@@ -112,7 +112,7 @@ fn keep_to_the_server(e: Tick) {
 잠들거나 하루의 끝(기본 다음날 6:00)이면 그 월드의 하루가 끝나고 각자의 아침이 옵니다. 열기구 방문은 꺼집니다.
 
 플레이어마다 자기 월드(자기 농장, 자기 시계, 열기구로 오감)로 하려면 server.properties의 `shared-world=false` — 게임의
-**설정 › 서버 관리**(운영자에게만 보임)에서 끄고 서버를 다시 켜면 됩니다 — 또는 플러그인이 `ServerTick`이나 `PlayerLogin`에서
+직접 연 서버는 파일을 고쳐 다시 켜고, 공식 24시간 서버는 중앙 관리자 페이지의 **요금제 · 24시간 서버 › 24시간 서버 관리**에서 끄고 다시 켜면 됩니다 — 또는 플러그인이 `ServerTick`이나 `PlayerLogin`에서
 `Server.set_shared_world(false)`를 부릅니다(플러그인 것이 server.properties보다 우선). 바뀐 뒤에 들어오는 사람부터 적용됩니다.
 
 ## 저장
