@@ -5,8 +5,6 @@ plugins:
   - jekyll-remote-theme
 lang: ko
 search_enabled: true
-search:
-  tokenizer_separator: /[\s\-/(),.`]+/
 heading_anchors: true
 color_scheme: light
 back_to_top: true
