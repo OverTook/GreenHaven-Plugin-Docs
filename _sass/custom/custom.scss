@@ -26,7 +26,7 @@ h3 { color: $wood; }
   background: $wood;
   border-bottom: 3px solid $ink;
 }
-.site-title { color: $cream !important; font-size: 1.5rem !important; }
+.site-title { color: $cream !important; font-size: 1.3rem !important; white-space: nowrap; }
 .site-title:hover { background-image: none; color: #fff !important; }
 .site-header .site-button svg { fill: $cream; }
 .side-bar { border-right: 1px solid $line; }
@@ -79,7 +79,7 @@ tr:nth-child(even) td { background: #fdf5e2; }
 .hero h1 {
   margin: 0;
   color: #fff;
-  font-size: 2.4rem !important;
+  font-size: clamp(1.6rem, 6vw, 2.4rem) !important;
   text-shadow: 0 3px 0 $ink;
   border: 0;
 }
