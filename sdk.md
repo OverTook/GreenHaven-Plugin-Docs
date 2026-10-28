@@ -139,6 +139,43 @@ fn count(_e: ServerTick) {
 }
 ```
 
+## OfflinePlayer
+
+지금 접속해 있지 않은 사람까지, 이 서버에 한 번이라도 들어온 누구든 읽습니다. 읽기 전용입니다.
+
+| | |
+|---|---|
+| `Server.offline_player(name)` → `OfflinePlayer` | 이름으로 |
+| `Server.offline_players()` → `Vec<OfflinePlayer>` | 들어온 적 있는 모두, 처음 들어온 순서 |
+
+| 메서드 | |
+|---|---|
+| `name()` | 이름 |
+| `has_played()` → `bool` | 저장된 게임이 있는지 |
+| `gold()` `day()` | 골드, 그 사람 월드의 날짜 |
+| `last_seen()` → `f64` | 마지막으로 나간 때 (1970년부터의 ms) |
+| `level(skill)` `friendship(villager)` `item_count(item)` | 스킬 레벨, 주민 호감도, 가방의 개수 |
+| `num(k)` | `"gold"` `"day"` `"energy"` `"seen"` `"level.<스킬>"` `"xp.<스킬>"` `"friendship.<주민>"` `"item.<id>"` |
+| `get(k)` | 이 플러그인이 그 사람에게 남긴 숫자, 그 사람 월드에서 (`Player::get`) |
+| `world_get(k)` | 이 플러그인이 그 사람 월드에 남긴 숫자 (`World::get`) |
+| `data_get(key)` / `world_data_get(key)` | 이 플러그인이 그 사람에게 / 그 사람 월드에 맡긴 바이트 |
+
+```rust
+#[command("부자", "골드가 가장 많은 농장 주인")]
+fn richest(c: Command) {
+    let best = Server.offline_players().into_iter().max_by_key(|p| p.gold());
+    if let Some(p) = best {
+        c.player().message(&format!("{}: {}골드", p.name(), p.gold()));
+    }
+}
+```
+
+- **마지막으로 저장된 상태**를 읽습니다 (그 사람 월드의 아침, `save_now`, 실시간 저장). 지금 접속해 있는 사람도 그렇게 읽히니,
+  그날 한 일까지 보려면 그 사람 월드의 이벤트에서 `Player`를 쓰세요.
+- 다른 플러그인의 값과 데이터는 보이지 않습니다.
+- 이벤트 한 번에 디스크에서 읽는 사람은 32명까지입니다(넘으면 없는 사람처럼 읽힘). 한 번 읽은 사람은 파일이 바뀔 때까지
+  다시 읽지 않으니, 같은 사람을 여러 번 읽는 것은 괜찮습니다.
+
 ## Npc
 
 주민 (`Npc(id)`; `Words::npc()`, `World::npcs()`).

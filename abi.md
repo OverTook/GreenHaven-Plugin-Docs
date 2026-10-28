@@ -87,6 +87,18 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `set_quit_warning(p, len)` | 나가기 경고 |
 | `set_shared_world(on: i32)` | 모두의 월드 |
 
+## 접속하지 않은 플레이어
+
+그 사람의 마지막으로 저장된 게임, 읽기만. 이벤트 한 번에 디스크에서 32명까지.
+
+| 함수 | |
+|---|---|
+| `offline_names(p, cap) -> i64` | 들어온 적 있는 모두, 줄바꿈으로 |
+| `offline_has(np, nl) -> i32` | 저장된 게임이 있으면 1 |
+| `offline_num(np, nl, kp, kl) -> f64` | `gold` `day` `energy` `seen` `level.<스킬>` `xp.<스킬>` `friendship.<주민>` `item.<id>`, 이 플러그인의 `w.<키>` `p.<키>` |
+| `offline_data(np, nl, kp, kl, p, cap) -> i64` | 이 플러그인이 그 사람 월드에 맡긴 바이트 (−1 없음) |
+| `offline_player_data(np, nl, kp, kl, p, cap) -> i64` | 그 사람 월드에서 그 사람에게 맡긴 바이트 |
+
 ## 하루와 날씨
 
 | 함수 | |
