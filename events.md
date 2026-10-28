@@ -24,7 +24,7 @@ fn cmd(c: Command) { /* … */ }
 
 - 핸들러는 이벤트를 값으로 받고 아무것도 돌려주지 않습니다.
 - 같은 이벤트의 핸들러들은 우선순위 차례로 돌고, **앞 핸들러(앞 플러그인)가 `set`으로 바꾼 값을 뒤 핸들러가 받습니다.**
-- 이벤트는 Bukkit처럼 두 갈래입니다.
+- 이벤트는 두 갈래입니다.
   - **취소할 수 있는 이벤트** (`Cancellable`): `e.cancel(why)` — 일어나지 않고, `why`가 플레이어에게 보입니다(`""`면 아무 말 없음).
     `e.set_cancelled(true)`는 `cancel("")`. 한 번 막히면 막힌 채이고, 뒤 핸들러(뒤 플러그인)는 불리지 않습니다.
   - **알리기만 하는 이벤트**: `cancel`이 아예 없어서 부르면 컴파일되지 않습니다.
@@ -101,11 +101,11 @@ fn cmd(c: Command) { /* … */ }
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
-### Bukkit 이름
+### 별칭
 
-같은 이벤트를 Bukkit의 이름으로도 씁니다.
+같은 이벤트를 이 이름으로도 씁니다.
 
-| Bukkit 이름 | = |
+| 별칭 | = |
 |---|---|
 | `PlayerJoin` / `PlayerQuit` | `Join` / `Leave` |
 | `PlayerChat` / `PlayerCommand` | `Chat` / `Command` |

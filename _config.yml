@@ -1,10 +1,22 @@
-title: GreenHaven 플러그인 API
+title: GreenHaven 플러그인
 description: GreenHaven 서버 플러그인 개발 문서 (Rust SDK, plugin.json, rules.json, 이벤트, "gh" 함수)
 remote_theme: just-the-docs/just-the-docs@v0.10.1
 plugins:
   - jekyll-remote-theme
 lang: ko
+color_scheme: greenhaven
 search_enabled: true
 heading_anchors: true
-color_scheme: light
 back_to_top: true
+back_to_top_text: "맨 위로"
+footer_content: "GreenHaven 플러그인 API 문서"
+callouts:
+  note:
+    title: 참고
+    color: green
+  tip:
+    title: 팁
+    color: yellow
+  warning:
+    title: 주의
+    color: red

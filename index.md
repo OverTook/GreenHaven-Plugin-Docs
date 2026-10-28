@@ -4,10 +4,27 @@ nav_order: 1
 permalink: /
 ---
 
-# GreenHaven 플러그인 API
+<div class="hero">
+  <div class="cat-run" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <h1 id="greenhaven-플러그인-api">GreenHaven 플러그인 API</h1>
+    <p>폴더 하나로 서버의 규칙·모습·콘텐츠를 바꿔요. 접속하는 사람은 아무것도 설치하지 않아요.</p>
+    <a class="btn btn-primary" href="#첫-플러그인-rust-sdk">첫 플러그인 만들기</a>
+    <a class="btn btn-wood" href="events">이벤트 보기</a>
+  </div>
+</div>
 
-마인크래프트 서버의 플러그인(Bukkit/Paper)처럼, 서버 운영자가 **폴더 하나**를 넣어 서버의 규칙·모습·콘텐츠를 바꿉니다.
-접속하는 사람은 아무것도 설치하지 않습니다. 서버가 판정하고, 필요한 그림·소리·모델은 접속할 때 자동으로 받습니다.
+서버 운영자가 **폴더 하나**를 넣어 서버의 규칙·모습·콘텐츠를 바꿉니다. 서버가 판정하고, 필요한 그림·소리·모델은
+접속할 때 자동으로 받습니다.
+
+<div class="cards">
+  <a class="card" href="plugin-json"><strong>plugin.json</strong><span>이름, 버튼, 바, 명령어, 설정, 휴대폰</span></a>
+  <a class="card" href="events"><strong>이벤트</strong><span>행동, 수확, 몬스터, 하루, 월드 만들기</span></a>
+  <a class="card" href="sdk"><strong>SDK 레퍼런스</strong><span>Player, World, Server, Npc, Entity, Gui</span></a>
+  <a class="card" href="rules"><strong>rules.json</strong><span>코드 없이 아이템·작물·주민·스킬·땅 바꾸기</span></a>
+  <a class="card" href="world"><strong>월드와 하루</strong><span>블록, 구조물, 주민, 시계, 저장</span></a>
+  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>열다섯 개의 예제와 쓰는 기능</span></a>
+</div>
 
 플러그인은 세 가지를 섞어 씁니다. 어느 것이든 없어도 됩니다.
 
@@ -60,7 +77,7 @@ greenhaven-plugin = { path = "../../sdk/plugin" }   # GreenHaven-Server의 sdk/p
 ```rust
 use greenhaven_plugin::*;
 
-#[on(Harvest)]                       // Bukkit의 @EventHandler
+#[on(Harvest)]                       // 이 이벤트마다 불림
 fn bigger(e: Harvest) {
     if e.crop() == "pumpkin" { e.set_count(e.count() * 2.0) }
 }
@@ -102,19 +119,9 @@ GreenHaven-Server 안의 `plugins/` 아래에 두었다면 `python tools/build_p
 
 - **코드는 서버에서만 돕니다.** 접속하는 게임에는 데이터(규칙, 그림·소리·모델)와 서버가 보낸 결과만 가고 코드는 가지
   않습니다. 그래서 플러그인의 결과는 서버 대답(온라인이면 수십 ms) 뒤에 보입니다.
-- **휴대폰의 자체 서버는 코드를 돌리지 않습니다.** 코드가 든 플러그인은 plugin.json에 `"mobile": true`가 없으면 통째로
+- **휴대폰의 자체 서버는 코드를 돌리지 않습니다.** 코드가 든 플러그인은 plugin.json에 [`"mobile": true`](plugin-json#휴대폰-mobile)가 없으면 통째로
   빠집니다(`rules.json`·`assets/`만으로 쓸 만하면 `true`). 온라인 서버에 들어가면 그 서버의 코드가 돌아 휴대폰에서도 보입니다.
 - **모듈은 월드마다 하나 만들어져 계속 쓰입니다.** 전역 변수가 다음 이벤트에도 남아 캐시로 써도 되지만, 자고 일어나지
   않은 하루가 버려질 때 새로 만들어집니다. 오래 남길 것은 `World::set` / `Player::set`이나 [데이터 저장](sdk#데이터-저장)에.
 - **저장은 바닐라 규칙**: 자고 일어난 아침에만 저장됩니다. [저장](world#저장) 참고.
 - 정해진 난수는 `e.roll(k)`: 같은 이벤트를 다시 돌려도 같은 값. `rand`는 쓰지 마세요(샌드박스에 시간·난수 원천이 없습니다).
-
-## 다음
-
-- [plugin.json](plugin-json) — 버튼, 바, 명령어, 설정
-- [이벤트](events) — 받을 수 있는 이벤트 전부
-- [SDK 레퍼런스](sdk) — `Player` `World` `Server` `Npc` `Entity` `Mob` `Structure` `Block` `Gui`
-- [rules.json](rules) — 코드 없이 콘텐츠 바꾸기
-- [월드와 하루](world) — 블록, 구조물, 주민, 하루의 끝, 모두의 월드, 저장
-- [서버 운영](server) — server.properties, 샌드박스, 한계
-- [샘플 플러그인](samples)

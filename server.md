@@ -11,7 +11,7 @@ nav_order: 8
 
 ## server.properties
 
-전용 서버는 데이터 폴더의 `server.properties`(처음 켤 때 기본값으로 만들어짐)를 읽습니다. Bukkit처럼 `키=값` 줄입니다.
+전용 서버는 데이터 폴더의 `server.properties`(처음 켤 때 기본값으로 만들어짐)를 읽습니다. `키=값` 줄입니다.
 
 ```
 name=봄바람 마을 서버
@@ -53,7 +53,7 @@ region=한국
 - 끝나지 않는 반복이나 오류(panic, trap)는 **그 플러그인의 몫만** 없던 일이 되고 게임은 계속됩니다.
 - 코드는 서버에서만 돌고 게임에는 가지 않습니다. `assets/`도 그림·소리·모델 원본만 씁니다.
 - 휴대폰(안드로이드) 게임의 자체 서버는 코드를 돌리지 않습니다: `rules.json`과 `assets/`만. 코드가 든 플러그인은
-  plugin.json에 `"mobile": true`가 있어야 그렇게라도 쓰입니다.
+  plugin.json에 [`"mobile": true`](plugin-json#휴대폰-mobile)가 있어야 그렇게라도 쓰입니다.
 - 이벤트 한 번에 1~2 µs (모듈은 월드마다 만들어 둔 채로 씀).
 
 ## 한계

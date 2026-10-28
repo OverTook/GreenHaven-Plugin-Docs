@@ -9,7 +9,7 @@ nav_order: 6
 1. TOC
 {:toc}
 
-월드는 Minecraft처럼 **처음 만들 때 한 번 생성되고, 그 뒤로는 저장된 것**입니다. 바닐라 생성기는 서버 코드이고,
+월드는 **처음 만들 때 한 번 생성되고, 그 뒤로는 저장된 것**입니다. 바닐라 생성기는 서버 코드이고,
 플러그인은 만들어질 때([`WorldCreate`](events#worldcreate), [`ChunkGenerate`](events#chunkgenerate))와 그 뒤 어느 이벤트에서나
 블록·구조물·주민을 바꿀 수 있습니다. 바뀐 것은 그 월드의 모두에게 바로 갑니다.
 
@@ -103,7 +103,7 @@ fn keep_to_the_server(e: Tick) {
 
 ## 모두의 월드
 
-바닐라는 플레이어마다 자기 월드(자기 농장, 자기 시계)입니다. Bukkit 서버처럼 모두를 월드 하나에 두려면 server.properties의
+바닐라는 플레이어마다 자기 월드(자기 농장, 자기 시계)입니다. 모두를 월드 하나에 두려면 server.properties의
 `shared-world=true`, 또는 `ServerTick`이나 `PlayerLogin`에서 `Server.set_shared_world(true)` (플러그인 것이 우선).
 
 - 들어오는 모든 플레이어가 서버의 월드에 농장 일꾼으로 들어갑니다: 땅·블록·작물·마을·주민·몬스터·돈은 함께, 가방·기력·

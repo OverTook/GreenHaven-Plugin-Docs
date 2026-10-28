@@ -1,0 +1,130 @@
+// GreenHaven: the game's wood and parchment (Client/scripts/game/ui_theme.gd)
+$ink: #3a2312;
+$wood: #8b5a2b;
+$wood-light: #c08552;
+$parch: #f7e3b0;
+$cream: #fbefcf;
+$line: #e2c07f;
+$green: #3f7a24;
+$green-dark: #2b5518;
+
+h1, h2, h3, h4, .site-title, .nav-list .nav-list-item > .nav-list-link {
+  font-family: "Jua", $body-font-family;
+  font-weight: 400;
+}
+body { line-height: 1.7; }
+h1 { color: $ink; letter-spacing: -0.01em; }
+h2 {
+  margin-top: 2.5rem !important;
+  padding-bottom: 0.3rem;
+  border-bottom: 2px dashed $line;
+}
+h3 { color: $wood; }
+
+// the sidebar: a wooden sign over parchment
+.site-header {
+  background: $wood;
+  border-bottom: 3px solid $ink;
+}
+.site-title { color: $cream !important; font-size: 1.5rem !important; }
+.site-title:hover { background-image: none; color: #fff !important; }
+.site-header .site-button svg { fill: $cream; }
+.side-bar { border-right: 1px solid $line; }
+.nav-list .nav-list-item .nav-list-link { border-radius: 8px; color: $ink; }
+.nav-list .nav-list-item .nav-list-link:hover { background-image: none; background: rgba($wood-light, 0.2); }
+.nav-list .nav-list-item .nav-list-link.active {
+  background: $green !important;
+  background-image: none !important;
+  color: #fff;
+}
+.main-header { background: $cream; border-bottom: 1px solid $line; }
+.search-input { background: #fffaf0; }
+
+// code
+code { border-radius: 5px; border-color: $line; color: #6b3f1d; font-size: 0.85em; }
+div.highlighter-rouge, figure.highlight, pre.highlight {
+  border: 1px solid $line;
+  border-radius: 10px;
+}
+a code { color: $green; }
+
+// tables: parchment cards
+.table-wrapper {
+  border-radius: 10px;
+  border: 1px solid $line;
+  box-shadow: 0 2px 0 rgba($ink, 0.08);
+}
+th { background: $parch !important; color: $ink; font-family: "Jua", $body-font-family; font-weight: 400; }
+th, td { border-color: rgba($line, 0.7) !important; }
+tr:nth-child(even) td { background: #fdf5e2; }
+
+// the home page
+.hero {
+  position: relative;
+  margin: -1rem -1rem 2rem;
+  min-height: 300px;
+  border-radius: 0 0 18px 18px;
+  overflow: hidden;
+  background: url("../images/hero.jpg") center 60% / cover no-repeat;
+  display: flex;
+  align-items: flex-end;
+  @media (min-width: 50rem) { margin: -2rem -2rem 2.5rem; min-height: 360px; }
+}
+.hero-inner {
+  width: 100%;
+  padding: 3rem 1.5rem 1.5rem;
+  background: linear-gradient(to bottom, rgba($ink, 0), rgba($ink, 0.82));
+  color: $cream;
+}
+.hero h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 2.4rem !important;
+  text-shadow: 0 3px 0 $ink;
+  border: 0;
+}
+.hero p { margin: 0.3rem 0 1rem; color: $cream; font-size: 1.1rem; }
+.hero .btn { margin: 0 0.5rem 0.4rem 0; }
+.btn-primary { border-radius: 10px; box-shadow: 0 3px 0 $green-dark !important; }
+.btn-wood {
+  border-radius: 10px;
+  background: $cream !important;
+  color: $ink !important;
+  box-shadow: 0 3px 0 $wood !important;
+}
+.cat-run {
+  position: absolute;
+  right: 1.2rem;
+  top: 1rem;
+  width: 128px;
+  height: 128px;
+  background: url("../images/cat_run.png") 0 0 / 1536px 128px;
+  animation: cat-run 0.54s steps(12) infinite;
+  filter: drop-shadow(0 4px 0 rgba($ink, 0.35));
+  @media (max-width: 40rem) { width: 96px; height: 96px; background-size: 1152px 96px; animation-name: cat-run-sm; }
+}
+@keyframes cat-run { to { background-position: -1536px 0; } }
+@keyframes cat-run-sm { to { background-position: -1152px 0; } }
+@media (prefers-reduced-motion: reduce) { .cat-run { animation: none; } }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin: 1rem 0 2rem;
+}
+.card {
+  display: block;
+  padding: 1rem 1.1rem;
+  background: $cream;
+  border: 2px solid $line;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 $line;
+  color: $ink !important;
+  text-decoration: none;
+  background-image: none !important;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 $wood-light; border-color: $wood-light; }
+.card strong { display: block; font-family: "Jua", $body-font-family; font-weight: 400; font-size: 1.15rem; color: $green; }
+.card span { font-size: 0.9rem; color: #6b4a2e; }
