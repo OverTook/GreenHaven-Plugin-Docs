@@ -1,0 +1,12 @@
+title: GreenHaven 플러그인 API
+description: GreenHaven 서버 플러그인 개발 문서 (Rust SDK, plugin.json, rules.json, 이벤트, "gh" 함수)
+remote_theme: just-the-docs/just-the-docs@v0.10.1
+plugins:
+  - jekyll-remote-theme
+lang: ko
+search_enabled: true
+search:
+  tokenizer_separator: /[\s\-/(),.`]+/
+heading_anchors: true
+color_scheme: light
+back_to_top: true
