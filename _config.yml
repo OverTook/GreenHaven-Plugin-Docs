@@ -1,5 +1,6 @@
 title: GreenHaven 플러그인
 description: GreenHaven 서버 플러그인 개발 문서 (Rust SDK, plugin.json, rules.json, 이벤트, "gh" 함수)
+url: https://wiki.greenhaven.fun
 remote_theme: just-the-docs/just-the-docs@v0.10.1
 plugins:
   - jekyll-remote-theme
