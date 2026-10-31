@@ -25,6 +25,7 @@ parent: 도감
 | <img class="ico" src="/assets/wiki/monsters/ember.png" alt=""> | [불꽃 정령](#ember) | 8 | 15 | 2.8 | 밤 레벨 5 |
 | <img class="ico" src="/assets/wiki/monsters/gem_bug.png" alt=""> | [보석 벌레](#gem_bug) | 4 | 7 | 1.7 | 광산 1층 |
 | <img class="ico" src="/assets/wiki/monsters/pot.png" alt=""> | [깨진 항아리](#pot) | 6 | 9 | 1.5 | 광산 4층 |
+| <img class="ico" src="/assets/wiki/monsters/spider.png" alt=""> | [동굴거미](#spider) | 6 | 9 | 2.2 | 광산 6층 |
 | <img class="ico" src="/assets/wiki/monsters/firefly.png" alt=""> | [반딧불이](#firefly) | 4 | 8 | 3.0 | 광산 8층 |
 | <img class="ico" src="/assets/wiki/monsters/biter.png" alt=""> | [식인 꽃](#biter) | 10 | 13 | 1.3 | 광산 12층 |
 | <img class="ico" src="/assets/wiki/monsters/vine.png" alt=""> | [덩굴 괴물](#vine) | 14 | 15 | 1.9 | 광산 18층 |
@@ -153,6 +154,21 @@ parent: 도감
 | 속도 | 1.5 m/s |
 | 움직임 | 깡충 뛰며 다가옴 |
 | 나오는 곳 | 광산 4층부터 33층까지 |
+| 쓰러뜨리는 데 | 검 돌 3대 · 구리 2대 · 철 1대 · 금 1대 · 미스릴 1대 |
+
+</div></div>
+### 동굴거미
+{: #spider }
+
+<div class="dex-card"><img src="/assets/wiki/monsters/spider.png" alt="동굴거미" loading="lazy"><div markdown="1">
+
+| | |
+|---|---|
+| 체력 | 6 |
+| 피해 | 9 |
+| 속도 | 2.2 m/s |
+| 움직임 | 걸어서 다가옴 |
+| 나오는 곳 | 광산 6층부터 35층까지 |
 | 쓰러뜨리는 데 | 검 돌 3대 · 구리 2대 · 철 1대 · 금 1대 · 미스릴 1대 |
 
 </div></div>
