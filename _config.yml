@@ -8,6 +8,9 @@ plugins:
 lang: ko
 color_scheme: greenhaven
 search_enabled: true
+search_placeholder_text: "위키 검색"
+search:
+  button: true
 heading_anchors: true
 back_to_top: true
 back_to_top_text: "맨 위로"

@@ -53,7 +53,7 @@ parent: 게임 규칙
 
 ## 처음 받는 것
 
-500G, <a href="/dex/crops#carrot_seeds">당근 씨앗 ×15</a> <a href="/dex/crops#potato_seeds">감자 씨앗 ×5</a> <a href="/dex/items#hoe">괭이</a> <a href="/dex/items#watering_can">물뿌리개</a> <a href="/dex/items#scythe">낫</a> <a href="/dex/items#axe">도끼</a> <a href="/dex/items#pickaxe">곡괭이</a> <a href="/dex/items#fishing_rod">낚싯대</a> <a href="/dex/items#sword">녹슨 검</a>
+500G, <a href="/dex/crops#carrot_seeds">당근 씨앗 ×15</a> <a href="/dex/crops#potato_seeds">감자 씨앗 ×5</a> <a href="/growth/tools#hoe">괭이</a> <a href="/growth/tools#watering_can">물뿌리개</a> <a href="/growth/tools#scythe">낫</a> <a href="/growth/tools#axe">도끼</a> <a href="/growth/tools#pickaxe">곡괭이</a> <a href="/growth/tools#fishing_rod">낚싯대</a> <a href="/growth/tools#sword">녹슨 검</a>
 
 ## 하루의 끝
 

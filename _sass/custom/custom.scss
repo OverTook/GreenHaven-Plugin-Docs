@@ -138,3 +138,5 @@ img.dex { width: 96px; height: 96px; }
 .dex-card table th:empty { display: none; }
 details.spoiler { background: #f6efdc; border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
 details.spoiler summary { cursor: pointer; font-weight: 600; }
+.site-nav .nav-list .nav-list-item .nav-list-link.active,
+.site-nav .nav-list .nav-list-item .nav-list-link.active:hover { color: #fff; }
