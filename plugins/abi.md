@@ -69,6 +69,7 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `xp(p, len, n: i64)` `friendship(p, len, n: i64)` | 경험치, 호감도 |
 | `open_shop(p, len)` | 가게 열기 |
 | `set_walk_speed(times: f64)` | 걸음 빠르기 |
+| `death(hold: i32)` `respawn()` | 쓰러뜨림 (`hold` 0이 아니면 쓰러진 채 대기), 일으킴 |
 | `set_model(p, len)` | [커스텀 모델](models) (빈 문자열: 원래 모습) |
 | `play_anim(p, len)` `stop_anim()` | [감정 표현](models) 재생, 끝내기 |
 | `set_time(minute: i64)` | 그 월드의 시각 |
@@ -110,7 +111,8 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | 함수 | |
 |---|---|
 | `set_weather(p, len, ahead: i64)` | 그날의 날씨 |
-| `set_day(day: i64)` `set_day_start(minute: i64)` `set_day_end(minute: i64)` | 날짜, 아침 시각, 하루의 끝 |
+| `set_day(day: i64)` | 날짜 |
+| `set_morning_time(minute: i64)` `set_night_time(minute: i64)` `set_dawn_time(minute: i64)` | 밤이 끝나는, 시작되는, 몬스터가 강해지는 시각 (음수: 규칙 값으로) |
 | `end_day()` | 하루를 끝냄 |
 
 ## 엔티티, 주민, 몬스터

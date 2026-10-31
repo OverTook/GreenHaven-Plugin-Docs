@@ -45,6 +45,7 @@ parent: 성장
 | <span id="furnace"></span>furnace | <a href="/dex/items#stone"><img class="ico" src="/assets/wiki/icons/stone.png" alt="" loading="lazy">돌 ×25</a> <a href="/dex/items#copper_ore"><img class="ico" src="/assets/wiki/icons/copper_ore.png" alt="" loading="lazy">구리 광석 ×10</a> | 처음부터 | 한 번 만들면 광석을 주괴로 제련할 수 있어요. |
 | <span id="crab_pot"></span><img class="ico" src="/assets/wiki/icons/crab_pot.png" alt="" loading="lazy">통발 | <a href="/dex/items#wood"><img class="ico" src="/assets/wiki/icons/wood.png" alt="" loading="lazy">나무 ×40</a> <a href="/dex/items#copper_ore"><img class="ico" src="/assets/wiki/icons/copper_ore.png" alt="" loading="lazy">구리 광석 ×2</a> | {'skill': 'fishing', 'lv': 2} | 물에 놓아두면 하루 뒤 해산물이 잡혀요. 미끼를 넣으면 꼭 잡혀요. |
 | <span id="preserves_jar"></span><img class="ico" src="/assets/wiki/icons/preserves_jar.png" alt="" loading="lazy">보존 항아리 | <a href="/dex/items#wood"><img class="ico" src="/assets/wiki/icons/wood.png" alt="" loading="lazy">나무 ×50</a> <a href="/dex/items#stone"><img class="ico" src="/assets/wiki/icons/stone.png" alt="" loading="lazy">돌 ×40</a> | {'skill': 'farming', 'lv': 3} | 과일은 잼, 채소는 절임으로 만들어요 (3일). 두 배 넘게 비싸요. |
+| <span id="keg"></span><img class="ico" src="/assets/wiki/icons/keg.png" alt="" loading="lazy">발효통 | <a href="/dex/items#wood"><img class="ico" src="/assets/wiki/icons/wood.png" alt="" loading="lazy">나무 ×40</a> <a href="/dex/items#copper_bar"><img class="ico" src="/assets/wiki/icons/copper_bar.png" alt="" loading="lazy">구리 주괴</a> <a href="/dex/items#iron_bar"><img class="ico" src="/assets/wiki/icons/iron_bar.png" alt="" loading="lazy">철 주괴</a> | {'skill': 'farming', 'lv': 5} | 과일은 과실주, 채소는 주스로 만들어요 (5일). 세 배 넘게 비싸요. |
 | <span id="bee_house"></span><img class="ico" src="/assets/wiki/icons/bee_house.png" alt="" loading="lazy">벌통 | <a href="/dex/items#wood"><img class="ico" src="/assets/wiki/icons/wood.png" alt="" loading="lazy">나무 ×40</a> <a href="/dex/items#copper_ore"><img class="ico" src="/assets/wiki/icons/copper_ore.png" alt="" loading="lazy">구리 광석</a> | {'skill': 'foraging', 'lv': 3} | 4일마다 꿀이 차요. 근처(5칸)에 다 핀 꽃이 있으면 꽃꿀이 돼요. 겨울엔 쉬어요. |
 | <span id="bait"></span><img class="ico" src="/assets/wiki/icons/bait.png" alt="" loading="lazy">미끼 ×5 | <a href="/dex/items#seaweed"><img class="ico" src="/assets/wiki/icons/seaweed.png" alt="" loading="lazy">해초</a> | {'skill': 'fishing', 'lv': 1} | 해초로 만든 미끼. 통발에 넣어요. |
 | <span id="copper_bar"></span><img class="ico" src="/assets/wiki/icons/copper_bar.png" alt="" loading="lazy">구리 주괴 | <a href="/dex/items#copper_ore"><img class="ico" src="/assets/wiki/icons/copper_ore.png" alt="" loading="lazy">구리 광석 ×4</a> | furnace | 구리 광석을 녹인 주괴. 대장간 강화 재료. |
@@ -58,6 +59,7 @@ parent: 성장
 | 기계 | 걸리는 시간 | 범위 |
 |---|---|---|
 | 보존 항아리 | 3일 | — |
+| 발효통 | 5일 | — |
 | 벌통 | — | 5 |
 | 통발 | — | — |
 

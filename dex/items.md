@@ -168,6 +168,7 @@ parent: 도감
 | <span id="big_chest"></span><img class="ico" src="/assets/wiki/icons/big_chest.png" alt="" loading="lazy">큰 상자 | 0 |
 | <span id="scarecrow"></span><img class="ico" src="/assets/wiki/icons/scarecrow.png" alt="" loading="lazy">허수아비 | 0 |
 | <span id="preserves_jar"></span><img class="ico" src="/assets/wiki/icons/preserves_jar.png" alt="" loading="lazy">보존 항아리 | 0 |
+| <span id="keg"></span><img class="ico" src="/assets/wiki/icons/keg.png" alt="" loading="lazy">발효통 | 0 |
 | <span id="bee_house"></span><img class="ico" src="/assets/wiki/icons/bee_house.png" alt="" loading="lazy">벌통 | 0 |
 | <span id="crab_pot"></span><img class="ico" src="/assets/wiki/icons/crab_pot.png" alt="" loading="lazy">통발 | 0 |
 

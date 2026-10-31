@@ -43,6 +43,8 @@ redirect_from:
 | `teleport(x, z)` | 옮기기 (서버의 이동 판정도 그 자리를 받아들임) |
 | `set_time(minute)` | 그 사람이 있는 월드의 시각 (6:00 = 360 ~ 2:00 = 1560; 날짜는 그대로), 그 월드의 게임에 바로 알림 |
 | `set_walk_speed(times)` | 걸음 빠르기 배수 (1이 원래). 게임의 걸음과 서버의 이동 판정이 함께 바뀜. 바꿀 때까지 유지 |
+| `death(hold)` | 쓰러뜨림 (`PlayerDeath`도 불림). `false`: 게임 규칙대로 진료소에서 바로 일어남. `true`: `respawn`까지 쓰러진 채 대기, 아침이 지나도 그대로. 다른 사람의 잠은 이 사람을 기다리지 않지만, 쓰러진 사람만으로 하루가 끝나지는 않음 |
+| `respawn()` | 쓰러진 채 대기 중인 사람을 진료소에서 일으킴 (체력 가득) |
 | `set_model(id)` `clear_model()` | [커스텀 모델](models)로 그림 / 원래 모습으로. 연결된 동안만, 계정은 그대로 |
 | `play_anim(id)` `stop_anim()` | [감정 표현](models) 재생 / 끝내기. 가만히 서 있을 때만, 움직이거나 행동하면 끝남 |
 | `say(line)` | 머리 위의 한마디 |
@@ -104,8 +106,9 @@ redirect_from:
 | 메서드 | |
 |---|---|
 | `set_day(day)` | 날짜 (1이 첫날; 계절은 날짜에서). 월드의 게임에 바로 알림 |
-| `set_day_start(minute)` | 이 월드의 아침 시각 (6:00 = 360) |
-| `set_day_end(minute)` | 이 월드의 하루의 끝 (그때 `DayEnd` `"clock"`; 다음날 6:00 = 1800) |
+| `set_morning_time(minute)` `clear_morning_time()` | 밤이 끝나는 시각 (해가 뜨고 몬스터가 사라짐, 6:30 = 390) / 계절의 해 뜨는 시각으로 |
+| `set_night_time(minute)` `clear_night_time()` | 밤이 시작되는 시각 (해가 지고 몬스터가 나옴, 18:00 = 1080) / 계절의 해 지는 시각으로 |
+| `set_dawn_time(minute)` `clear_dawn_time()` | 몬스터가 강해지는 시각 (2:00 = 120), 아침까지 / 기본값으로 |
 | `end_day()` | 지금 하루를 끝냄, 모두 잔 것처럼 (먼저 `DayEnd` `"end_day"`) |
 
 ### 블록

@@ -83,11 +83,14 @@ fn neighbor(e: WorldCreate) {
 |---|---|
 | `Player::set_time(minute)` | 지금 시각 |
 | `World::set_day(n)` | 날짜 |
-| `World::set_day_start(minute)` | 아침 시각 |
-| `World::set_day_end(minute)` | 하루의 끝 시각 |
+| `World::set_morning_time(minute)` `clear_morning_time()` | 밤이 끝나는 시각 |
+| `World::set_night_time(minute)` `clear_night_time()` | 밤이 시작되는 시각 |
+| `World::set_dawn_time(minute)` `clear_dawn_time()` | 몬스터가 강해지는 시각 |
 | `World::end_day()` | 지금 하루를 끝냄 |
 | [`DayEnd`](events#dayend) | 끝나려는 하루를 막기 |
 | [`DayChange`](events#daychange) | 날짜가 넘어가지 않게 |
+
+세 시각은 하늘과 몬스터에 함께 적용되고, 계절과 상관없이 하나의 값입니다. 월드에 저장되고 `clear_*`로 규칙 값으로 돌아갑니다. 밤이 하루 안에 있어도 됩니다(1:00~5:00). 새 날의 시작은 6:00으로 고정이고, 더 일찍 끝내려면 `Tick`에서 시각을 보고 `end_day()`를 부릅니다.
 
 이 설정들만 월드마다이고, rules.json의 다른 값을 코드에서 바꾸는 일반 API는 없습니다(규칙은 서버 전체가 함께 씀).
 

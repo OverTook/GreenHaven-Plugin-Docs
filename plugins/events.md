@@ -266,7 +266,7 @@ fn circle(e: MobStep) {
 
 ### PlayerDeath
 
-플레이어가 쓰러질 때(체력이 다함). `keep_inventory(true)`: 가방과 장비를 지킴.
+플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기.
 
 ## 플레이어
 
@@ -374,13 +374,13 @@ fn pressed(e: Button) {
 
 | `reason()` | 언제 | 취소하면 |
 |---|---|---|
-| `"clock"` | 하루의 끝 시각 (`World::set_day_end`) | 시계가 계속 감, 날짜 그대로 |
+| `"clock"` | 하루의 끝 시각 (rules.json `day_end`) | 시계가 계속 감, 날짜 그대로 |
 | `"sleep"` | 모두 잠듦 | 자던 사람들이 일어남, 하루가 이어짐 |
 | `"end_day"` | 플러그인의 `World::end_day()` | 아무 일도 없음 |
 | `"limit"` | 넘을 수 없는 끝 (다음날 6:00, 더 늦은 day_end면 그것) | 아침이 오지 않음(작물·출하·생성 없음, 저장도 없음), 날짜 그대로, 시계는 하루의 시작으로 |
 
 기본 규칙에서는 하루의 끝이 곧 다음날 6:00(=limit)이라 시계로 끝나는 날은 `"limit"`입니다. `"clock"`은
-`set_day_end`로 더 이른 끝을 둔 월드에서 옵니다.
+rules.json의 `day_end`를 앞당긴 서버에서 옵니다.
 
 ### DayChange
 
