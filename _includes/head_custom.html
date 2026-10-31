@@ -1,3 +1,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script>
+  // lunr's trimmer takes everything but [A-Za-z0-9_] off a word's ends: all of a Korean word. Letters of any script stay.
+  if (window.lunr) {
+    lunr.trimmer = function (token) {
+      return token.update(function (s) { return s.replace(/^[^\p{L}\p{N}_]+|[^\p{L}\p{N}_]+$/gu, ''); });
+    };
+    lunr.Pipeline.registerFunction(lunr.trimmer, 'trimmer');
+  }
+</script>
