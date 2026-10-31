@@ -128,3 +128,13 @@ tr:nth-child(even) td { background: #fdf5e2; }
 .card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 $wood-light; border-color: $wood-light; }
 .card strong { display: block; font-family: "Jua", $body-font-family; font-weight: 400; font-size: 1.15rem; color: $green; }
 .card span { font-size: 0.9rem; color: #6b4a2e; }
+
+// the game wiki
+img.ico { width: 26px; height: 26px; vertical-align: middle; margin-right: 6px; }
+img.dex { width: 96px; height: 96px; }
+.dex-card { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
+.dex-card > img { width: 160px; height: 160px; object-fit: contain; background: #f6efdc; border-radius: 12px; padding: 8px; box-sizing: border-box; }
+.dex-card > div { flex: 1; min-width: 240px; }
+.dex-card table th:empty { display: none; }
+details.spoiler { background: #f6efdc; border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+details.spoiler summary { cursor: pointer; font-weight: 600; }
