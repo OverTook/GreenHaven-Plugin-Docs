@@ -59,6 +59,7 @@ nav_order: 5
 | `progress.tutorial_tasks` | [첫날 할 일](#첫날-할-일) |
 | `progress.fishing.reel` | [낚시의 손맛](#낚시의-손맛) |
 | `monsters_add`, `animals_add` | [몬스터와 농장 동물 더하기](#몬스터와-농장-동물-더하기) |
+| `models_add`, `emotes_add` | [커스텀 모델과 감정 표현](models) |
 | `villagers_add`, `villagers_remove`, `town_remove` | 주민·구획 더하기·빼기 (그 이름이 나오는 모든 표에서) |
 | `places_add` | 주민이 가는 새 장소 |
 | `terrain` | [땅](#땅-terrain) |

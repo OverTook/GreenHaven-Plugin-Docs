@@ -22,8 +22,9 @@ permalink: /
   <a class="card" href="events"><strong>이벤트</strong><span>행동, 수확, 몬스터, 하루, 월드 만들기</span></a>
   <a class="card" href="sdk"><strong>SDK 레퍼런스</strong><span>Player, World, Server, OfflinePlayer, Npc, Gui</span></a>
   <a class="card" href="rules"><strong>rules.json</strong><span>코드 없이 아이템·작물·주민·스킬·땅 바꾸기</span></a>
+  <a class="card" href="models"><strong>커스텀 모델</strong><span>플레이어 모델과 감정 표현, 뼈대 규격과 검사 규칙</span></a>
   <a class="card" href="world"><strong>월드와 하루</strong><span>블록, 구조물, 주민, 시계, 저장</span></a>
-  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>열다섯 개의 예제와 쓰는 기능</span></a>
+  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>열여섯 개의 예제와 쓰는 기능</span></a>
 </div>
 
 플러그인은 세 가지를 섞어 씁니다. 어느 것이든 없어도 됩니다.

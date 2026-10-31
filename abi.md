@@ -65,6 +65,8 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `xp(p, len, n: i64)` `friendship(p, len, n: i64)` | 경험치, 호감도 |
 | `open_shop(p, len)` | 가게 열기 |
 | `set_walk_speed(times: f64)` | 걸음 빠르기 |
+| `set_model(p, len)` | [커스텀 모델](models) (빈 문자열: 원래 모습) |
+| `play_anim(p, len)` `stop_anim()` | [감정 표현](models) 재생, 끝내기 |
 | `set_time(minute: i64)` | 그 월드의 시각 |
 | `visit(p, len)` `home()` | 열기구로 그 월드에 / 집으로 |
 | `music_play(p, len)` `music_all(p, len)` | 그 플레이어 / 월드 모두에게 곡 |

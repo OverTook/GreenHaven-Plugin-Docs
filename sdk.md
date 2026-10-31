@@ -39,6 +39,8 @@ nav_order: 4
 | `teleport(x, z)` | 옮기기 (서버의 이동 판정도 그 자리를 받아들임) |
 | `set_time(minute)` | 그 사람이 있는 월드의 시각 (6:00 = 360 ~ 2:00 = 1560; 날짜는 그대로), 그 월드의 게임에 바로 알림 |
 | `set_walk_speed(times)` | 걸음 빠르기 배수 (1이 원래). 게임의 걸음과 서버의 이동 판정이 함께 바뀜. 바꿀 때까지 유지 |
+| `set_model(id)` `clear_model()` | [커스텀 모델](models)로 그림 / 원래 모습으로. 연결된 동안만, 계정은 그대로 |
+| `play_anim(id)` `stop_anim()` | [감정 표현](models) 재생 / 끝내기. 가만히 서 있을 때만, 움직이거나 행동하면 끝남 |
 | `say(line)` | 머리 위의 한마디 |
 | `message(line)` | 채팅 한 줄 |
 | `title(line)` | 화면 가운데 큰 제목 |
