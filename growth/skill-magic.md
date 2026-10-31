@@ -1,5 +1,5 @@
 ---
-title: 스킬: 마법
+title: 마법 스킬
 nav_order: 6
 parent: 성장
 ---

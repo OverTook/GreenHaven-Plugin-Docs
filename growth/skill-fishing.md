@@ -1,5 +1,5 @@
 ---
-title: 스킬: 낚시
+title: 낚시 스킬
 nav_order: 5
 parent: 성장
 ---

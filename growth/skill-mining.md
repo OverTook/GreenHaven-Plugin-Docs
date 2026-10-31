@@ -1,5 +1,5 @@
 ---
-title: 스킬: 채광
+title: 채광 스킬
 nav_order: 4
 parent: 성장
 ---

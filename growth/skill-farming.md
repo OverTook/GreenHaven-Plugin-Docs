@@ -1,5 +1,5 @@
 ---
-title: 스킬: 농사
+title: 농사 스킬
 nav_order: 2
 parent: 성장
 ---

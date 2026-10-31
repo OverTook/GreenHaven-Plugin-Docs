@@ -23,8 +23,8 @@ parent: 성장
 | <span id="scythe"></span><img class="ico" src="/assets/wiki/icons/scythe_basic.png" alt="" loading="lazy">낫 | 1 |
 | <span id="axe"></span><img class="ico" src="/assets/wiki/icons/axe_basic.png" alt="" loading="lazy">도끼 | 2 |
 | <span id="pickaxe"></span><img class="ico" src="/assets/wiki/icons/pickaxe_basic.png" alt="" loading="lazy">곡괭이 | 2 |
-| <span id="sword"></span>녹슨 검 | 0 |
-| <span id="fishing_rod"></span>낚싯대 | 1 |
+| <span id="sword"></span><img class="ico" src="/assets/wiki/icons/sword_rusty.png" alt="" loading="lazy">녹슨 검 | 0 |
+| <span id="fishing_rod"></span><img class="ico" src="/assets/wiki/icons/fishing_rod_bamboo.png" alt="" loading="lazy">낚싯대 | 1 |
 
 ## 도구 강화
 

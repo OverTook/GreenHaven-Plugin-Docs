@@ -1,5 +1,5 @@
 ---
-title: 스킬: 채집
+title: 채집 스킬
 nav_order: 3
 parent: 성장
 ---
