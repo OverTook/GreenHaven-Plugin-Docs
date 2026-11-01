@@ -1,0 +1,253 @@
+---
+title: 네트워크 프로토콜
+nav_order: 10
+parent: 플러그인
+---
+
+# 네트워크 프로토콜
+{: .no_toc }
+
+게임과 게임 서버가 주고받는 메시지예요. 봇, 서버 목록 사이트, 다른 클라이언트처럼 게임 밖에서 서버에 붙는 프로그램을
+만들 때 보세요. 플러그인만 만든다면 몰라도 돼요.
+{: .fs-5 }
+
+1. TOC
+{:toc}
+
+{: .warning }
+서버는 모든 행동을 스스로 검사해요(이동 속도, 벽, 손이 닿는 거리, 1초에 10번이 넘는 행동, 너무 고른 간격). 규칙에
+안 맞는 것은 거절되고, 이상한 것은 계정에 기록돼요. 이 문서는 정상적인 클라이언트를 만들기 위한 것이에요.
+
+## 연결
+
+| | |
+|---|---|
+| 전송 | QUIC (UDP), 기본 포트 7777 |
+| TLS | 1.3만, ALPN `greenhaven` |
+| 인증서 | 서버가 처음 켜질 때 데이터 폴더에 만든 자체 서명 인증서. 처음 접속할 때 SHA-256을 기억해 두고(핀) 다음부터 다르면 끊으세요. 서버가 켜질 때 콘솔에 찍혀요. |
+| 메시지 | 클라이언트가 여는 **양방향 스트림 하나**. 프레임은 `[길이 u32 리틀 엔디언][JSON]`, 한 메시지 최대 128 KB |
+| 데이터그램 | QUIC 데이터그램. 위치와 음성처럼 최신 것만 쓸모 있는 것. 첫 바이트가 종류, 숫자는 모두 리틀 엔디언 |
+
+연결 후 10초 안에 스트림을 열고 첫 메시지를 보내야 해요. 첫 메시지는 `info`, `manage`, `join` 중 하나예요.
+
+## 서버 정보 (`info`)
+
+접속하지 않고 서버 목록에 보일 것만 물어요. 답을 보내고 서버가 연결을 닫아요.
+
+```json
+{"t":"info"}
+```
+```json
+{"t":"info","name":"","motd":"","players":3,"max":20,"version":"<규칙 버전>","protocol":1,"game":"0.1.0",
+ "password":false,"plugins":[],"host":false,"files":[{"kind":"pack","size":1048576}],"tags":[],"region":"","scopes":[]}
+```
+
+- `game`: 서버가 받는 게임 버전, `protocol`: 메시지 버전
+- `files`: 접속하면 받게 될 파일의 종류와 크기만(이름과 해시는 접속 뒤에)
+- `host`: 플레이어 게임의 자체 서버(접속하면 그 농장의 일꾼)
+- `scopes`: 서버의 플러그인이 쓰는 바깥 기능
+
+## 접속 (`join`)
+
+```json
+{"t":"join","name":"닉네임","secret":"<계정 비밀>","game":"0.1.0","proto":1,"version":"<규칙 버전>",
+ "ticket":"<중앙 서버 티켓>","lang":"ko","tz":540,"reg":"<가진 레지스트리 해시>","batch":true}
+```
+
+| 필드 | 뜻 |
+|---|---|
+| `name`, `secret` | 계정. 처음 보는 이름이면 그 비밀로 계정이 만들어지고, 다음부터는 비밀이 맞아야 해요. 이름은 1-32자, `@`로 시작 못 해요 (온라인 모드에서는 중앙 서버의 계정 id) |
+| `game`, `proto` | 게임 버전과 프로토콜 버전. 게임 버전이 서버와 다르면 `proto`가 같을 때만 들어가요. `game`을 안 보내면 `version`(규칙 버전)이 같아야 해요 |
+| `ticket` | 온라인 모드 서버(server.properties `online-mode`가 `false`가 아닌 곳)는 공식 중앙 서버가 이 서버의 인증서 핀에 맞춰 발급한 티켓을 확인해요 |
+| `password` | 서버 비밀번호(SHA-256 16진수, 또는 그대로) |
+| `fresh` | 새 농장으로 시작 |
+| `farm_at` | 새 농장일 때 농장 자리 `[x, y, z]` (셀) |
+| `balloon` | 열기구로 왔음: 걷기가 정거장에서 시작 |
+| `lang`, `tz` | 언어, 시간대(UTC에서 동쪽으로 분) |
+| `reg` | 가지고 있는 레지스트리의 해시. 서버 것과 다를 때만 `registry`가 와요 |
+| `batch` | 다른 플레이어 위치를 데이터그램 6으로 묶어 받기 |
+| `peek` | 로비용: 친구 소식만 받고 누구에게도 접속 중으로 안 보임 (`{"t":"peeked","name","code"}` 다음 친구 목록) |
+
+플러그인이 접속 전에 물을 것이 있으면 `{"t":"prompt","gui":{...}}`가 오고, `{"t":"prompt_answer","gui","button","inputs":{}}`로
+답해요.
+
+성공:
+
+```json
+{"t":"joined","order":0,"world":12345,"state":{},"r":0,"packs":[],"reg_hash":"...","registry":{},"scopes":[],"now":1761955200000}
+```
+
+- `state`: 게임 전체(아래 [상태](#상태)), `r`: 서버가 마지막으로 받은 행동 번호
+- `packs`: 받을 파일 `[{"name","size","sha","kind":"pack"|"plugin","title","ver"}]`
+- `registry`: 서버의 게임 콘텐츠(규칙 JSON, 플러그인 패치 포함). `reg_hash`로 저장해 두세요
+- `now`: 서버 시계(유닉스 ms). 행동과 위치의 시각은 이 시계로 찍어요
+
+이어서 `friends`, `visits`가 와요.
+
+거절: `{"t":"rejected","reason":"..."}`. 덧붙는 것: `"update":true,"game":"<서버 버전>"`(게임을 업데이트해야 함),
+`"password":true`(비밀번호 틀림). 다른 곳에서 같은 계정으로 접속하면 먼저 연결에 `rejected`가 가요.
+서버가 내보내면 `{"t":"kicked","reason"}`.
+
+### 파일 받기
+
+```json
+{"t":"pack","name":"<이름>","off":0}
+```
+```json
+{"t":"pack","name":"<이름>","off":0,"size":123456,"d":"<base64, 최대 48 KB>"}
+```
+
+`off`를 늘려가며 받고 `sha`(SHA-256)로 확인하세요. 리소스 팩은 미디어(PNG, JPG, WebP, OGG, WAV, GLB)만 들어 있는
+zip이에요. 실행되는 것은 없어요.
+
+## 행동 (`act`)
+
+게임 안에서 한 일은 일어날 때마다 하나씩 보내요. `r`은 1씩 늘어나요. 이미 받은 번호(마지막 이하)를 다시 보내면 `ok`가
+다시 오고 두 번 적용되지 않아요.
+
+```json
+{"t":"act","r":12,"e":{"k":"till","t":1761955200000,"d":3,"m":420,"x":10.5,"z":4.5,"c":[10,4],"tool":"hoe"}}
+```
+
+| `e` 필드 | 뜻 |
+|---|---|
+| `k` | 종류 (아래) |
+| `t` | 시각(서버 시계 유닉스 ms) |
+| `d`, `m` | 게임 날짜, 하루의 분(6:00 = 360) |
+| `x`, `z` | 플레이어 위치(셀) |
+| `c` | 대상 셀 `[x, z]` |
+| `id`, `n`, `a` | 물건 id, 개수, 동물·주민·장비 칸·마법 부여 |
+| `tool`, `why` | 쓴 도구, 이유(행동마다 다름) |
+| `pw` | `cast`: 던지는 힘 0-100 |
+| `ch` | `till` / `water`: 모아 쓰기 단계 |
+| `fx`, `fz` | `strike`: 바라본 방향 |
+| `inp`, `ticks`, `hk` | `fish`: 릴 게임에서 버튼이 바뀐 틱, 플레이한 틱 수, 입질부터 챔질까지 ms |
+| `vals` | `plugin`: 플러그인 패널 입력값 |
+
+종류: `till` `water` `plant` `fertilize` `harvest` `hit` `strike` `cast` `fish` `forage` `item` `pickup` `discard` `eat`
+`use` `buy` `sell` `ship` `craft` `place` `unplace` `store` `take` `furnish` `unfurnish` `equip` `unequip` `upgrade`
+`smith_pick` `enchant` `perk` `talk` `gift` `answer` `words` `request` `daily` `quest` `giveup` `mail` `read_mail`
+`animal` `pet` `feed` `product` `collect` `release` `sapling` `fruit` `door` `enter` `mine` `gate` `build` `enlarge`
+`donate` `bundle` `love` `festival` `keg` `preserves_jar` `bee_house` `crab_pot` `skin_buy` `skin_use` `tutorial`
+`plugin` `gui` `button` `command` `sleep` `day`. 서버가 플러그인과 규칙에 따라 판정하니 값은 레지스트리를 보세요.
+
+답:
+
+- `{"t":"ok","r":12,"res":{...},"s":{...}}`: 받아들임. `res`는 클라이언트가 알 수 없는 결과(부서진 것의 `drops`,
+  채집 `n`, 낚시 `cast`의 `level` `bite` `reel`, `fish`의 `id`(`""`: 놓침), `strike`의 `hits` `[[몬스터, 남은 hp]]`,
+  땅에 떨어진 것 `g`). `s`는 바뀐 플레이어 상태의 키만
+- `{"t":"no","r","why"}` 다음 `{"t":"state","state","r"}`: 거절, 그 행동은 일어나지 않았어요. 상태를 그대로 받아들이세요
+- `day`(하루 끝) 뒤에는 `ok` 다음 `{"t":"morning","state","summary":[[id,n,값]...],"total"}`
+- 집터 고르기: `{"t":"site","at":[x,y,z]}` → `{"t":"site","state"}`
+
+## 상태
+
+`state`는 한 플레이어의 게임 전체예요: `day` `m` `weather` `weather_next` `gold` `energy` `max_energy` `health`
+`max_health` `bag` `layout` `tiles` `trees` `debris` `forage` `animals` `shipped` `xp` `levels` `perks` `gear` `placed`
+`chests` `equip` `quests` `friendship` `mail` 등, 그리고 `town`(서버가 정한 마을: 셀, 부지, 구조물, 장소). 모르는 키는
+무시하세요. 키는 플러그인과 버전에 따라 늘어나요.
+
+## 서버가 보내는 것
+
+| 메시지 | 언제 |
+|---|---|
+| `{"t":"clock","d","m"}` | 2초마다 월드 시계. 클라이언트 시계를 맞추세요 |
+| `{"t":"world","d"}` | 같은 월드의 누군가가 바꾼 것 |
+| `{"t":"blocks","l":[[x,y,z,블록]]}` | 블록이 바뀜 |
+| `{"t":"back","why","x","z"}` | 이동이 거절됨: 그 자리로 돌아가세요 |
+| `{"t":"hurt","s","n","health"}` | 몬스터에게 맞음 |
+| `{"t":"fell","state","hold"}` | 쓰러짐(진료소에서 일어남). `hold`면 `{"t":"respawn","state"}`까지 기다림 |
+| `{"t":"says","l":[[주민, 말, 지연]]}` | 주민의 말 |
+| `{"t":"fx","list":[[종류,이름,x,y,z]]}` | 다른 사람 행동의 효과음과 파티클 |
+| `{"t":"ents","e"}` | 플러그인 엔티티 |
+| `{"t":"pdata","d"}` | 플러그인의 플레이어 값(바) |
+| `{"t":"gui","g"}` | 플러그인 패널 |
+| `{"t":"ext","k","v"}` | 플러그인 API 메시지 (예: `world.time`) |
+| `{"t":"came","name"}` / `{"t":"went","name"}` | 누가 월드에 들어오고 나감 |
+| `{"t":"beds","all","s"}` | 같이 하기: 누가 자고 있는지 |
+| `{"t":"chat","name","text"}` | 채팅 (보낸 사람에게도) |
+
+## 그 밖의 클라이언트 메시지
+
+| 보냄 | 답 |
+|---|---|
+| `{"t":"chunk","k":[x,z]}` | `{"t":"chunk","k","c"}` ([청크](#청크)) |
+| `{"t":"chat","text"}` | 1-200자, 5초에 5줄까지. 넘으면 버려져요 |
+| `{"t":"layout","layout"}` | 가방 순서와 선택 칸 (최대 64 KB) |
+| `{"t":"look","look"}` | 모습(species, skin, hat, glasses, back, body). 온라인 모드에서는 중앙 서버의 것이 쓰여요 |
+| `{"t":"looks","names":[]}` | `{"t":"looks","looks":{이름:모습},"held":{이름:모델}}` (한 번에 32명) |
+| `{"t":"held","m"}` | 손에 든 것의 모델 이름 (`""`: 없음). 다른 사람에게 `{"t":"held","name","m"}` |
+| `{"t":"line","at":[x,y,z]}` | 낚시찌 위치 (`null`: 감음). 다른 사람에게 `{"t":"line","name","at"}` |
+| `{"t":"status","name"}` | `{"t":"status","name","online"}` (친구만 `true`) |
+| `{"t":"pause","on"}` | 게임 자체 서버에서 혼자일 때만: 월드 시계 멈춤 |
+| `{"t":"plugin_settings"}` / `{"t":"plugin_setting","plugin","key","value"}` | 플러그인 설정 목록 / 바꾸기 (게임 자체 서버의 주인만) |
+
+### 방문
+
+| 보냄 | 답 |
+|---|---|
+| `{"t":"visits","visits"?}` | 방문 노트 묻기 / 바꾸기 → `{"t":"visits","visits","here","why"?}` |
+| `{"t":"worlds","tab":"friend"\|"recent"}` | `{"t":"worlds","tab","list"}` |
+| `{"t":"fly","to","filters","skip"}` | 열기구로 위에 뜸 → `{"t":"over","owner","row","terrain","state"}` 또는 `{"t":"over","none"}` |
+| `{"t":"land"}` | 내림 → `{"t":"visit","owner","can","chat","voice","terrain","state"}` |
+| `{"t":"home"}` | `{"t":"home","why","state"}` (보내질 때도 와요) |
+| `{"t":"invite","names","msg"}` | 받는 사람에게 `{"t":"invited",...}`. `invite_cancel`, `invite_answer` (`from`, `yes`, `hours`), `invites` |
+
+### 친구
+
+중앙 서버를 쓰는 서버에서는 친구 목록이 중앙 서버의 것이에요. 아래는 `online-mode=false` 서버의 자체 친구예요.
+
+`friend` (`name`, `yes`?), `friend_find` (`q`), `friend_cancel`, `unfriend`, `block` (`undo`), `friend_note` (`memo`,
+`fav`), `friend_policy` (`all` / `played` / `none`), `friends`. 서버는 `friends` (전체 목록), `friend_status`,
+`friend_ask`, `friend_found`, `friend`(`why`: 거절)를 보내요.
+
+## 데이터그램
+
+### 클라이언트 → 서버
+
+| 종류 | 형식 | |
+|---|---|---|
+| 1 | `[1][walk u16][x f64][y f32][z f64][yaw f32][doing u8]` (28바이트) | 다른 사람에게 보일 위치. 주변에 누가 있으면 초당 30번, 아니면 5번 |
+| 2 | `[2][Opus 프레임]` (최대 1024바이트) | 음성: 같은 월드 40 m 안 |
+| 3 | `[3][x f64][z f64]` | 몬스터용 위치, 초당 10번 |
+| 4 | `[4][t i64 ms][x f64][y f32][z f64]` (29바이트) | 서버가 검사하는 걷기, 초당 5번 |
+
+좌표는 지금 있는 월드의 셀(1 m). `walk`는 새 걷기(부활, 순간이동)마다 늘리는 번호. `doing`은 하위 7비트가
+`0 서 있음, 1 걷기, 2 달리기, 3 잠, 4 도구, 5 수영, 6 점프, 7 낙하, 8 입질, 9 릴 감기`, 최상위 비트는 도구 동작을 시작할
+때마다 뒤집어요.
+
+### 서버 → 클라이언트
+
+| 종류 | 형식 |
+|---|---|
+| 1 | `[1][ms u32][이름 길이 u8][이름 UTF-8][x f64][y f32][z f64][yaw f32][doing u8]`: 같은 월드의 다른 사람 |
+| 6 | `[6][개수 u8]` 다음 데이터그램 1에서 첫 바이트를 뺀 것들 (`batch` 접속, 최대 1200바이트) |
+| 2 | `[2][이름 길이 u8][이름][Opus]` |
+| 3 | `[3][개수 u8][층 u16]` 다음 각 `[serial u16][kind u8][tier u8][hp u16][x f32][z f32]`: 몬스터 (층 0 = 지상) |
+| 5 | `[5][개수 u8]` 다음 각 `[n u8][x f32][z f32][yaw u8][place u8][work u8][flags u8][in_for u8][act u8][acts u8][with u8]`: 주민, 초당 5번 |
+| 7 | `[7][개수 u8]` 다음 각 `[id u32][x f32][z f32][flags u8]`: 농장 동물, 초당 5번 |
+
+- 데이터그램은 잃어버릴 수 있어요. 보이는 사람은 1초마다 다시 오니 3초 동안 소식 없는 사람은 지우세요
+- 5의 `yaw`는 256분의 1바퀴, `flags`는 `1 움직임, 2 달림, 4 실내, 8 숨김`, `place`/`in_for`는 레지스트리 장소 번호
+- 7의 `id`는 동물 id의 FNV-1a 32비트, `flags`는 `1 걷기, 2 누움(밤), 4 풀 뜯기, 8 먹기`
+
+## 청크
+
+월드는 32 x 32 칸, 높이 64칸(y -8부터) 블록 청크예요. `c`는 base64로 된 바이트:
+
+1. 1024개 열(x가 빠르게, 그다음 z). 각 열은 `[런 개수 u8]` 다음 `[블록 u8, 개수 u8]` 쌍, y -8부터 위로. 마지막 런 위는 공기
+2. 나머지는 MessagePack으로 된 소품 배열: `{"m": 모델 res:// 경로, "x","y","z","size","yaw", "solid": [반지름, 높이] 또는 null}`
+
+블록: `0 air, 1 grass, 2 sand, 3 snow, 4 stone, 5 dirt, 6 road, 7 bed(물 밑 모래), 8 water`. 그 위의 번호는 플러그인
+블록이에요. 블록 y는 y-0.5부터 y+0.5까지 차지해요.
+
+## 관리 (`manage`)
+
+24시간 서버의 주인이 접속 없이 설정을 묻거나 바꿔요. 중앙 서버 티켓으로 주인을 확인해요.
+
+```json
+{"t":"manage","name":"닉네임","ticket":"...","props":{...}}
+```
+```json
+{"t":"manage","owner","props","running","restart","shared_now","players","saved"}
+```
