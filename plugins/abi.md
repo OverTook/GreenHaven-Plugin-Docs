@@ -121,7 +121,10 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 |---|---|
 | `ent_spawn(p, len, x, y, z: f64) -> i64` | 엔티티 만들기 (id, 0 실패) |
 | `ent_get(id, k, kl) -> f64` `ent_set(id, k, kl, v)` | `x` `y` `z` `yaw` `scale` (`alive`) |
-| `ent_anim(id, p, len)` `ent_remove(id)` | |
+| `ent_anim(id, p, len)` `ent_remove(id)` | 클립 (아바타: 동작, 부를 때마다 한 번) |
+| `ent_look(id, p, len)` `ent_held(id, p, len)` | 아바타(`ent_spawn("avatar", …)`)의 CatLook JSON, 손에 든 아이템 id |
+| `ent_name(id, p, len)` | 아바타 머리 위 이름 (`""` 없음) |
+| `ent_text(id, kp, kl, p, cap) -> i32` | `model` `anim` `held` `name` |
 | `ent_count() -> i64` `ent_at(i) -> i64` | 이 플러그인의 엔티티 |
 | `npc_count() -> i64` `npc_id(i, p, cap) -> i32` | 주민 목록 |
 | `npc_get(ip, il, kp, kl) -> f64` | `x` `z` `moving` `hidden` `indoors` |
@@ -129,6 +132,7 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `npc_spawn(p, len) -> i32` `npc_set(ip, il, p, len)` `npc_remove(ip, il)` | 더하기 (1/0), 바꾸기, 빼기 |
 | `mob_set(n, k, kl, v)` `mob_attack(n, damage, reach: f64)` | 몬스터 값, 공격 |
 | `mob_spawn(p, len, x, z: f64)` `mob_remove(n)` | 소환, 없애기 |
+| `mob_anim(n, p, len)` | 그 몬스터 모델의 클립 한 번 (그 층의 모든 게임) |
 | `mine_rock(i, j: i32, p, len)` | `mine.floor`: 바위 놓기 (`""` 치우기) |
 
 ## 블록과 구조물
@@ -146,6 +150,18 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `structure_text(id, k, kl, p, cap) -> i32` | `k` `m` `plot` `n` `key` `kind` `label` `text` `s` `owner` |
 | `structure_put(p, len) -> i64` | 세우기 (id, 0 실패) |
 | `structure_remove(id)` `structure_remove_plot(p, len)` `structure_move(id, x, z, yaw: f64)` | |
+| `debris_at(x, z: i64, p, cap) -> i32` | 그 칸(지상)의 야생 것 id (`""` 없음) |
+| `tree_fell(x, z: i64, tx, tz: f64) -> i32` | 나무를 마지막 도끼질처럼 (tx, tz) 쪽으로 베기 (1/0): 그루터기, 나무는 누구나 |
+| `debris_break(x, z: i64) -> i32` | 돌·잡초·그루터기·광맥 부수기 (1/0) |
+| `ground_drop(p, len, n: i64, x, y, z: f64, floor: i64) -> i64` `ground_remove(id)` | 땅에 아이템 놓기(번호, 0 실패; 누구나 바로 주움) / 치우기 |
+| `debris_hp(x, z: i64) -> i64` | 그 칸의 야생 것의 남은 체력 (0 없음) |
+| `debris_damage(x, z, n: i64, tx, tz: f64) -> i64` | `n`만큼 치기: 남은 체력 (흔들림), 0이면 쓰러짐/부서짐(나무는 (tx, tz) 쪽으로), −1 없음 |
+| `ground_count() -> i64` `ground_at(i) -> i64` | 땅의 아이템 번호들 (이벤트가 시작될 때의 것, 이번에 가져간 것 빼고) |
+| `ground_get(id, k, kl) -> f64` `ground_item(id, p, cap) -> i32` | `x` `y` `z` `n` `floor` `alive` (NaN 없음) / 아이템 id |
+| `ground_move(id, x, y, z: f64)` | 옮기기 |
+| `ground_model(id, p, len)` `ground_anim(id, p, len)` | 아이템 대신 그릴 `res://` 모델 (`""` 아이템 모양), 그 모델의 클립 (부를 때마다) |
+| `ground_consume(id, x, y, z: f64)` | 그곳의 무언가가 먹음: 없어지고, 게임은 그쪽으로 날아가게 그림 |
+| `room_get(np, nl, kp, kl) -> f64` | 방: `x` `z` `y`(바닥) `door_x` `door_z` `out_x` `out_z` `w` `d` (NaN 없음) |
 
 ## 이벤트 말고 내보내는 것
 

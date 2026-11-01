@@ -62,7 +62,7 @@ redirect_from:
 | `data_del(key)` | |
 
 {: .note }
-`Tick`에서 `Tick::players()`가 준 `Player`라도 `give` `take` `add_gold` `add_energy` `say`는 월드 주인에게 갑니다.
+`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerVisit` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
 
 ## World
 
@@ -76,7 +76,7 @@ redirect_from:
 | `play_music(track)` | 월드의 모두에게 곡 (`""`: 원래 목록으로) |
 | `particle(name, x, y, z)` | 파티클: `"fire"` `"smoke"` `"sparkle"` `"splash"` `"leaf"` `"hit"` 또는 `res://….png` |
 | `sound(name, x, y, z)` | 소리: `"hit"` `"pickup"` `"click"` `"step_soft"` `"step_hard"` 또는 `res://….ogg` |
-| `set_weather(name, days_ahead)` | 그날(0 오늘)의 날씨: `"sunny"` `"rain"` `"storm"` `"snow"` … |
+| `set_weather(name, days_ahead)` | 그날(0 오늘, 112일 뒤까지)의 날씨: 규칙 `weather`의 이름 `"Clear Sky"` `"Cloudy 1"` `"Rain"` `"Storm"` `"Snow"` `"Foggy"` … (다른 이름은 무시) |
 
 ### 몬스터와 엔티티
 
@@ -84,8 +84,11 @@ redirect_from:
 |---|---|
 | `strike(x, z, radius, damage)` | 그 둘레의 몬스터 공격 |
 | `spawn_mob(kind, x, z)` | 이벤트의 층에 몬스터 하나 (지상은 밤에만 남음) |
-| `spawn(model, x, y, z)` → `Option<Entity>` | 이 플러그인의 엔티티: `res://` 모델(glb, 씬) 또는 png(늘 카메라를 보는 그림) |
-| `entities()` → `Vec<Entity>` | 이 플러그인의 엔티티들 |
+| `spawn(model, x, y, z)` → `Option<ModelEntity>` | 이 플러그인의 엔티티: `res://` 모델(glb, 씬) 또는 png(늘 카메라를 보는 그림) |
+| `spawn_avatar(x, y, z)` → `Option<Avatar>` | 플레이어 아바타 엔티티 (게임이 플레이어처럼 그림; [`Avatar`](#avatar)) |
+| `entities()` → `Vec<ModelEntity>` | 이 플러그인의 엔티티들 (아바타는 `as_avatar()`) |
+| `items()` → `Vec<ItemEntity>` | 땅에 놓인 모든 아이템 (이벤트가 시작될 때의 것에서 이번 이벤트가 가져간 것을 뺀 것; 이번에 놓은 것은 없음) |
+| `items_near(x, z, radius)` → `Vec<ItemEntity>` | 그 둘레(지상)의 아이템, 가까운 것부터 |
 | `npcs()` → `Vec<Npc>` | 주민들 |
 
 ### 값과 데이터
@@ -119,6 +122,19 @@ redirect_from:
 | `top(x, z)` → `i64` | 기둥에서 가장 높은 단단한 블록의 y (없으면 `Block::LOWEST - 1`) |
 | `set_block(x, y, z, b)` | 블록 놓기 (저장됨) |
 | `fill(from, to, b)` | 상자 모양 채우기, 양 끝 포함, 한 번에 청크 넷까지 |
+
+### 야생과 땅, 방
+
+| 메서드 | |
+|---|---|
+| `debris_at(x, z)` → `String` | 그 칸(지상)의 야생 것: `"oak"` `"maple"` `"rock_small"` `"weeds"` 광맥 … (`""` 없음) |
+| `tree_fell(x, z, toward_x, toward_z)` → `bool` | 그 나무를 플레이어의 마지막 도끼질처럼 그쪽으로 베어 쓰러뜨림: 그루터기가 남고 나무는 꼭대기가 닿는 곳에, 누구나 바로 주움. 모든 게임에서 쓰러짐 |
+| `debris_break(x, z)` → `bool` | 돌·잡초·그루터기·광맥을 마지막 곡괭이·낫질처럼 부숨 (떨굼은 누구나) |
+| `debris_hp(x, z)` → `i64` | 그 칸의 야생 것이 사라지기까지 남은 체력 (참나무 5, 큰 돌 3 …; 기본 도구 한 번이 1; 0 없음) |
+| `debris_damage(x, z, n, toward_x, toward_z)` → `Option<i64>` | 도구 한 번처럼 `n`만큼 침: 모든 게임에서 흔들림, `Some(남은 체력)`. 0이 되면 마지막 한 번처럼 나무는 그쪽으로 쓰러지고(`tree_fell`) 나머지는 부서짐(`debris_break`): `Some(0)`. `None`: 아무것도 없음 |
+| `ground_drop(item, n, x, y, z, floor)` → `Option<ItemEntity>` | 땅에 놓인 아이템(누구나 바로 주움; 게임이 모르는 아이템은 놓이지 않음) |
+| `ground_remove(id)` | 그 번호의 것 치우기 (`ItemEntity::remove`) |
+| `room(name)` → `Option<Room>` | 건물 방(`"Farmhouse"` …): `x` `z` 가운데, `y` 바닥(땅 아래), `door` 안쪽 문 앞, `out` 바깥 문 앞, `size`. 엔티티를 `(door.0, y, door.1)`로 옮기면 방 안 |
 
 ### 구조물과 주민
 
@@ -198,17 +214,76 @@ fn richest(c: Command) {
 | `set(json)` | 덮어쓰기 (`{"home": "...", "schedule": [...]}`) |
 | `remove()` | 월드에서 빼기 |
 
-## Entity
+## 엔티티
+
+Bukkit의 `Entity` 계층처럼, 월드에 있는 것은 모두 `Entity` 트레잇을 구현합니다. Rust에는 클래스 상속이 없어서 종류마다
+타입이 따로 있고, 공통 동작은 트레잇으로 나눕니다(`&dyn Entity`는 어느 것이든 받음).
+
+```text
+Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  is_alive  distance_to
+├── ModelEntity            이 플러그인의 모델 (World::spawn)
+├── ItemEntity             땅에 놓인 아이템 (World::items, ground_drop)
+├── EnemyEntity (= Mob)    몬스터 (MobStep::mob)
+└── PlayerEntity (트레잇)  name  facing
+    ├── Avatar             플러그인이 만든 플레이어 아바타 (World::spawn_avatar)
+    └── Player             진짜 플레이어
+```
+
+### Entity
+
+| 메서드 | |
+|---|---|
+| `location()` → `(x, y, z)` | 칸 좌표, y는 발 높이 (진짜 플레이어와 몬스터는 0: 땅 위) |
+| `move_to(x, y, z)` | 바로 그곳으로 (진짜 플레이어는 `Player::teleport`, 몬스터는 x z) |
+| `play_anim(clip)` / `stop_anim()` | 모두에게 보이는 애니메이션: 모델은 그 클립, 아바타는 동작, 진짜 플레이어는 이모트(서 있을 때만), 몬스터는 클립 한 번, 아이템은 `set_model`한 모델의 클립 |
+| `remove()` | 월드에서 없앰 (진짜 플레이어는 아무 일 없음) |
+| `is_alive()` → `bool` | 아직 있음 (플레이어: 쓰러져 있지 않음) |
+| `distance_to(&dyn Entity)` → `f64` | 땅 위의 거리 |
+
+### ModelEntity
 
 이 플러그인의 엔티티 (`World::spawn`). **저장되지 않습니다**: 서버를 다시 켜면 사라지니, 남길 것은 `World::set`에.
 
 | 메서드 | |
 |---|---|
-| `get(k)` / `set(k, v)` | `"x"` `"y"` `"z"` `"yaw"` `"scale"` (`get`은 `"alive"`도) |
-| `position()` → `(x, y, z)` | |
-| `move_to(x, y, z)` | |
-| `play(clip)` | 모델의 애니메이션 |
-| `remove()` | |
+| `get(k)` / `set(k, v)` | `"x"` `"y"` `"z"` `"yaw"`(라디안, 0이 +z) `"scale"` (`get`은 `"alive"`도) |
+| `text(k)` → `String` | `"model"` `"anim"` `"held"` `"name"` |
+| `as_avatar()` → `Option<Avatar>` | 아바타면 그것으로 |
+
+### Avatar
+
+플레이어 아바타 엔티티 (`World::spawn_avatar`): 게임이 플레이어처럼 그립니다. `PlayerEntity`.
+
+| 메서드 | |
+|---|---|
+| `play_anim(동작)` | `"idle"` `"walk"` `"run"`(걷기·달리기는 빠르기로) `"sleep"` `"swim"` `"jump"` `"fall"`, 도구 `"axe"` `"pickaxe"` `"hoe"` `"scythe"` `"sword"` `"water"` `"cast"`(부를 때마다 한 번 휘두름), `"emote:<id>"` |
+| `set_look(json)` | 모습: CatLook JSON `{"species": "Dog", "skin": "Dog03", "hat": "Cap_turboA"}` (`"{}"` 기본 고양이) |
+| `hold(item)` | 손에 든 아이템 (`"axe"` …, `""` 없음) |
+| `set_name(name)` / `name()` | 머리 위 이름 (`""` 없음) |
+| `facing()` | 바라보는 쪽 (`yaw`에서) |
+| `entity()` → `ModelEntity` | 모델 엔티티로서 (`set("yaw", ..)` `set("scale", ..)`) |
+
+### ItemEntity
+
+땅에 놓인 아이템 하나 (그 번호). 플레이어가 지나가면 줍고, 어느 엔티티든 먹을 수 있습니다.
+
+| 메서드 | |
+|---|---|
+| `item()` → `String` / `amount()` / `floor()` | 아이템 id (`""` 없음), 개수, 광산 층 (0 지상) |
+| `consume_by(&dyn Entity)` | 그 엔티티가 먹음: 땅에서 없어지고(아무도 못 얻음), 모든 게임에서 그쪽으로 날아 들어감 |
+| `set_model(path)` | 아이템 대신 그 `res://` 모델로 그림 (`""` 아이템 모양으로) — 그 모델의 클립은 `play_anim` |
+| `move_to(x, y, z)` | 옮김 (게임에서 미끄러지듯) |
+
+```rust
+// 가까운 사과를 먹는 아바타
+if let Some(apple) = w.items_near(x, z, 2.0).into_iter().find(|i| i.item() == "apple") {
+    apple.consume_by(&avatar);
+}
+```
+
+### PlayerEntity
+
+`Avatar`와 `Player`가 구현: `name()`(진짜 플레이어 `""`은 월드 주인), `facing()`.
 
 ```rust
 #[on(Button)]
@@ -222,9 +297,10 @@ fn fireball(e: Button) {
 }
 ```
 
-## Mob
+## EnemyEntity
 
-몬스터 하나 (`Mob(serial)`; `MobStep::mob()`).
+몬스터 하나 (`EnemyEntity(serial)`, 예전 이름 `Mob`; `MobStep::mob()`). `Entity`: `play_anim(clip)`은 그 종류 모델의 클립을
+그 층의 모든 게임에서 한 번(`"Attack01"` `"Victory"` …), `location()`은 자기 `mob` 이벤트 안에서만.
 
 | 메서드 | |
 |---|---|
