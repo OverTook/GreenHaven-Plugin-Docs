@@ -35,11 +35,26 @@ parent: 플러그인
 접속하지 않고 서버 목록에 보일 것만 물어요. 답을 보내고 서버가 연결을 닫아요.
 
 ```json
-{"t":"info"}
+{"t": "info"}
 ```
 ```json
-{"t":"info","name":"","motd":"","players":3,"max":20,"version":"<규칙 버전>","protocol":1,"game":"0.1.0",
- "password":false,"plugins":[],"host":false,"files":[{"kind":"pack","size":1048576}],"tags":[],"region":"","scopes":[]}
+{
+  "t": "info",
+  "name": "",
+  "motd": "",
+  "players": 3,
+  "max": 20,
+  "version": "<규칙 버전>",
+  "protocol": 1,
+  "game": "0.1.0",
+  "password": false,
+  "plugins": [],
+  "host": false,
+  "files": [{"kind": "pack", "size": 1048576}],
+  "tags": [],
+  "region": "",
+  "scopes": []
+}
 ```
 
 - `game`: 서버가 받는 게임 버전, `protocol`: 메시지 버전
@@ -50,8 +65,19 @@ parent: 플러그인
 ## 접속 (`join`)
 
 ```json
-{"t":"join","name":"닉네임","secret":"<계정 비밀>","game":"0.1.0","proto":1,"version":"<규칙 버전>",
- "ticket":"<중앙 서버 티켓>","lang":"ko","tz":540,"reg":"<가진 레지스트리 해시>","batch":true}
+{
+  "t": "join",
+  "name": "닉네임",
+  "secret": "<계정 비밀>",
+  "game": "0.1.0",
+  "proto": 1,
+  "version": "<규칙 버전>",
+  "ticket": "<중앙 서버 티켓>",
+  "lang": "ko",
+  "tz": 540,
+  "reg": "<가진 레지스트리 해시>",
+  "batch": true
+}
 ```
 
 | 필드 | 뜻 |
@@ -74,7 +100,18 @@ parent: 플러그인
 성공:
 
 ```json
-{"t":"joined","order":0,"world":12345,"state":{},"r":0,"packs":[],"reg_hash":"...","registry":{},"scopes":[],"now":1761955200000}
+{
+  "t": "joined",
+  "order": 0,
+  "world": 12345,
+  "state": {},
+  "r": 0,
+  "packs": [],
+  "reg_hash": "...",
+  "registry": {},
+  "scopes": [],
+  "now": 1761955200000
+}
 ```
 
 - `state`: 게임 전체(아래 [상태](#상태)), `r`: 서버가 마지막으로 받은 행동 번호
@@ -91,10 +128,10 @@ parent: 플러그인
 ### 파일 받기
 
 ```json
-{"t":"pack","name":"<이름>","off":0}
+{"t": "pack", "name": "<이름>", "off": 0}
 ```
 ```json
-{"t":"pack","name":"<이름>","off":0,"size":123456,"d":"<base64, 최대 48 KB>"}
+{"t": "pack", "name": "<이름>", "off": 0, "size": 123456, "d": "<base64, 최대 48 KB>"}
 ```
 
 `off`를 늘려가며 받고 `sha`(SHA-256)로 확인하세요. 리소스 팩은 미디어(PNG, JPG, WebP, OGG, WAV, GLB)만 들어 있는
@@ -106,7 +143,20 @@ zip이에요. 실행되는 것은 없어요.
 다시 오고 두 번 적용되지 않아요.
 
 ```json
-{"t":"act","r":12,"e":{"k":"till","t":1761955200000,"d":3,"m":420,"x":10.5,"z":4.5,"c":[10,4],"tool":"hoe"}}
+{
+  "t": "act",
+  "r": 12,
+  "e": {
+    "k": "till",
+    "t": 1761955200000,
+    "d": 3,
+    "m": 420,
+    "x": 10.5,
+    "z": 4.5,
+    "c": [10, 4],
+    "tool": "hoe"
+  }
+}
 ```
 
 | `e` 필드 | 뜻 |
@@ -246,8 +296,32 @@ zip이에요. 실행되는 것은 없어요.
 24시간 서버의 주인이 접속 없이 설정을 묻거나 바꿔요. 중앙 서버 티켓으로 주인을 확인해요.
 
 ```json
-{"t":"manage","name":"닉네임","ticket":"...","props":{...}}
+{
+  "t": "manage",
+  "name": "닉네임",
+  "ticket": "<중앙 서버 티켓>",
+  "props": {"motd": "어서 오세요"}
+}
 ```
 ```json
-{"t":"manage","owner","props","running","restart","shared_now","players","saved"}
+{
+  "t": "manage",
+  "owner": true,
+  "props": {},
+  "running": {},
+  "restart": false,
+  "shared_now": true,
+  "players": 2,
+  "saved": null,
+  "online": ["닉네임"],
+  "started": 1761955200000,
+  "log": [[1761955200000, "닉네임 들어옴"]],
+  "bans": [],
+  "plugins": [],
+  "plan_plugins": []
+}
 ```
+
+- `owner`: 주인이 아니면 `false`만 와요
+- `props`: 저장된 설정(다음 시작에 쓰임), `running`: 지금 쓰이는 설정, `restart`: 둘이 달라 다시 시작해야 함
+- `props` 대신 `op`로 `kick`, `ban`, `unban`, 플러그인 켜기/끄기 같은 일을 시켜요

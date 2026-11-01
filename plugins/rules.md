@@ -110,8 +110,14 @@ redirect_from:
 `progress.tutorial_tasks`는 할 일 목록이고, 서버가 같은 목록으로 보상(`progress.tutorial`)을 판정합니다.
 
 ```json
-{"id": "fence", "title": "울타리 만들기", "act": "craft", "n": 2, "item": "",
- "text": ["PC 안내", "PC 둘째 줄", "폰 안내", "폰 둘째 줄"]}
+{
+  "id": "fence",
+  "title": "울타리 만들기",
+  "act": "craft",
+  "n": 2,
+  "item": "",
+  "text": ["PC 안내", "PC 둘째 줄", "폰 안내", "폰 둘째 줄"]
+}
 ```
 
 - 게임이 아는 `id`: `move` `look` `till` `plant` `water`(n칸) `chop` `mine` `ship` `talk` `sleep` — 원래의 감지, 카드 그림,
@@ -125,9 +131,26 @@ redirect_from:
 `client.Intro.SCENES`: 새 농장을 만들 때의 오프닝 장면들. `[]`이면 오프닝 없이 바로 캐릭터 만들기.
 
 ```json
-{"title": "새 마을", "caption": "자막", "stage": 7, "image": "res://plugins/my/scene.png", "music": "lovely_town",
- "speaker": "raon", "name": "라온", "role": "마을 마법사", "lines": ["대사 하나", "대사 둘"], "wave": "doyun",
- "letter": {"tag": "", "no": "", "title": "", "lines": [], "sign": "", "stub": ["1인", "새벽 첫 비행"]}}
+{
+  "title": "새 마을",
+  "caption": "자막",
+  "stage": 7,
+  "image": "res://plugins/my/scene.png",
+  "music": "lovely_town",
+  "speaker": "raon",
+  "name": "라온",
+  "role": "마을 마법사",
+  "lines": ["대사 하나", "대사 둘"],
+  "wave": "doyun",
+  "letter": {
+    "tag": "",
+    "no": "",
+    "title": "",
+    "lines": [],
+    "sign": "",
+    "stub": ["1인", "새벽 첫 비행"]
+  }
+}
 ```
 
 - `stage`: 게임의 장면 (0 도시의 밤 … 8 도착: 움직이는 인물·비·열기구가 그림 위에). 없으면 `image` 한 장만.
@@ -152,18 +175,46 @@ redirect_from:
 ```json
 {
   "monsters_add": {
-    "ice_slime": {"like": "slime", "name": "얼음 버섯", "level": 1, "weight": 2, "hp": 5,
-      "drops": [["stone", 2, 0.6]], "xp": 3, "skill": "mining",
-      "look": {"kind": "mushroom_cute", "variant": 1, "scale": 0.95, "tint": "8fd8ff"}},
-    "wisp": {"like": "firefly", "level": 2, "mine": 2, "script": true,
-      "look": {"model": "res://plugins/my/wisp.glb", "scale": 1.0,
-        "clips": {"idle": "Idle", "move": "Fly", "attack": "Bite", "hit": "Hit", "die": "Die"}, "tiers": ["8ad8ff", "ffb35c"]}}
+    "ice_slime": {
+      "like": "slime",
+      "name": "얼음 버섯",
+      "level": 1,
+      "weight": 2,
+      "hp": 5,
+      "drops": [["stone", 2, 0.6]],
+      "xp": 3,
+      "skill": "mining",
+      "look": {"kind": "mushroom_cute", "variant": 1, "scale": 0.95, "tint": "8fd8ff"}
+    },
+    "wisp": {
+      "like": "firefly",
+      "level": 2,
+      "mine": 2,
+      "script": true,
+      "look": {
+        "model": "res://plugins/my/wisp.glb",
+        "scale": 1.0,
+        "clips": {"idle": "Idle", "move": "Fly", "attack": "Bite", "hit": "Hit", "die": "Die"},
+        "tiers": ["8ad8ff", "ffb35c"]
+      }
+    }
   },
   "animals_add": {
-    "goat": {"like": "sheep", "name": "염소", "house": "barn", "price": 2500, "product": "goat_milk", "every": 2,
+    "goat": {
+      "like": "sheep",
+      "name": "염소",
+      "house": "barn",
+      "price": 2500,
+      "product": "goat_milk",
+      "every": 2,
       "product_item": {"name": "염소 젖", "sell": 260, "color": "f4efe2"},
-      "feed": {"name": "염소 사료", "price": 50, "sell": 25}, "foods": ["hay", "wheat"],
-      "grow": 3, "breed": 5, "scale": 1.2, "tint": "c9b28f"}
+      "feed": {"name": "염소 사료", "price": 50, "sell": 25},
+      "foods": ["hay", "wheat"],
+      "grow": 3,
+      "breed": 5,
+      "scale": 1.2,
+      "tint": "c9b28f"
+    }
   }
 }
 ```
@@ -222,14 +273,41 @@ redirect_from:
 | `uses`, `shop`, `night`, `furnish`, `title` | |
 
 ```json
-{"client": {"Interiors": {"ROOMS": {
-  "Farmhouse": {"w": 10, "things+": [["table", 3.5, -2.0, 90]]},
-  "Bakery": {"w": 7, "d": 6, "door": 0.0, "out": [0.0, 5.7], "style": "wood", "windows": [], "things": [], "lights": [],
-    "keepers": [["doyun", 0.0, 1.0, 180, ["bakery"]]]}}}},
- "town_plots": {"bakery": {"w": 9, "d": 13, "items": [
-   {"k": "building", "n": "Bakery", "m": "emily", "x": 4.5, "z": 5.3, "yaw": 180, "s": "빵집"},
-   {"k": "door", "x": 4, "z": 0}, {"k": "clear", "x": 0, "z": 0, "w": 9, "d": 13}]}},
- "town_order+": ["bakery"]}
+{
+  "client": {
+    "Interiors": {
+      "ROOMS": {
+        "Farmhouse": {
+          "w": 10,
+          "things+": [["table", 3.5, -2.0, 90]]
+        },
+        "Bakery": {
+          "w": 7,
+          "d": 6,
+          "door": 0.0,
+          "out": [0.0, 5.7],
+          "style": "wood",
+          "windows": [],
+          "things": [],
+          "lights": [],
+          "keepers": [["doyun", 0.0, 1.0, 180, ["bakery"]]]
+        }
+      }
+    }
+  },
+  "town_plots": {
+    "bakery": {
+      "w": 9,
+      "d": 13,
+      "items": [
+        {"k": "building", "n": "Bakery", "m": "emily", "x": 4.5, "z": 5.3, "yaw": 180, "s": "빵집"},
+        {"k": "door", "x": 4, "z": 0},
+        {"k": "clear", "x": 0, "z": 0, "w": 9, "d": 13}
+      ]
+    }
+  },
+  "town_order+": ["bakery"]
+}
 ```
 
 새 건물은 새 구획(`town_plots` + `town_order+`, 기존 모델 `m`)에 새 이름 `n`으로, 그 방을 같은 이름으로 넣으면 됩니다(처음

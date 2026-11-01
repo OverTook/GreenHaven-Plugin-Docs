@@ -22,11 +22,27 @@ redirect_from:
   "mobile": false,
   "conflicts": ["other_plugin"],
   "ui": {
-    "buttons": [{"id": "fireball", "label": "화염구", "icon": "res://plugins/example/fireball.png", "key": "Q", "cooldown": 1.5}],
+    "buttons": [
+      {
+        "id": "fireball",
+        "label": "화염구",
+        "icon": "res://plugins/example/fireball.png",
+        "key": "Q",
+        "cooldown": 1.5
+      }
+    ],
     "bars": [{"id": "mana", "label": "마나", "max": 100, "color": "4f7bff"}]
   },
   "settings": [
-    {"key": "power", "label": "화염구 세기", "kind": "range", "min": 1, "max": 10, "step": 1, "default": 3}
+    {
+      "key": "power",
+      "label": "화염구 세기",
+      "kind": "range",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "default": 3
+    }
   ]
 }
 ```
@@ -133,10 +149,27 @@ let mode = setting("mode").unwrap_or_default();   // 글자 그대로 ("12.5", "
 | `warn` / `note` | 값 없이 `label`만: 주의 / 안내 | — |
 
 ```json
-"settings": [
-  {"key": "on", "label": "서버 시계 쓰기", "kind": "toggle", "default": true},
-  {"key": "day_real_minutes", "label": "하루의 길이 (실제 분)", "kind": "range", "min": 5, "max": 60, "step": 1,
-   "unit": "분", "default": 14, "hint": "6시부터 새벽 2시까지가 실제로 몇 분인지 (게임 기본 14분)"},
-  {"key": "seasons", "label": "축제 계절", "kind": "chips", "choices": ["봄", "여름", "가을", "겨울"], "default": ["봄"]}
-]
+{
+  "settings": [
+    {"key": "on", "label": "서버 시계 쓰기", "kind": "toggle", "default": true},
+    {
+      "key": "day_real_minutes",
+      "label": "하루의 길이 (실제 분)",
+      "kind": "range",
+      "min": 5,
+      "max": 60,
+      "step": 1,
+      "unit": "분",
+      "default": 14,
+      "hint": "6시부터 새벽 2시까지가 실제로 몇 분인지 (게임 기본 14분)"
+    },
+    {
+      "key": "seasons",
+      "label": "축제 계절",
+      "kind": "chips",
+      "choices": ["봄", "여름", "가을", "겨울"],
+      "default": ["봄"]
+    }
+  ]
+}
 ```
