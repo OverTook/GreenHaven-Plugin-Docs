@@ -19,22 +19,23 @@ has_children: true
 접속할 때 자동으로 받습니다.
 
 <div class="cards">
-  <a class="card" href="plugin-json"><strong>plugin.json</strong><span>이름, 버튼, 바, 명령어, 설정, 휴대폰</span></a>
+  <a class="card" href="plugin-json"><strong>plugin.json</strong><span>이름, 버튼, 바, 명령어, 설정</span></a>
   <a class="card" href="events"><strong>이벤트</strong><span>행동, 수확, 몬스터, 하루, 월드 만들기</span></a>
   <a class="card" href="sdk"><strong>SDK 레퍼런스</strong><span>Player, World, Server, OfflinePlayer, Npc, Gui</span></a>
-  <a class="card" href="rules"><strong>rules.json</strong><span>코드 없이 아이템·작물·주민·스킬·땅 바꾸기</span></a>
+  <a class="card" href="rules"><strong>규칙 등록</strong><span>Enable에서 아이템·작물·블록·주민·스킬·땅 바꾸기</span></a>
+  <a class="card" href="screen"><strong>화면</strong><span>HUD 요소, 미니맵, 키, 채널, 인벤토리 창</span></a>
   <a class="card" href="models"><strong>커스텀 모델</strong><span>플레이어 모델과 감정 표현, 뼈대 규격과 검사 규칙</span></a>
-  <a class="card" href="world"><strong>월드와 하루</strong><span>블록, 구조물, 주민, 시계, 저장</span></a>
-  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>열여섯 개의 예제와 쓰는 기능</span></a>
+  <a class="card" href="world"><strong>월드와 하루</strong><span>블록과 새 블록 종류, 청크, 구조물, 주민, 시계, 저장</span></a>
+  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>스무 개의 예제와 쓰는 기능</span></a>
 </div>
 
-플러그인은 세 가지를 섞어 씁니다. 어느 것이든 없어도 됩니다.
+플러그인은 코드와 에셋으로 되어 있습니다. 규칙(가격, 작물, 아이템, 블록, 주민, 대사, 스킬, 몬스터, 땅 …)도 코드에서
+등록합니다(Bukkit의 `onEnable`처럼 [`Enable`](events#enable) 이벤트에서 `Registry`로).
 
 | 무엇 | 파일 | 하는 일 | 문서 |
 |---|---|---|---|
-| 코드 | `code.wasm` | 이벤트를 받아 값을 바꾸거나 막고, 아이템·골드·창·엔티티·블록… 을 다룸 (서버에서만 돎) | [이벤트](events), [SDK](sdk), ["gh" 함수](abi) |
-| 규칙 | `rules.json` | 서버 규칙 덮어쓰기: 가격, 작물, 아이템, 주민, 대사, 스킬, 몬스터, 땅 … | [rules.json](rules) |
-| 에셋 | `assets/` | 접속자에게 보낼 그림·소리·모델 (게임의 `res://` 경로 그대로) | [rules.json › 에셋](rules#에셋) |
+| 코드 | `code.wasm` | 켜질 때 규칙 등록, 이벤트를 받아 값을 바꾸거나 막고, 아이템·골드·창·화면·엔티티·블록… 을 다룸 (서버에서만 돎) | [이벤트](events), [SDK](sdk), [규칙 등록](rules), [화면](screen), ["gh" 함수](abi) |
+| 에셋 | `assets/` | 접속자에게 보낼 그림·소리·모델 (게임의 `res://` 경로 그대로; 없어도 됨) | [규칙 등록 › 에셋](rules#에셋) |
 
 ## 넣는 곳
 
@@ -45,10 +46,12 @@ has_children: true
 ```
 <data>/plugins/my_plugin/
   plugin.json   이름, 버전, 화면(버튼·바), 설정
-  code.wasm     이벤트 핸들러 (WebAssembly)
-  rules.json    서버 규칙 덮어쓰기
+  code.wasm     규칙 등록(Enable)과 이벤트 핸들러 (WebAssembly)
   assets/       접속자에게 보낼 그림·소리·모델
 ```
+
+`rules.json`은 더 이상 읽지 않습니다. 서버 운영자가 규칙을 바꾸려면 플러그인이 아니라 `<data>/rules.d/*.json`(이름 순서로
+덮음)에 둡니다.
 
 ## 첫 플러그인 (Rust SDK)
 
@@ -115,14 +118,14 @@ cp target/wasm32-unknown-unknown/release/my_plugin.wasm code.wasm
 GreenHaven-Server 안의 `plugins/` 아래에 두었다면 `python tools/build_plugins.py my_plugin`이 위 두 줄을 대신하고,
 `--zip <폴더>`는 서버가 받는 모양 그대로 zip으로 묶습니다.
 
-폴더째(`plugin.json`, `code.wasm`, 있으면 `rules.json`, `assets/`) 서버의 `plugins/`에 넣고 서버를 켜면 됩니다.
+폴더째(`plugin.json`, `code.wasm`, 있으면 `assets/`) 서버의 `plugins/`에 넣고 서버를 켜면 됩니다.
 
 ## 알아 둘 것
 
 - **코드는 서버에서만 돕니다.** 접속하는 게임에는 데이터(규칙, 그림·소리·모델)와 서버가 보낸 결과만 가고 코드는 가지
   않습니다. 그래서 플러그인의 결과는 서버 대답(온라인이면 수십 ms) 뒤에 보입니다.
-- **휴대폰의 자체 서버는 코드를 돌리지 않습니다.** 코드가 든 플러그인은 plugin.json에 [`"mobile": true`](plugin-json#휴대폰-mobile)가 없으면 통째로
-  빠집니다(`rules.json`·`assets/`만으로 쓸 만하면 `true`). 온라인 서버에 들어가면 그 서버의 코드가 돌아 휴대폰에서도 보입니다.
+- **휴대폰의 자체 서버는 플러그인을 쓰지 않습니다.** 휴대폰에서 연 혼자 하기·LAN 농장에는 플러그인이 하나도 없습니다.
+  플러그인이 있는 서버에는 휴대폰으로도 들어갈 수 있고, 그 서버의 코드가 돌아 휴대폰에서도 그대로 보입니다.
 - **모듈은 월드마다 하나 만들어져 계속 쓰입니다.** 전역 변수가 다음 이벤트에도 남아 캐시로 써도 되지만, 자고 일어나지
   않은 하루가 버려질 때 새로 만들어집니다. 오래 남길 것은 `World::set` / `Player::set`이나 [데이터 저장](sdk#데이터-저장)에.
 - **저장은 바닐라 규칙**: 자고 일어난 아침에만 저장됩니다. [저장](world#저장) 참고.

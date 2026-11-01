@@ -20,6 +20,7 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 
 - 모듈은 `memory`를 내보냅니다.
 - 이벤트: SDK 없이는 `on_event() -> i32` (0 그대로, 아니면 막음)를 내보내고 plugin.json의 `events`로 구독합니다.
+  규칙을 등록하려면 `"enable"`을 구독하고 거기서 `register`를 부릅니다(샘플 `wild_fish`).
   SDK는 핸들러마다 내보내기를 만들고 "gh" 커스텀 섹션에 `on\t<이벤트>\t<우선순위>\t<내보내기>\n`,
   `command\t<이름>\t<설명>\n` 줄을 씁니다.
 - 글을 넘길 때: `(ptr, len)` (UTF-8).
@@ -145,6 +146,9 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `set_block(x, y, z: i64, b: i32)` | |
 | `fill(x0, y0, z0, x1, y1, z1: i64, b: i32)` | 양 끝 포함, 한 번에 청크 넷까지 |
 | `props_clear()` | `chunk.generate`: 그 청크의 덤불·풀·유목 치우기 |
+| `set_blocks(p, len)` | 블록 여럿을 한 번에: 블록마다 `i32` x, y, z, 번호 (리틀 엔디언, 16바이트), 65 536개까지. `chunk.generate` / `chunk.load`에서는 그 청크의 것만 |
+| `chunk_mark(x, z: i64, p, len) -> i64` | 청크 (x, z)에 이 플러그인이 남긴 숫자 `name` (0 없음; 월드와 함께 저장) |
+| `chunk_set_mark(x, z: i64, p, len, v: i64)` | 그 숫자 정하기 |
 | `structure_count() -> i64` `structure_id(i) -> i64` | 구조물 목록 |
 | `structure_get(id, k, kl) -> f64` | `x` `z` `y` `yaw` `w` `d` `scale` |
 | `structure_text(id, k, kl, p, cap) -> i32` | `k` `m` `plot` `n` `key` `kind` `label` `text` `s` `owner` |
@@ -162,6 +166,20 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `ground_model(id, p, len)` `ground_anim(id, p, len)` | 아이템 대신 그릴 `res://` 모델 (`""` 아이템 모양), 그 모델의 클립 (부를 때마다) |
 | `ground_consume(id, x, y, z: f64)` | 그곳의 무언가가 먹음: 없어지고, 게임은 그쪽으로 날아가게 그림 |
 | `room_get(np, nl, kp, kl) -> f64` | 방: `x` `z` `y`(바닥) `door_x` `door_z` `out_x` `out_z` `w` `d` (NaN 없음) |
+
+## 등록과 화면
+
+| 함수 | |
+|---|---|
+| `register(p, len)` | 규칙 위에 덮을 JSON 객체 ([규칙 등록](rules)). `enable` 이벤트에서만 (다른 때는 무시), 한 번에 1 MB까지 |
+| `hud(p, len)` `hud_all(p, len)` | HUD 작업 하나 (그 플레이어 / 월드 모두): `{"op", …}` (`op`: `add` `set` `remove` `clear` `hide` `show` `key`) ([화면](screen#sdk-없이)), 64 KB까지 |
+| `send(cp, cl, p, len)` `send_all(cp, cl, p, len)` | 채널 `cp`에 바이트 (그 플레이어 / 모두), 256 KB까지 |
+| `send_png(cp, cl, w, h: i32, p, len, all: i32) -> i32` | RGBA8 픽셀(`w` × `h`, 512까지)을 PNG로 채널에 (`all` 0이 아니면 모두에게). PNG의 바이트 수, `len`이 `w × h × 4`가 아니면 0 |
+| `columns(x0, z0, w, d: i64, p, cap) -> i64` | 위에서 본 땅: 기둥마다 2바이트(가장 높은 단단한 블록 번호(위에 물이면 물), 높이 − (−8)), `w`개씩 줄로, 256 × 256까지. 전체 바이트 수 |
+| `inv_open(p, len)` | 인벤토리 창 `{"id", "title", "rows", "cols", "slots", "bag"}` / 닫기 `{"id", "close": true}` |
+
+게임에서 오는 것은 이벤트로: `packet`(`text("channel")` `text("data")`), `inventory`(`text("inv")` `text("side")` `n()` 칸
+`text("click")` `text("bag_item")`).
 
 ## 이벤트 말고 내보내는 것
 

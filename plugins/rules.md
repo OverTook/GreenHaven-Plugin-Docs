@@ -1,5 +1,5 @@
 ---
-title: rules.json
+title: 규칙 등록 (Registry)
 nav_order: 5
 parent: 플러그인
 redirect_from:
@@ -7,18 +7,56 @@ redirect_from:
   - /rules.html
 ---
 
-# rules.json — 코드 없이 콘텐츠 바꾸기
+# 규칙 등록 (Registry) — 아이템·작물·주민·스킬·땅 바꾸기
 {: .no_toc }
 
 1. TOC
 {:toc}
 
 **게임의 콘텐츠는 서버의 것**입니다.
-서버는 자기 `data/rules.json`에 플러그인들의 패치를 모두 덮은 결과를 접속하는 게임에 보내고(해시로 캐시되어 바뀌었을 때만
-다시 받음), 게임은 자기 표 대신 그것으로 작물·아이템·퀘스트·주민·대사·마을 배치를 만듭니다. 그래서 패치 하나가 서버의
+서버는 자기 `data/rules.json`에 플러그인들이 등록한 것을 모두 덮은 결과를 접속하는 게임에 보내고(해시로 캐시되어 바뀌었을
+때만 다시 받음), 게임은 자기 표 대신 그것으로 작물·아이템·퀘스트·주민·대사·마을 배치를 만듭니다. 그래서 등록 하나가 서버의
 판정과 모든 접속자의 화면을 함께 바꿉니다.
 
-플러그인 폴더의 `rules.json`은 휴대폰의 자체 서버에서도 적용됩니다(코드는 아님).
+## 코드로 등록하기 (`Enable`)
+
+Bukkit의 `onEnable`처럼, 플러그인은 서버가 켜질 때 [`Enable`](events#enable) 이벤트에서 `Registry`로 규칙을 더하고 바꿉니다.
+등록은 이 이벤트에서만 됩니다(다른 이벤트에서 부르면 아무것도 안 함). 월드도 플레이어도 없을 때입니다.
+
+```rust
+use greenhaven_plugin::*;
+
+#[on(Enable)]
+fn enable(_e: Enable) {
+    Registry::set("bag.slots", "48");                 // 값 하나: 경로와 JSON
+    Registry::text("가방", "큰 가방");                 // 화면 글자
+    Registry::crop("golden_carrot", r#"{"days": 8, "seasons": [0, 1, 2], "name": "황금 당근", "look": "carrot", "tint": "ffd23f"}"#);
+    Registry::item("golden_carrot", r#"{"name": "황금 당근", "icon": "res://plugins/golden_crops/golden_carrot.png", "color": "f2c14e"}"#);
+    Registry::set("price.golden_carrot_seeds", "120");
+    Registry::patch(r#"{"edible": {"golden_carrot": 150}, "progress": {"quests+": [["golden_harvest", "황금빛 수확", "황금 당근 3개를 가져다주세요.", {"deliver": {"golden_carrot": 3}}, 2000, "doyun"]]}}"#);
+}
+```
+
+| 함수 | 규칙의 키 |
+|---|---|
+| `Registry::patch(json)` | JSON 객체 하나를 규칙 위에 덮음 |
+| `Registry::set(path, json)` | `"bag.slots"` 같은 경로의 값 하나 (`"48"`, `"\"글\""`, `"[1, 2]"`) |
+| `Registry::add(table, id, json)` | 표 `table`에 `id` 더하기·바꾸기 (`set("table.id", json)`) |
+| `Registry::block(id, &BlockKind)` | `blocks_add` — [새 블록 종류](world#새-블록-종류) |
+| `Registry::item(id, json)` | `items` |
+| `Registry::crop(id, json)` | `crops` |
+| `Registry::monster(id, json)` | `monsters_add` |
+| `Registry::animal(id, json)` | `animals_add` |
+| `Registry::villager(id, json)` | `villagers_add` |
+| `Registry::model(id, json)` `Registry::emote(id, json)` | `models_add` `emotes_add` ([커스텀 모델](models)) |
+| `Registry::text(from, to)` | `texts` |
+
+이 문서의 JSON 예는 모두 `Registry::patch`에 넘기는 모양입니다. SDK 없이는 plugin.json `events`에 `"enable"`을 구독하고
+`on_event`에서 "gh" [`register(ptr, len)`](abi#등록과-화면)를 부릅니다(샘플 `wild_fish`).
+
+{: .note }
+플러그인 폴더의 `rules.json`은 더 이상 읽지 않습니다(서버가 켜질 때 그렇다고 알림). 코드가 없는 플러그인은 규칙을 바꿀 수
+없고 `assets/`만 보냅니다.
 
 ## 덮어쓰기 규칙
 
@@ -28,19 +66,12 @@ redirect_from:
 - `null`은 지웁니다.
 - 나머지(숫자, 글, 목록)는 바꿉니다.
 - **목록에 더하려면 키 뒤에 `+`**: `{"progress": {"quests+": [ … ]}}`는 원래 퀘스트 뒤에 붙입니다.
-- 여러 플러그인의 패치는 폴더 이름 순서로 겹칩니다.
+- 한 플러그인의 등록은 부른 차례로, 여러 플러그인은 폴더 이름 순서로 겹칩니다.
+- 그 아래에 서버 자신의 패치가 먼저 깔립니다: `<data>/rules.d/*.json`(이름 순서). 운영자의 설정이고, 게임은 월드의 옵션을
+  `rules.d/_world.json`에, 게임 자체 서버는 `rules.d/00_host_world.json`(`{"world_owner": "host"}`)에 씁니다. 플러그인이 아닙니다.
 
 서버도 쓰는 표는 서버의 키 그대로, 게임만 쓰는 표는 `"client"` 아래 `{클래스: {표: …}}`로 있습니다. 무엇이 있는지는
 서버의 `data/rules.json`을 열어 보세요.
-
-```json
-{
-  "bag": {"slots": 48},
-  "max_energy": 370,
-  "starter": {"gold": 1000},
-  "texts": {"가방": "큰 가방"}
-}
-```
 
 ## 키
 
@@ -64,6 +95,7 @@ redirect_from:
 | `progress.fishing.reel` | [낚시의 손맛](#낚시의-손맛) |
 | `monsters_add`, `animals_add` | [몬스터와 농장 동물 더하기](#몬스터와-농장-동물-더하기) |
 | `models_add`, `emotes_add` | [커스텀 모델과 감정 표현](models) |
+| `blocks_add` | [새 블록 종류](world#새-블록-종류) (`Registry::block`) |
 | `villagers_add`, `villagers_remove`, `town_remove` | 주민·구획 더하기·빼기 (그 이름이 나오는 모든 표에서) |
 | `places_add` | 주민이 가는 새 장소 |
 | `terrain` | [땅](#땅-terrain) |
@@ -156,8 +188,8 @@ redirect_from:
 - `stage`: 게임의 장면 (0 도시의 밤 … 8 도착: 움직이는 인물·비·열기구가 그림 위에). 없으면 `image` 한 장만.
 - `music`: 그 장면부터 (게임의 `assets/music` 이름이나 `res://….ogg`).
 - `lines`: 자막 뒤에 `speaker`의 얼굴·목소리로. `wave`: PC에서 옆에서 손 흔드는 주민.
-- 오프닝은 서버에 들어가기 전에 나옵니다: 혼자 하기는 그 월드의 플러그인 `rules.json`을 미리 읽고, 온라인은 마지막으로 그
-  서버에 들어갔을 때 받아 둔 것(처음이면 게임의 것)을 씁니다.
+- 오프닝은 서버에 들어가기 전에 나옵니다: 혼자 하기는 그 월드의 플러그인들의 `Enable`을 서버를 켜기 전에 돌려 등록한 것을
+  쓰고, 온라인은 마지막으로 그 서버에 들어갔을 때 받아 둔 것(처음이면 게임의 것)을 씁니다.
 
 ## 음악
 

@@ -28,7 +28,7 @@ redirect_from:
    python fix_model.py my_model.glb out.glb
    ```
 
-5. `out.glb`를 플러그인 `assets/plugins/<플러그인 이름>/`에 넣고 `rules.json`에 등록합니다.
+5. `out.glb`를 플러그인 `assets/plugins/<플러그인 이름>/`에 넣고 `Enable`에서 [등록](#등록)합니다.
 
 {: .warning }
 > **4번을 건너뛰면 대부분 거절됩니다.** 블렌더는 뼈의 기준 회전을 정확히 보존하지 못합니다. 아래를 향한 뼈(발, 엄지)가 20°쯤 틀어지고, 가져오기 옵션에 따라 더 많은 뼈가 돌아갑니다. 그대로 쓰면 발목이 꼬이므로 서버가 거절합니다. `fix_model.py`는 뼈 위치와 메시 모양은 그대로 둔 채 회전을 게임 값으로 되돌리고, 바인드 행렬과 애니메이션 값을 다시 계산합니다.
@@ -37,14 +37,13 @@ redirect_from:
 
 ## 등록
 
-```json
-{
-  "models_add": {
-    "blue_cat": {"model": "res://plugins/custom_model/blue_cat.glb", "name": "파란 고양이"}
-  },
-  "emotes_add": {
-    "wave": {"file": "res://plugins/custom_model/wave.glb", "name": "손 흔들기", "loop": false}
-  }
+서버가 켜질 때 [`Enable`](events#enable)에서 `Registry::model` / `Registry::emote`로(규칙의 `models_add` / `emotes_add`).
+
+```rust
+#[on(Enable)]
+fn enable(_e: Enable) {
+    Registry::model("blue_cat", r#"{"model": "res://plugins/custom_model/blue_cat.glb", "name": "파란 고양이"}"#);
+    Registry::emote("wave", r#"{"file": "res://plugins/custom_model/wave.glb", "name": "손 흔들기", "loop": false}"#);
 }
 ```
 

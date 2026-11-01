@@ -14,7 +14,7 @@ redirect_from:
 {:toc}
 
 월드는 **처음 만들 때 한 번 생성되고, 그 뒤로는 저장된 것**입니다. 바닐라 생성기는 서버 코드이고,
-플러그인은 만들어질 때([`WorldCreate`](events#worldcreate), [`ChunkGenerate`](events#chunkgenerate))와 그 뒤 어느 이벤트에서나
+플러그인은 만들어질 때([`WorldCreate`](events#worldcreate), [`ChunkGenerate`](events#chunkgenerate)), 청크를 불러올 때([`ChunkLoad`](events#chunkload))와 그 뒤 어느 이벤트에서나
 블록·구조물·주민을 바꿀 수 있습니다. 바뀐 것은 그 월드의 모두에게 바로 갑니다.
 
 ## 블록
@@ -22,8 +22,13 @@ redirect_from:
 - 청크는 32 × 32칸, 높이 64칸 (y −8 ~ 55). 블록 하나는 y−0.5 ~ y+0.5를 채웁니다: 마을 땅은 y 0의 블록, 윗면 0.5.
 - 청크는 누가 처음 가까이 갈 때 만들어지고(바닐라 땅, 그다음 `chunk.generate`), `<data>/chunks/<월드>/<x>_<z>.bin`에
   저장되어 그 뒤로는 저장된 그대로입니다.
-- 블록: `air` `grass` `sand` `snow` `stone` `dirt` `road` `bed`(물 밑 모래) `water` ([`Block`](sdk#block)).
+- 블록: `air` `grass` `sand` `snow` `stone` `dirt` `road` `bed`(물 밑 모래) `water` ([`Block`](sdk#block)), 그리고 플러그인이
+  등록한 [새 블록 종류](#새-블록-종류).
 - 서버의 이동 판정도 블록을 읽습니다: 블록을 쌓으면 그 위를 걸을 수 있고, 파내면 떨어집니다.
+- 많이 바꿀 때는 `World::set_blocks(&[(x, y, z, Block)])`: 한 번에 65 536개까지, `set_block`을 여러 번 부르는 것보다 훨씬 쌉니다.
+  `ChunkGenerate` / `ChunkLoad`에서는 그 청크의 것만 받습니다.
+- 청크 표시: `World::chunk_mark(x, z, name)` → `i64`(0: 없음) / `set_chunk_mark(x, z, name, v)`. 청크마다 이 플러그인의 숫자로,
+  월드와 함께 저장됩니다. 이미 만들어진 청크에 새 블록을 한 번씩 넣을 때 씁니다([`ChunkLoad`](events#chunkload)).
 
 ```rust
 #[on(ChunkGenerate)]
@@ -36,6 +41,33 @@ fn flat(e: ChunkGenerate) {
     e.clear_props();
 }
 ```
+
+## 새 블록 종류
+
+플러그인은 [`Enable`](events#enable)에서 블록 종류를 등록합니다. 바닐라 블록의 모델(`look`)에 색(`tint`)을 입혀 그립니다.
+
+```rust
+#[on(Enable)]
+fn enable(_e: Enable) {
+    Registry::block("ruby_block", &BlockKind::new("루비 블록", "stone", "e0405a"));
+    Registry::block("glass", &BlockKind { solid: false, item: false, ..BlockKind::new("유리", "snow", "bfe6ff") });
+}
+```
+
+| `BlockKind` | |
+|---|---|
+| `name` | 이름 (아이템 이름도) |
+| `look` | 그려질 바닐라 블록: `"grass"` `"sand"` `"snow"` `"stone"` `"dirt"` |
+| `tint` | 그 위에 입힐 색 `"rrggbb"` |
+| `solid` | 단단함 (`false`: 지나다님). 기본 `true` |
+| `item` | 놓는 아이템이 따로 있음 (아이템 id는 블록 id, `"type": "block"`). 기본 `true` |
+
+- 번호는 서버가 9부터 매기고 `<data>/blocks.json`에 남겨, 저장된 청크가 늘 같은 블록을 뜻합니다. 코드에서는
+  `Block::named("ruby_block")`으로 찾아 `set_block` / `set_blocks`로 놓습니다. 접속하는 게임은 레지스트리의 `"blocks"`로 그립니다.
+- `item`이 있으면 플레이어가 그 아이템을 손에 들고 사용 버튼으로 앞 칸에 놓고(닿는 곳, 빈 칸, 옆에 단단한 블록이 있어야),
+  곡괭이로 부숴 가방에 돌려받습니다: [`BlockPlace` / `BlockBreak`](events#blockplace--blockbreak). 바닐라 땅의 블록은
+  부서지지 않습니다.
+- 예: `plugins/blocks`.
 
 ## 구조물
 
@@ -61,7 +93,7 @@ fn open(e: WorldCreate) {
 
 바닐라 주민 10명이 월드를 만들 때 들어가고, 그 목록이 서버의 주민 AI·대사·선물·의뢰와 게임의 주민 표가 됩니다. 주민은
 서버가 걷게 하고 말도 서버가 합니다: 광장의 잡담, 둘이 만나 나누는 말과 소문, 플레이어가 하는 일을 보고 하는 말, 지나갈
-때의 인사, 말을 걸었을 때의 대답이 모두 대사 표(`client.VillagerLines` 등, [rules.json](rules)으로 더함)에서 나옵니다.
+때의 인사, 말을 걸었을 때의 대답이 모두 대사 표(`client.VillagerLines` 등, [등록](rules)으로 더함)에서 나옵니다.
 
 ```rust
 #[on(WorldCreate)]
@@ -92,7 +124,7 @@ fn neighbor(e: WorldCreate) {
 
 세 시각은 하늘과 몬스터에 함께 적용되고, 계절과 상관없이 하나의 값입니다. 월드에 저장되고 `clear_*`로 규칙 값으로 돌아갑니다. 밤이 하루 안에 있어도 됩니다(1:00~5:00). 새 날의 시작은 6:00으로 고정이고, 더 일찍 끝내려면 `Tick`에서 시각을 보고 `end_day()`를 부릅니다.
 
-이 설정들만 월드마다이고, rules.json의 다른 값을 코드에서 바꾸는 일반 API는 없습니다(규칙은 서버 전체가 함께 씀).
+이 설정들만 월드마다이고, 규칙의 다른 값은 서버가 켜질 때([`Enable`](events#enable))만 바꿉니다(규칙은 서버 전체가 함께 씀).
 
 ### 서버 하나의 시계
 
@@ -113,9 +145,9 @@ fn keep_to_the_server(e: Tick) {
 바닐라 규칙은 **모두가 월드 하나**입니다(`shared-world=true`, 기본). 그 월드는 **서버의 월드**(`@world`, 플레이어 이름으로는
 못 씀)이고, 서버가 아무도 없어도 그 월드를 돌립니다(주민, `tick`, 밤, 시계). 어느 서버든 코드는 같습니다.
 
-플러그인은 그 월드를 **서버를 연 호스트의 농장**으로 바꿀 수 있습니다: rules.json에 `{"world_owner": "host"}`. 게임 안의 서버(혼자
-하기, 서버 개설로 연 LAN)에는 이 플러그인(`host_world`, 기본 제공)이 들어 있고 뺄 수 없습니다. 그래서 혼자 하기와 LAN에서는 호스트의
-농장이 모두의 월드입니다.
+그 월드를 **서버를 연 호스트의 농장**으로 바꿀 수 있습니다: 규칙의 `{"world_owner": "host"}`(플러그인의 `Registry::patch`나 서버의
+`rules.d/*.json`). 게임 안의 서버(혼자 하기, 서버 개설로 연 LAN)는 켤 때마다 `rules.d/00_host_world.json`에 이것을 쓰고, 뺄 수
+없습니다. 그래서 혼자 하기와 LAN에서는 호스트의 농장이 모두의 월드입니다.
 
 들어오는 사람은 그 월드의 농장 일꾼입니다: 땅·블록·작물·마을·주민·몬스터는 함께, **돈**·가방·기력·스킬·호감도는 각자. 돈은 어느
 서버에서나 각자의 것이고(바닐라), 출하 상자에 넣은 것은 넣은 사람에게 그 사람의 아침에 정산됩니다. 모두가 잠들거나 하루의 끝(기본

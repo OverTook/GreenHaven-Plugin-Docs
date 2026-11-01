@@ -103,6 +103,12 @@ fn cmd(c: Command) { /* … */ }
 | [`PlayerDeath`](#playerdeath) | `death` | | 플레이어가 쓰러짐 |
 | [`MobDeath`](#mobdeath) | `mob.death` | | 플레이어가 몬스터를 쓰러뜨림 |
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
+| [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
+| [`BlockPlace`](#blockplace--blockbreak) | `block.place` | ✔ | 플레이어가 가방의 블록을 놓음 |
+| [`BlockBreak`](#blockplace--blockbreak) | `block.break` | ✔ | 플레이어가 플러그인 블록을 부숨 |
+| [`ChunkLoad`](#chunkload) | `chunk.load` | | 청크가 서버의 메모리에 들어옴 |
+| [`Packet`](#packet) | `packet` | | 게임이 이 플러그인의 채널로 보낸 패킷 (HUD 버튼·입력·키) |
+| [`InventoryClick`](#inventoryclick) | `inventory` | | 이 플러그인의 인벤토리 창을 누름 |
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
 ### 별칭
@@ -118,6 +124,24 @@ fn cmd(c: Command) { /* … */ }
 | `EntityDamage` / `EntityDamageByPlayer` | `Damage` / `Strike` |
 | `CreatureSpawn` / `EntityDeath` | `Spawn` / `MobDeath` |
 | `PlayerLevelChange` | `LevelUp` |
+
+예전의 별칭 `BlockBreak`(`hit`)·`BlockPlace`(`place` `furnish`)는 [`WildHit`·`ThingPlace`](#행동마다의-이벤트)로 바뀌었고,
+`BlockBreak` `BlockPlace`는 이제 [블록](#blockplace--blockbreak)의 이벤트입니다.
+
+## 켜질 때
+
+### Enable
+
+서버가 켜질 때 플러그인마다 한 번(Bukkit의 `onEnable`). 월드도 플레이어도 없습니다. **`Registry`가 등록하는 곳은 여기뿐**입니다:
+아이템, 작물, 블록, 몬스터, 동물, 주민, 모델, 글자, 규칙의 숫자 … ([규칙 등록](rules)).
+
+```rust
+#[on(Enable)]
+fn enable(_e: Enable) {
+    Registry::set("bag.slots", "48");
+    Registry::block("ruby_block", &BlockKind::new("루비 블록", "stone", "e0405a"));
+}
+```
 
 ## 행동
 
@@ -143,8 +167,8 @@ fn watered(e: ActionAfter) {
 | `PlayerPlant` | `plant` `sapling` | 씨앗·묘목 심기 (`id` 씨앗) |
 | `PlayerWater` | `water` | 물 주기 |
 | `PlayerHarvest` | `harvest` `fruit` | 작물·과일나무 거두기 (거둔 양은 [`Harvest`](#harvest)) |
-| `BlockBreak` | `hit` | 나무·바위·잡초·광맥을 도구로 침 |
-| `BlockPlace` | `place` `furnish` | 땅에 설치물, 집에 가구 놓기 |
+| `WildHit` | `hit` | 나무·바위·잡초·광맥을 도구로 침 |
+| `ThingPlace` | `place` `furnish` | 땅에 설치물, 집에 가구 놓기 |
 | `BlockRemove` | `unplace` `unfurnish` | 놓은 것 다시 줍기 |
 | `PlayerFish` | `cast` `fish` `release` | 던지기, 낚아 올림, 놓아줌 |
 | `PlayerEat` | `eat` | 먹기 |
@@ -174,7 +198,7 @@ fn no_sleep(e: PlayerSleep) { e.cancel("이 서버에선 잠들 수 없어요") 
 
 ### Use
 
-게임에 쓰임새가 없는 아이템(플러그인이 `rules.json`으로 더한 것 등)을 썼을 때. `id()` 아이템. 가져가려면 `player().take(id, 1)`.
+게임에 쓰임새가 없는 아이템(플러그인이 [등록](rules)한 것 등)을 썼을 때. `id()` 아이템. 가져가려면 `player().take(id, 1)`.
 
 ## 농사와 장사
 
@@ -235,7 +259,7 @@ fn festival(e: Sell) {
 
 ### MobStep
 
-`rules.json`의 `monsters_add`에서 `"script": true`인 종류의 몬스터마다, 서버의 한 걸음(1초에 10번)에 옵니다. 한 걸음의
+[등록](rules#몬스터-monsters_add)한 `monsters_add`에서 `"script": true`인 종류의 몬스터마다, 서버의 한 걸음(1초에 10번)에 옵니다. 한 걸음의
 몬스터 모두를 모듈 하나가 차례로 받습니다.
 
 | | |
@@ -344,6 +368,30 @@ fn pressed(e: Button) {
 }
 ```
 
+### Packet
+
+게임이 이 플러그인의 채널로 보낸 패킷(Bukkit의 plugin messaging): [HUD](screen)의 버튼·입력 칸의 `on`, 묶은 키(`Hud::key`).
+다른 플러그인의 패킷은 오지 않습니다.
+
+| | |
+|---|---|
+| `channel()` | 채널 (플러그인 이름 없이: `"map/zoom"`) |
+| `data()` | 함께 온 것 (버튼: `""`, 입력 칸: 쓴 글; 4 KB까지) |
+| `player()` | 보낸 사람 |
+
+### InventoryClick
+
+이 플러그인의 [인벤토리 창](screen#인벤토리-창)(`Player::open_inventory`)을 눌렀을 때. **아무것도 저절로 옮겨지지 않습니다**:
+주고, 가져가고, 칸을 다시 보여 주는 것은 플러그인이 합니다.
+
+| | |
+|---|---|
+| `inventory()` | 창의 id |
+| `side()` | `"top"` 창의 칸, `"bag"` 옆의 가방, `"close"` 닫음 |
+| `slot()` | 칸 번호 |
+| `click()` | `"left"` / `"right"` |
+| `bag_item()` | 누른 가방 칸의 아이템 (`""`: 없음, 또는 `"bag"`이 아님) |
+
 ### Words
 
 주민에게 말을 걸 때(또는 마을 소식을 들을 때). 주민의 말은 서버가 대사 표에서 고릅니다.
@@ -374,13 +422,13 @@ fn pressed(e: Button) {
 
 | `reason()` | 언제 | 취소하면 |
 |---|---|---|
-| `"clock"` | 하루의 끝 시각 (rules.json `day_end`) | 시계가 계속 감, 날짜 그대로 |
+| `"clock"` | 하루의 끝 시각 (규칙의 `day_end`) | 시계가 계속 감, 날짜 그대로 |
 | `"sleep"` | 모두 잠듦 | 자던 사람들이 일어남, 하루가 이어짐 |
 | `"end_day"` | 플러그인의 `World::end_day()` | 아무 일도 없음 |
 | `"limit"` | 넘을 수 없는 끝 (다음날 6:00, 더 늦은 day_end면 그것) | 아침이 오지 않음(작물·출하·생성 없음, 저장도 없음), 날짜 그대로, 시계는 하루의 시작으로 |
 
 기본 규칙에서는 하루의 끝이 곧 다음날 6:00(=limit)이라 시계로 끝나는 날은 `"limit"`입니다. `"clock"`은
-rules.json의 `day_end`를 앞당긴 서버에서 옵니다.
+규칙의 `day_end`를 앞당긴 서버에서 옵니다.
 
 ### DayChange
 
@@ -406,10 +454,58 @@ rules.json의 `day_end`를 앞당긴 서버에서 옵니다.
 | `size()` | 한 변의 칸 수 (32) |
 | `clear_props()` | 그 위의 덤불·풀·유목 치우기 |
 
+### BlockPlace / BlockBreak
+
+플레이어가 손에 든 블록(아이템 `"type": "block"`)을 사용 버튼으로 앞 칸에 놓을 때 / 플러그인이 [등록한 블록](world#새-블록-종류)을
+곡괭이로 부술 때(아이템이 있는 종류면 가방에). 바닐라 땅의 블록은 부서지지 않습니다. 취소하면 일어나지 않습니다.
+
+| | |
+|---|---|
+| `block()` | 블록 종류의 id (`"ruby_block"`) |
+| `at()` → `(x, y, z)` | 그 칸 |
+| `player()` | 놓거나 부순 사람 |
+
+```rust
+#[on(BlockPlace)]
+fn placed(e: BlockPlace) {
+    if e.at().1 > 12 { e.cancel("그렇게 높이는 쌓을 수 없어요") }
+}
+```
+
+### ChunkLoad
+
+청크가 서버의 메모리에 들어올 때, 게임이 그 청크를 달라고 해서(Bukkit의 ChunkLoadEvent). 방금 만든 청크도, 오래전에 만든
+청크도 옵니다. 여기서 바꾼 것(그 청크 안만: `World::set_blocks`)이 그대로 게임에 갑니다. **이미 만들어진 청크에 새 블록을 한 번씩
+넣는** 방법: 청크 표시(`World::chunk_mark` / `set_chunk_mark`, 월드와 함께 저장)를 보고, 아직이면 바꾸고 표시합니다.
+
+| | |
+|---|---|
+| `chunk()` → `(x, z)` | 청크 번호 (칸은 `x * CHUNK ..`; `CHUNK` = 32) |
+| `first_cell()` → `(x0, z0)` | 첫 칸 |
+| `is_new()` | 방금 만들어짐 (전에 보낸 적 없음) |
+
+```rust
+#[on(ChunkLoad)]
+fn loaded(e: ChunkLoad) {
+    let (cx, cz) = e.chunk();
+    let w = e.world();
+    if w.chunk_mark(cx, cz, "pillar") >= 1 { return }   // 이미 넣음
+    let (x0, z0) = e.first_cell();
+    let (x, z) = (x0 + CHUNK / 2, z0 + CHUNK / 2);
+    let y = w.top(x, z);
+    if let Some(ruby) = Block::named("ruby_block") {
+        w.set_blocks(&[(x, y + 1, z, ruby), (x, y + 2, z, ruby)]);
+    }
+    w.set_chunk_mark(cx, cz, "pillar", 1);
+}
+```
+
+예: `plugins/blocks`.
+
 ### MineFloor
 
 광산 층이 그날 처음 만들어질 때(누가 처음 내려갈 때, 아무도 보기 전). **바위만** 바꿀 수 있습니다: 벽과 사다리는
-배치(`rules.json`의 [`mine_layout`](rules#광산-mine_layout))의 것입니다.
+배치(규칙의 [`mine_layout`](rules#광산-mine_layout))의 것입니다.
 
 | | |
 |---|---|

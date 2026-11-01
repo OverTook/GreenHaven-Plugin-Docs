@@ -56,13 +56,15 @@ redirect_from:
 | `visit(owner)` | 열기구로 그 사람 월드에 바로 내림 (`PlayerVisit`이 불림) |
 | `home()` | 자기 월드로 |
 | `show(&Gui)` | 창 띄우기 ([`Gui`](#gui)). `PlayerLogin`에서는 들어오기 전의 입력 창 |
+| `hud()` → `Hud` | 그 사람의 화면: HUD 요소, 게임 HUD 숨기기, 키, 채널 ([화면](screen)) |
+| `open_inventory(&Inventory)` / `close_inventory(id)` | 이 플러그인의 인벤토리 창 열기(다시 부르면 지금 칸으로) / 닫기 ([인벤토리 창](screen#인벤토리-창)) |
 | `get(k)` / `set(k, v)` | 그 사람에게 남기는 숫자 (이 플러그인의 것; 저장됨). plugin.json의 바가 보여 주는 값 |
 | `data_put(key, &[u8])` → `bool` | 그 사람의 바이트 ([데이터 저장](#데이터-저장)) |
 | `data_get(key)` → `Option<Vec<u8>>` | |
 | `data_del(key)` | |
 
 {: .note }
-`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerVisit` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
+`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerVisit` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
 
 ## World
 
@@ -122,6 +124,11 @@ redirect_from:
 | `top(x, z)` → `i64` | 기둥에서 가장 높은 단단한 블록의 y (없으면 `Block::LOWEST - 1`) |
 | `set_block(x, y, z, b)` | 블록 놓기 (저장됨) |
 | `fill(from, to, b)` | 상자 모양 채우기, 양 끝 포함, 한 번에 청크 넷까지 |
+| `set_blocks(&[(x, y, z, Block)])` | 여러 블록을 한 번에 (65 536개까지). `ChunkGenerate` / `ChunkLoad`에서는 그 청크의 것만 |
+| `chunk_mark(x, z, name)` → `i64` / `set_chunk_mark(x, z, name, v)` | 청크 (x, z)에 이 플러그인이 남기는 숫자 (0: 없음; 월드와 함께 저장). 이미 넣은 것의 표시로 |
+| `columns(x0, z0, w, d)` → `Vec<(Block, i64)>` | 위에서 본 땅: `w` × `d` 기둥(256 × 256까지, `w`개씩 줄로), 각 기둥의 가장 높은 단단한 블록(위에 물이면 물)과 높이 |
+| `columns_raw(x0, z0, w, d)` → `Vec<u8>` | 같은 것을 기둥마다 두 바이트(블록 번호, 높이 − `Block::LOWEST`)로: 반복에서 읽기 쌈 ([미니맵](screen#미니맵)) |
+| `hud()` → `Hud` | 월드 모두의 화면 ([화면](screen)) |
 
 ### 야생과 땅, 방
 
@@ -340,7 +347,28 @@ fn fireball(e: Button) {
 | `Block::WATER` | 8 | |
 | `Block::LOWEST` | -8 | 가장 낮은 블록의 y (그 아래는 모두 단단함). 청크는 이로부터 64칸 높이 |
 
-`Block::named("stone")` → `Option<Block>`: 이름(또는 번호)으로.
+`Block::named("stone")` → `Option<Block>`: 이름(또는 번호)으로. 플러그인이 등록한 종류(9부터)도 이름으로 찾습니다
+([새 블록 종류](world#새-블록-종류)). `CHUNK` = 32: 청크 한 변의 칸 수.
+
+## Registry
+
+규칙에 더하고 바꾸기. [`Enable`](events#enable)에서만 됩니다(다른 이벤트에서는 아무것도 안 함). 자세히: [규칙 등록](rules).
+
+| | |
+|---|---|
+| `Registry::patch(json)` | JSON 객체를 규칙 위에 덮음 (`"key+"`는 목록에 더함) |
+| `Registry::set(path, json)` | 값 하나: `Registry::set("bag.slots", "48")` |
+| `Registry::add(table, id, json)` | 표에 하나 |
+| `Registry::block(id, &BlockKind)` | 블록 종류 ([새 블록 종류](world#새-블록-종류)): `BlockKind::new(name, look, tint)`, `solid` `item` |
+| `Registry::item` `crop` `monster` `animal` `villager` `model` `emote` `(id, json)` | `items` `crops` `monsters_add` `animals_add` `villagers_add` `models_add` `emotes_add` |
+| `Registry::text(from, to)` | 화면 글자 바꾸기 |
+
+## 화면 (`Hud`, `El`, `Inventory`)
+
+`Player::hud()` / `World::hud()`의 `Hud`: `add(id, &El)` `set(id, &El)` `remove(id)` `clear()` `hide(part)` `show(part)` `key(key, on)`
+`send(chan, &[u8])` `send_text(chan, text)` `send_png(chan, w, h, &rgba)`. `El::panel` `text` `image` `bar` `button` `input`에
+`anchor(Anchor::…)` `pos` `size` `color` `bind` `follow` `zoom` `rotate` `round` `marker` `child` …. `Inventory::new(id, title, rows, cols)`
+`.slot(i, item, n, name, lore)` `.with_bag()`. 모두 [화면](screen)에.
 
 ## Gui
 
