@@ -49,7 +49,7 @@ fn packet(e: Packet) {
 | `remove(id)` | |
 | `clear()` | 이 플러그인의 요소와 키를 모두 없애고, 숨긴 게임 HUD를 다시 보임 |
 | `hide(part)` / `show(part)` | 게임 자신의 HUD 부분 숨기기 / 다시 보이기 (아래) |
-| `key(key, on)` | 키(`"M"` `"F5"` `"Tab"`)를 누르면 채널 `on`의 패킷 (패널이 열려 있지 않을 때; `""` 풀기) |
+| `key(key, on)` / `key_action(on, label, key)` | 단축키: 키(`"M"` `"F5"` `"Tab"`)를 누르면 채널 `on`의 패킷 (패널이 열려 있지 않을 때; `""` 풀기). 플레이어의 설정 › 조작키에 `label`로 나와 다른 키로 바꿀 수 있음 (아래 「단축키」) |
 | `replace(window)` / `restore(window)` | 게임의 창을 열면 이 플러그인에 `"window"` 패킷이 대신 감 / 게임의 창으로 되돌림 (아래 「게임의 창 바꾸기」) |
 | `send(chan, &[u8])` `send_text(chan, text)` | 이 플러그인의 채널 `chan`에 값 (256 KB까지). 게임은 마지막 값을 갖고 있고, 그 채널에 묶인 요소가 보여 줌 |
 | `send_png(chan, w, h, &rgba)` → `i32` | RGBA8 픽셀(`w` × `h`, 512 × 512까지)을 PNG로 만들어 채널에: 묶인 이미지가 보여 줌. PNG의 바이트 수, 픽셀이 `w × h × 4`가 아니면 0 |
@@ -151,6 +151,35 @@ fn click(e: InventoryClick) {
 
 `Player::open_inventory(&inv)`(이미 열려 있으면 지금 칸으로), `Player::close_inventory(id)`. 서버는 열린 창을 기억해 그 창의 칸만
 받습니다.
+
+## 단축키
+
+`Hud::key_action("map", "미니맵 켜기/끄기", "M")`은 기본 키가 M인 단축키입니다. 플레이어는 설정 › 조작키에서 보라색 칩으로 보고
+다른 키로 옮기거나(Backspace: 키 없음) 기본값으로 되돌릴 수 있습니다. 바꾼 키는 서버마다 플레이어 기기에 남습니다.
+
+- 게임이 쓰는 키(Esc, Enter, V, 단축바 숫자, 조작키의 모든 키)와 겹치면 게임이 먼저입니다: 그 단축키는 키 없이 남고,
+  먼저 등록된 다른 단축키와 겹쳐도 마찬가지입니다.
+- 접속한 뒤 그런 단축키가 있으면 팝업 하나로 알립니다: "이 서버의 플러그인 단축키 N개가 게임의 키와 겹쳐 바인딩이
+  취소되었어요" 와 그 목록(접속마다 한 번).
+
+## 환영 창 (그림이 든 창)
+
+접속(`Join`)에서 HUD 요소로 그립니다: 가운데 `panel`에 플러그인 그림, 글, 닫는 버튼.
+
+```rust
+#[on(Join)]
+fn came(e: Join) {
+    let p = e.player();
+    p.hud().add("welcome", &El::panel("wood").anchor(Anchor::Center).size(400.0, 340.0)
+        .child(El::image("res://plugins/screen/welcome.png").anchor(Anchor::Top).pos(0.0, 16.0).size(360.0, 150.0))
+        .child(El::text("어서 오세요!").anchor(Anchor::Top).pos(0.0, 176.0).size(360.0, 30.0).font_size(20))
+        .child(El::button("시작하기", "welcome").anchor(Anchor::Bottom).pos(0.0, -16.0).size(140.0, 44.0)));
+}
+// Packet "welcome": p.hud().remove("welcome")
+```
+
+`pos`는 앵커가 둔 자리에서 더 옮기는 양입니다(가운데 앵커는 이미 가운데). `text`에 폭(`size`)을 주면 줄바꿈되고, 가운데
+앵커면 가운데 정렬됩니다.
 
 ## 게임의 창 바꾸기
 
