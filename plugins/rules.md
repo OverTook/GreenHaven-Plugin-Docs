@@ -43,7 +43,6 @@ fn enable(_e: Enable) {
 | `Registry::set(path, json)` | `"bag.slots"` 같은 경로의 값 하나 (`"48"`, `"\"글\""`, `"[1, 2]"`) |
 | `Registry::add(table, id, json)` | 표 `table`에 `id` 더하기·바꾸기 (`set("table.id", json)`) |
 | `Registry::block(id, &BlockKind)` | `blocks_add` — [새 블록 종류](world#새-블록-종류) |
-| `Registry::ui_theme(json)` | `ui_theme` — [게임의 창 꾸미기](screen#게임의-창-바꾸기꾸미기) |
 | `Registry::item(id, json)` | `items` |
 | `Registry::crop(id, json)` | `crops` |
 | `Registry::monster(id, json)` | `monsters_add` |

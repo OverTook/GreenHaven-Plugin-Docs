@@ -363,7 +363,6 @@ fn fireball(e: Button) {
 | `Registry::set(path, json)` | 값 하나: `Registry::set("bag.slots", "48")` |
 | `Registry::add(table, id, json)` | 표에 하나 |
 | `Registry::block(id, &BlockKind)` | 블록 종류 ([새 블록 종류](world#새-블록-종류)): `BlockKind::new(name, look, tint)` `textured(name, png)` `model(name, glb, size)`, `solid` `item` `texture` `top` `bottom` `alpha` `model` `side` `size` |
-| `Registry::ui_theme(json)` | 게임의 창·HUD의 색과 틀·종이·칸·버튼 그림 ([게임의 창 꾸미기](screen#게임의-창-바꾸기꾸미기)) |
 | `Registry::item` `crop` `monster` `animal` `villager` `model` `emote` `(id, json)` | `items` `crops` `monsters_add` `animals_add` `villagers_add` `models_add` `emotes_add` |
 | `Registry::text(from, to)` | 화면 글자 바꾸기 |
 
