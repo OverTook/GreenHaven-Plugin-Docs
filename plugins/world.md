@@ -44,15 +44,22 @@ fn flat(e: ChunkGenerate) {
 
 ## 새 블록 종류
 
-플러그인은 [`Enable`](events#enable)에서 블록 종류를 등록합니다. 바닐라 블록의 모델(`look`)에 색(`tint`)을 입혀 그립니다.
+플러그인은 [`Enable`](events#enable)에서 블록 종류를 등록합니다. 그려지는 모습은 셋 중 하나입니다(앞의 것이 있으면 그것):
+자기 **모델**(GLB), 자기 **텍스처**의 큐브(PNG, 비쳐 보이게도), 바닐라 블록의 모델에 **색**을 입힌 것. 여러 칸을 차지할 수도 있습니다.
 
 ```rust
 #[on(Enable)]
 fn enable(_e: Enable) {
     Registry::block("ruby_block", &BlockKind::new("루비 블록", "stone", "e0405a"));
-    Registry::block("glass", &BlockKind { solid: false, item: false, ..BlockKind::new("유리", "snow", "bfe6ff") });
+    Registry::block("brick", &BlockKind::textured("벽돌", "res://plugins/blocks/brick.png"));
+    Registry::block("glass", &BlockKind { alpha: true, ..BlockKind::textured("유리", "res://plugins/blocks/glass.png") });
+    Registry::block("fence", &BlockKind { side: "res://plugins/blocks/fence_rail.glb".into(),
+        ..BlockKind::model("나무 울타리", "res://plugins/blocks/fence_post.glb", [1, 1, 1]) });
+    Registry::block("hut", &BlockKind::model("오두막", "res://plugins/blocks/hut.glb", [3, 3, 3]));
 }
 ```
+
+그림과 모델은 플러그인의 `assets/plugins/<이름>/`에 넣고 `res://plugins/<이름>/…`로 부릅니다(접속할 때 게임이 받아 감).
 
 | `BlockKind` | |
 |---|---|
@@ -60,7 +67,22 @@ fn enable(_e: Enable) {
 | `look` | 그려질 바닐라 블록: `"grass"` `"sand"` `"snow"` `"stone"` `"dirt"` |
 | `tint` | 그 위에 입힐 색 `"rrggbb"` |
 | `solid` | 단단함 (`false`: 지나다님). 기본 `true` |
-| `item` | 놓는 아이템이 따로 있음 (아이템 id는 블록 id, `"type": "block"`). 기본 `true` |
+| `item` | 놓는 아이템이 따로 있음 (아이템 id는 블록 id, `"type": "block"`, 아이콘은 `texture`). 기본 `true` |
+| `texture` | 여섯 면의 PNG: 자기 텍스처의 큐브 (픽셀 그대로) |
+| `top` / `bottom` | 위·아래 면만 다른 PNG (없으면 `texture`) |
+| `alpha` | PNG의 알파대로 비쳐 보임 (유리, 잎) |
+| `model` | 자기 GLB 모델: 원점은 차지하는 칸들의 바닥 가운데, 1 유닛 = 한 칸 |
+| `side` | +x를 향한 GLB: 같은 종류나 불투명하고 단단한 블록이 있는 옆(네 방향)마다 그쪽으로 돌려 붙임 (울타리의 가로대) |
+| `size` | `[x, y, z]` 차지하는 칸 (각 1~16, 놓은 칸에서 +x +y +z로). 기본 `[1, 1, 1]` |
+
+`BlockKind::new(name, look, tint)`, `BlockKind::textured(name, png)`, `BlockKind::model(name, glb, size)`로 시작해
+`{ alpha: true, ..BlockKind::textured(…) }`처럼 나머지를 정합니다.
+
+- **여러 칸**: 놓은 칸에 그 종류, 나머지 칸은 그려지지 않는 부품 블록이 되어 건물처럼 그 칸들 모두 막힙니다(`solid`가 꺼져
+  있으면 모두 지나다님). 놓을 때 모든 칸이 비어 있어야 하고, 어느 칸을 부숴도 전체가 사라져 아이템 하나로 돌아옵니다.
+  `set_block` / `set_blocks`로 놓아도 부품까지 채워집니다(청크 이벤트 안에서는 그 청크의 칸만).
+- **충돌**은 칸 단위입니다: 단단한 종류는 모양과 상관없이 그 칸 전체가 막힙니다(서버의 걷기 판정과 같게).
+- 비쳐 보이거나 모델이거나 지나다니는 종류 옆의 블록 면은 그려집니다.
 
 - 번호는 서버가 9부터 매기고 `<data>/blocks.json`에 남겨, 저장된 청크가 늘 같은 블록을 뜻합니다. 코드에서는
   `Block::named("ruby_block")`으로 찾아 `set_block` / `set_blocks`로 놓습니다. 접속하는 게임은 레지스트리의 `"blocks"`로 그립니다.

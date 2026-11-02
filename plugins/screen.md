@@ -50,6 +50,7 @@ fn packet(e: Packet) {
 | `clear()` | 이 플러그인의 요소와 키를 모두 없애고, 숨긴 게임 HUD를 다시 보임 |
 | `hide(part)` / `show(part)` | 게임 자신의 HUD 부분 숨기기 / 다시 보이기 (아래) |
 | `key(key, on)` | 키(`"M"` `"F5"` `"Tab"`)를 누르면 채널 `on`의 패킷 (패널이 열려 있지 않을 때; `""` 풀기) |
+| `replace(window)` / `restore(window)` | 게임의 창을 열면 이 플러그인에 `"window"` 패킷이 대신 감 / 게임의 창으로 되돌림 (아래 「게임의 창 바꾸기·꾸미기」) |
 | `send(chan, &[u8])` `send_text(chan, text)` | 이 플러그인의 채널 `chan`에 값 (256 KB까지). 게임은 마지막 값을 갖고 있고, 그 채널에 묶인 요소가 보여 줌 |
 | `send_png(chan, w, h, &rgba)` → `i32` | RGBA8 픽셀(`w` × `h`, 512 × 512까지)을 PNG로 만들어 채널에: 묶인 이미지가 보여 줌. PNG의 바이트 수, 픽셀이 `w × h × 4`가 아니면 0 |
 
@@ -150,6 +151,61 @@ fn click(e: InventoryClick) {
 
 `Player::open_inventory(&inv)`(이미 열려 있으면 지금 칸으로), `Player::close_inventory(id)`. 서버는 열린 창을 기억해 그 창의 칸만
 받습니다.
+
+## 게임의 창 바꾸기·꾸미기
+
+**바꾸기** — `Hud::replace(window)`: 플레이어가 그 창을 열면 게임은 열지 않고 이 플러그인에 채널 `"window"`의 패킷을 보냅니다.
+플러그인은 자기 것(인벤토리 창, HUD 요소, `gui`)을 보여 주면 됩니다. 아무것도 안 하면 그 창은 막힌 셈입니다.
+`restore(window)`로 게임의 창이 돌아옵니다.
+
+| 창 | 패킷 데이터 (JSON) |
+|---|---|
+| `bag` | 가방의 모든 탭: `{"window": "bag", "tab": "bag"}` (`bag` `skills` `relations` `map` `craft` `quests`) |
+| `shop` | 가게: `"shop"` (`general` `clinic` `furniture` `ranch` …), `"selling"` |
+| `smith` / `enchant` | 대장간 / 마법사의 마법 부여대 |
+| `chest` | 상자: `"x"` `"z"` |
+| `build` | 서연의 건축 |
+| `letter` | 우편함 편지: `"from"` `"text"` `"items"` |
+| `bundles` / `library` / `festival` | 꾸러미 / 도서관 / 축제 (`"festival"`) |
+
+```rust
+#[on(Join)]
+fn came(e: Join) {
+    e.player().hud().replace("bag");
+}
+
+#[on(Packet)]
+fn packet(e: Packet) {
+    if e.channel() == "window" && e.data().contains("\"bag\"") {
+        e.player().open_inventory(&Inventory::new("bag", "보따리", 1, 3).with_bag());
+    }
+}
+```
+
+판정은 그대로 서버의 행동입니다: 가방 창을 바꿔도 아이템은 서버의 것이고, 플러그인이 주고 가져갑니다.
+
+**꾸미기** — `Registry::ui_theme(json)`([`Enable`](events#enable)에서): 게임의 모든 창과 HUD가 그 모습으로 그려집니다.
+서버를 떠나면 게임의 모습으로 돌아옵니다.
+
+```rust
+#[on(Enable)]
+fn enable(_e: Enable) {
+    Registry::ui_theme(r#"{"colors": {"ink": "1d2433", "parch": "e2e9f4", "wood": "34446c"},
+        "frame": {"texture": "res://plugins/screen/frame.png", "margin": 12, "pad": 4},
+        "parchment": {"texture": "res://plugins/screen/parchment.png", "margin": 12}}"#);
+}
+```
+
+| 키 | |
+|---|---|
+| `colors` | 색 `"rrggbb"`: `ink`(글자) `sub`(작은 글자) `brown` `wood` `wood_light`(틀) `parch` `parch_shade`(종이) `cream` `cream_shade`(버튼) `line` `green` `green_dark` `red` `gold` `hp` `en` `shade` `veil` |
+| `frame` | 나무 틀 대신의 그림 |
+| `parchment` | 양피지 대신 |
+| `slot` / `slot_selected` | 아이템 칸 / 고른 칸 (없으면 `slot`을 밝게) |
+| `button` / `button_go` / `button_red` | 보통 / 확인 / 위험 버튼 (올리면 밝게, 누르면 어둡게) |
+
+그림은 `{"texture": 플러그인 assets의 PNG, "margin": 나인 슬라이스 가장자리 픽셀 (또는 [왼, 위, 오른, 아래]), "pad": 안쪽 여백}`:
+가장자리는 그대로, 가운데는 늘어납니다. 예: `plugins/screen`의 남색 테마(`make_assets.py`).
 
 ## SDK 없이
 
