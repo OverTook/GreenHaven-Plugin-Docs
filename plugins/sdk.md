@@ -141,6 +141,7 @@ redirect_from:
 | `debris_damage(x, z, n, toward_x, toward_z)` → `Option<i64>` | 도구 한 번처럼 `n`만큼 침: 모든 게임에서 흔들림, `Some(남은 체력)`. 0이 되면 마지막 한 번처럼 나무는 그쪽으로 쓰러지고(`tree_fell`) 나머지는 부서짐(`debris_break`): `Some(0)`. `None`: 아무것도 없음 |
 | `ground_drop(item, n, x, y, z, floor)` → `Option<ItemEntity>` | 땅에 놓인 아이템(누구나 바로 주움; 게임이 모르는 아이템은 놓이지 않음) |
 | `ground_remove(id)` | 그 번호의 것 치우기 (`ItemEntity::remove`) |
+| `path((x0, z0), (x1, z1))` → `Vec<(f64, f64)>` | 마을 안의 걸어갈 길(주민의 길찾기와 같음: 지은 것을 돌아서, 길은 싸게): 첫 걸음 뒤로 꺾이는 점들, 마지막이 목적지. 비어 있으면 길이 없음(마을 밖 포함) |
 | `room(name)` → `Option<Room>` | 건물 방(`"Farmhouse"` …): `x` `z` 가운데, `y` 바닥(땅 아래), `door` 안쪽 문 앞, `out` 바깥 문 앞, `size`. 엔티티를 `(door.0, y, door.1)`로 옮기면 방 안 |
 
 ### 구조물과 주민
@@ -246,6 +247,8 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | `remove()` | 월드에서 없앰 (진짜 플레이어는 아무 일 없음) |
 | `is_alive()` → `bool` | 아직 있음 (플레이어: 쓰러져 있지 않음) |
 | `distance_to(&dyn Entity)` → `f64` | 땅 위의 거리 |
+| `set_interact(label)` | 플레이어가 E로 쓸 수 있음: 가까이 가면 「E: label」, 누르면 [`EntityInteract`](events#entityinteract) (이 플러그인에만). `""` 끄기. 플러그인의 엔티티(`ModelEntity` `Avatar`)만 |
+| `say(text)` | 머리 위 말풍선 (가까운 모두에게). 플러그인의 엔티티만 |
 
 ### ModelEntity
 

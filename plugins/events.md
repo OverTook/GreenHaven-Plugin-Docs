@@ -109,6 +109,7 @@ fn cmd(c: Command) { /* … */ }
 | [`ChunkLoad`](#chunkload) | `chunk.load` | | 청크가 서버의 메모리에 들어옴 |
 | [`Packet`](#packet) | `packet` | | 게임이 이 플러그인의 채널로 보낸 패킷 (HUD 버튼·입력·키) |
 | [`InventoryClick`](#inventoryclick) | `inventory` | | 이 플러그인의 인벤토리 창을 누름 |
+| [`EntityInteract`](#entityinteract) | `entity.interact` | | 플레이어가 이 플러그인의 엔티티를 E로 씀 |
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
 ### 별칭
@@ -378,6 +379,17 @@ fn pressed(e: Button) {
 | `channel()` | 채널 (플러그인 이름 없이: `"map/zoom"`) |
 | `data()` | 함께 온 것 (버튼: `""`, 입력 칸: 쓴 글; 4 KB까지) |
 | `player()` | 보낸 사람 |
+
+### EntityInteract
+
+플레이어가 이 플러그인의 엔티티(`Entity::set_interact`로 쓸 수 있게 한 것)에 가까이 가서 E를 눌렀을 때(Bukkit의
+PlayerInteractEntityEvent). 서버가 거리를 확인합니다. 무엇을 할지는 모두 플러그인이: 말하기, 선물 받기, 상점 창, 퀘스트 …
+
+| | |
+|---|---|
+| `entity()` | 쓴 엔티티 (`ModelEntity`; 아바타면 `as_avatar()`) |
+| `held()` | 그때 손에 든 아이템 (`""`: 없음). 가져가려면 `player().take(…)` |
+| `player()` | 쓴 사람 |
 
 ### InventoryClick
 

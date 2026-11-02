@@ -167,6 +167,15 @@ fn click(e: InventoryClick) {
 | `build` | 서연의 건축 |
 | `letter` | 우편함 편지: `"from"` `"text"` `"items"` |
 | `bundles` / `library` / `festival` | 꾸러미 / 도서관 / 축제 (`"festival"`) |
+| `dialogue` | 주민과의 대화: `"who"` `"text"` `"choices"` (선택지 글). 플러그인이 `Hud::choose(n)`으로 고름 |
+| `settings` / `friends` | 설정(`"tab"`) / 친구 |
+| `balloon` / `visit_book` | 열기구 / 방문 노트 |
+| `sleep` | 잠자기 물음 (`Hud::open("sleep", "{}")`이면 눕기) |
+| `summary` | 아침 결산: `"lines"` `"total"` |
+| `mirror` | 거울(모습 바꾸기) |
+| `catch` | 잡은 물고기 카드: `"id"` `"q"` … |
+
+`Hud::open(window, data)`: 바꾼 창이라도 게임의 것을 지금 엶 (플러그인 자기 화면 다음에, 예: 확인을 받은 뒤 `sleep`).
 
 ```rust
 #[on(Join)]

@@ -74,6 +74,7 @@ fn enable(_e: Enable) {
 | `model` | 자기 GLB 모델: 원점은 차지하는 칸들의 바닥 가운데, 1 유닛 = 한 칸 |
 | `side` | +x를 향한 GLB: 같은 종류나 불투명하고 단단한 블록이 있는 옆(네 방향)마다 그쪽으로 돌려 붙임 (울타리의 가로대) |
 | `size` | `[x, y, z]` 차지하는 칸 (각 1~16, 놓은 칸에서 +x +y +z로). 기본 `[1, 1, 1]` |
+| `rotate` | 마인크래프트처럼 놓는 사람 쪽을 보게 90°씩 돌려 놓음: 모델의 +z가 플레이어 쪽, 홀수 회전이면 `size`의 x와 z가 바뀜 (`BlockKind::model`은 기본 켬). [`BlockPlace`](events#blockplace--blockbreak)의 `turn()` |
 
 `BlockKind::new(name, look, tint)`, `BlockKind::textured(name, png)`, `BlockKind::model(name, glb, size)`로 시작해
 `{ alpha: true, ..BlockKind::textured(…) }`처럼 나머지를 정합니다.

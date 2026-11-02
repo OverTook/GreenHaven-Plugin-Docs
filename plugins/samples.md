@@ -34,6 +34,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `custom_model` 커스텀 모델 | `/변신`으로 파란 고양이가 되고 `/인사`로 손을 흔듦 | [`models_add`, `emotes_add`](models), `set_model`, `play_anim` |
 | `wild_fish` 거친 물고기 | 잉어는 느긋하게, 참치는 빠르게, 비단잉어는 물결처럼 오르내리다 갑자기 내달림 | `progress.fish.<id>.reel`, `reel` 내보내기, "gh" `register` (SDK 없이) |
 | `screen` 화면 꾸미기 | 오른쪽 아래 마나 바와 화염 버튼, 왼쪽 위 둥근 미니맵(M으로 켜고 끄기), H로 시계 숨기기, 마나 상점 창(가방의 물건을 마나로), 게임의 모든 창을 남색 테마로, 가방 대신 자기 보따리 창(K로 원래 가방) | [화면](screen): `Hud` `El` `Anchor`, `World::columns_raw` + `send_png`, `Hud::hide` `key` `replace` `restore`, `Registry::ui_theme`, `Packet`, `Inventory`, `InventoryClick` |
+| `townsfolk` 엔티티 주민 | 주민 기능 없이 엔티티만으로 만든 주민 새봄: 시간표대로 마을 길을 걷고, 가까이 오면 인사, E로 이야기·선물, 플레이어마다 하트(`/새봄`) | `spawn_avatar`, `Entity::set_interact` `say`, [`EntityInteract`](events#entityinteract), `World::path`, `Player::get/set` |
 | `blocks` 새 블록 | 루비 블록, 고유 텍스처의 벽돌, 비쳐 보이는 유리, 이어지는 나무 울타리(모델), 3×3×3칸 오두막(모델), `/블록`으로 받아 놓고 곡괭이로 부숨, 이미 있는 청크에도 처음 불러올 때 한 번 루비 기둥 | `Registry::block` (`BlockKind::textured` `model`), `BlockPlace` `BlockBreak`, `ChunkLoad`, `World::set_blocks` `chunk_mark` |
 
 빌드 (GreenHaven-Server에서):
