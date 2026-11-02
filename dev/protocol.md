@@ -1,14 +1,17 @@
 ---
 title: 네트워크 프로토콜
-nav_order: 10
-parent: 플러그인
+nav_order: 1
+parent: 개발자
+redirect_from:
+  - /plugins/protocol
+  - /plugins/protocol.html
 ---
 
 # 네트워크 프로토콜
 {: .no_toc }
 
 게임과 게임 서버가 주고받는 메시지예요. 봇, 서버 목록 사이트, 다른 클라이언트처럼 게임 밖에서 서버에 붙는 프로그램을
-만들 때 보세요. 플러그인만 만든다면 몰라도 돼요.
+만들 때 보세요. 서버의 규칙이나 콘텐츠를 바꾸려면 [플러그인](/plugins/)을 보세요.
 {: .fs-5 }
 
 1. TOC
