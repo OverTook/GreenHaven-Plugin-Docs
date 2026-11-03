@@ -13,9 +13,13 @@ redirect_from:
 1. TOC
 {:toc}
 
-Bukkit의 커스텀 GUI·스코어보드·보스 바·지도처럼, 플러그인이 플레이어의 화면에 자기 것을 그립니다. 게임은 플러그인의 코드를
-돌리지 않습니다: 서버가 보낸 **데이터**(요소, 채널의 값)를 그리고, 누르면 서버에 패킷을 보냅니다. 서버 쪽은
-`src/plugin_api/ui.rs`, 게임 쪽은 `PluginHud`. 예: `plugins/screen`.
+Bukkit의 커스텀 GUI·스코어보드·보스 바·지도처럼, 플러그인이 플레이어의 화면에 자기 것을 그립니다. 이 쪽의 것은 서버 쪽
+코드가 보내는 **데이터**(요소, 채널의 값)를 게임이 그리고, 누르면 서버에 패킷을 보냅니다. 서버 쪽은 `src/plugin_api/ui.rs`,
+게임 쪽은 `PluginHud`. 예: `plugins/screen`.
+
+{: .tip }
+매 프레임 바뀌는 화면(카운트다운, 따라다니는 표시), 카메라, 화면 페이드·번쩍임은 서버를 오가지 않고 [게임 쪽 코드](client)에서
+그리세요. 요소 `El`은 두 쪽이 같습니다(게임 쪽 `Hud::add` / `set` / `remove` / `hide` / `show`).
 
 ```rust
 #[on(Join)]
@@ -122,7 +126,7 @@ fn draw_map(w: &World, p: &Player) {
 
 ## 패킷 (`Packet`)
 
-버튼·입력 칸의 `on`, `key`로 묶은 키는 그 플러그인에게만 [`Packet`](events#packet) 이벤트로 옵니다: `channel()`, `data()`(4 KB까지),
+버튼·입력 칸의 `on`, `key`로 묶은 키, 그리고 [게임 쪽 코드](client)의 `send`는 그 플러그인에게만 [`Packet`](events#packet) 이벤트로 옵니다: `channel()`, `data()`(4 KB까지),
 `player()`. 플레이어의 행동처럼 판정되므로 여기서 `give` `take` `add_gold` …가 됩니다.
 
 ## 인벤토리 창
@@ -206,6 +210,9 @@ fn came(e: Join) {
 | `mirror` | 거울(모습 바꾸기) |
 | `catch` | 잡은 물고기 카드: `"id"` `"q"` … |
 
+받는 쪽은 [`WindowOpen`](events#windowopen) 이벤트로 쓰면 편합니다(`window()`, `get("tab")` …; 채널 `"window"`의 `Packet`으로도
+옴). 게임은 가방 같은 창을 서버에 묻지 않고 바로 열기 때문에(기다림 없이), 열 때마다 묻는 대신 가져갈 창을 미리 정해 두는 방식입니다.
+
 `Hud::open(window, data)`: 바꾼 창이라도 게임의 것을 지금 엶 (플러그인 자기 화면 다음에, 예: 확인을 받은 뒤 `sleep`).
 
 ```rust
@@ -214,9 +221,9 @@ fn came(e: Join) {
     e.player().hud().replace("bag");
 }
 
-#[on(Packet)]
-fn packet(e: Packet) {
-    if e.channel() == "window" && e.data().contains("\"bag\"") {
+#[on(WindowOpen)]
+fn opened(e: WindowOpen) {
+    if e.window() == "bag" {
         e.player().open_inventory(&Inventory::new("bag", "보따리", 1, 3).with_bag());
     }
 }

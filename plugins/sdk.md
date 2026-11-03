@@ -13,6 +13,8 @@ redirect_from:
 `use greenhaven_plugin::*;` 하나로 아래가 모두 들어옵니다. 좌표는 모두 **칸**(1 m)이고, y는 블록의 가운데입니다
 (마을 땅은 y 0의 블록, 윗면 0.5).
 
+이것은 서버 쪽(`server.wasm`)의 SDK입니다. 게임 안에서 도는 쪽(`client.wasm`)은 `greenhaven-client`: [게임 쪽 코드](client).
+
 1. TOC
 {:toc}
 
@@ -43,6 +45,11 @@ redirect_from:
 | `teleport(x, z)` | 옮기기 (서버의 이동 판정도 그 자리를 받아들임) |
 | `set_time(minute)` | 그 사람이 있는 월드의 시각 (6:00 = 360 ~ 2:00 = 1560; 날짜는 그대로), 그 월드의 게임에 바로 알림 |
 | `set_walk_speed(times)` | 걸음 빠르기 배수 (1이 원래). 게임의 걸음과 서버의 이동 판정이 함께 바뀜. 바꿀 때까지 유지 |
+| `inventory()` → [`PlayerInventory`](#playerinventory) | 그 사람의 가방 (Bukkit의 getInventory) |
+| `gear(id)` → `Option<`[`Gear`](#gear)`>` | 그 사람의 도구·장비 하나의 등급과 마법 (가방에 없으면 `None`) |
+| `mount(&entity, speed, seat)` | 이 플러그인의 엔티티에 태움: 모든 게임이 그 엔티티를 탄 사람 아래에 그리고 `seat` m 위에 앉힘, 걸음은 `speed`배로 판정. 그 사람이 한 일의 이벤트에서만 (`EntityInteract`, 명령어, 버튼, `Packet`); 저장되지 않음 ([탈것](moving#탈것)) |
+| `dismount()` | 내림: 엔티티는 그 자리에, 걸음은 전과 같이 |
+| `set_check(check, on)` | 서버의 이동 검사 하나를 이 사람에게만 끄고 켬: `"speed"` `"walls"` `"air"` `"teleport"` `"reach"`. 끄면 플러그인이 `PlayerMove`에서 대신 검사해야 함. 저장되지 않음 (`Join`에서 다시). 모두에게는 `Registry::set("checks.air", "false")` ([이동 방식 만들기](moving#서버의-이동-검사)) |
 | `death(hold)` | 쓰러뜨림 (`PlayerDeath`도 불림). `false`: 게임 규칙대로 진료소에서 바로 일어남. `true`: `respawn`까지 쓰러진 채 대기, 아침이 지나도 그대로. 다른 사람의 잠은 이 사람을 기다리지 않지만, 쓰러진 사람만으로 하루가 끝나지는 않음 |
 | `respawn()` | 쓰러진 채 대기 중인 사람을 진료소에서 일으킴 (체력 가득) |
 | `set_model(id)` `clear_model()` | [커스텀 모델](models)로 그림 / 원래 모습으로. 연결된 동안만, 계정은 그대로 |
@@ -64,7 +71,44 @@ redirect_from:
 | `data_del(key)` | |
 
 {: .note }
-`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerVisit` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
+`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerVisit` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다. `PlayerVisit`에서 `give` `take` `inventory()`는 그 사람의 집 가방입니다.
+
+## PlayerInventory
+
+`Player::inventory()` (Bukkit의 PlayerInventory). 아이템은 id와 개수뿐입니다.
+
+| 메서드 | |
+|---|---|
+| `items()` → `Vec<(String, i64)>` | 가방의 모든 것 (id, 개수), id 순서 |
+| `count(id)` → `i64` / `contains(id)` → `bool` | 개수 / 있는지 |
+| `add(id, n)` | 넣기 (한 번에 999까지; `Player::give`) |
+| `remove(id, n)` | 빼기: 있는 만큼만 (`Player::take`는 모자라면 아무것도 안 가져감) |
+| `clear(include_tools)` | 비우기. `false`면 도구는 남김 (착용한 장비는 가방에 없으므로 늘 그대로) |
+
+- 읽는 것은 **이벤트가 시작될 때**의 모습, 바꾸는 것은 **이벤트가 끝난 뒤**에 됩니다(`give`가 되는 이벤트와 `PlayerVisit`에서만).
+- 그 이벤트의 플레이어 것만 됩니다(`Tick::players()`의 다른 사람은 비어 보임).
+- 행동의 이벤트에선 그 월드에서 쓰는 가방(방문 중이면 그 월드의 가방), `PlayerVisit`에선 집 가방입니다.
+
+## Gear
+
+도구·장비의 등급과 마법은 아이템 하나하나가 아니라 **그 사람의 그 도구**에 붙습니다(도끼는 한 사람에 하나: 대장간과 마법
+부여대가 바꾸는 것). 그래서 `Player::gear(id)`로 따로 다룹니다.
+
+| | |
+|---|---|
+| `id` `tier` `enchants` | 필드: 아이템 id, 등급, `Vec<(마법, 레벨)>` |
+| `enchant(name)` → `i64` | 그 마법의 레벨 (0 없음) |
+| `set_enchant(name, level)` | 그 레벨로 (규칙의 `enchant_max`까지, 칸 수는 세지 않음; 0이면 뗌). 가방에 있는 것에만 |
+| `remove_enchant(name)` | 떼기 |
+
+```rust
+#[command("효율", "도끼에 효율 마법을 한 단계 더해요")]
+fn efficiency(c: Command) {
+    if let Some(axe) = c.player().gear("axe") {
+        axe.set_enchant("efficiency", axe.enchant("efficiency") + 1);
+    }
+}
+```
 
 ## World
 
@@ -242,7 +286,8 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | 메서드 | |
 |---|---|
 | `location()` → `(x, y, z)` | 칸 좌표, y는 발 높이 (진짜 플레이어와 몬스터는 0: 땅 위) |
-| `move_to(x, y, z)` | 바로 그곳으로 (진짜 플레이어는 `Player::teleport`, 몬스터는 x z) |
+| `move_to(x, y, z)` | 그곳으로 (진짜 플레이어는 `Player::teleport`, 몬스터는 x z). 플러그인의 엔티티는 게임이 플러그인의 말 사이를 고른 빠르기로 그려서 틱마다의 걸음이 부드럽게 보임 (8 m 넘게는 바로) |
+| `glide_to(x, y, z, secs)` | `secs`초에 걸쳐 고른 빠르기로 그려지며 감: 걷기 하나나 비행 하나를 한 번에 (자리는 이미 끝: `location`). 플러그인의 엔티티만, 다른 것은 `move_to`와 같음 |
 | `play_anim(clip)` / `stop_anim()` | 모두에게 보이는 애니메이션: 모델은 그 클립, 아바타는 동작, 진짜 플레이어는 이모트(서 있을 때만), 몬스터는 클립 한 번, 아이템은 `set_model`한 모델의 클립 |
 | `remove()` | 월드에서 없앰 (진짜 플레이어는 아무 일 없음) |
 | `is_alive()` → `bool` | 아직 있음 (플레이어: 쓰러져 있지 않음) |

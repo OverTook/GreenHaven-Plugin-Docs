@@ -10,7 +10,7 @@ redirect_from:
 # "gh" 함수 (원본 ABI)
 {: .no_toc }
 
-SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::sys`에 그대로 있고, 다른 언어로 WebAssembly를 만들 때는
+SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽 `client.wasm`이 쓰는 모듈 `"ghc"`는 [아래](#게임-쪽-ghc). Rust SDK로는 `greenhaven_plugin::sys`에 그대로 있고, 다른 언어로 WebAssembly를 만들 때는
 모듈 `"gh"`에서 가져옵니다.
 
 1. TOC
@@ -51,6 +51,10 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `refuse(p, len)` | 막기 (이유) |
 | `drop(p, len, n: i64)` | 이벤트의 칸에 아이템 떨구기 |
 | `give(p, len, n: i64)` | 아이템 주기 (음수면 빼기) |
+| `inv_count(p, len) -> i64` | 그 플레이어의 가방에 그 아이템이 몇 개 |
+| `inv_list(p, cap) -> i32` | 가방의 모든 것: 한 줄에 하나 `id	n	tier	마법:레벨,…` (이벤트가 시작될 때의 것) |
+| `inv_clear(tools: i32)` | 가방 비우기 (`tools` 0이 아니면 도구까지; 착용한 장비는 그대로) |
+| `inv_enchant(ip, il, ep, el, level: i64)` | 그 사람의 도구 `ip`에 마법 `ep`를 그 레벨로 (0: 떼기; 규칙의 `enchant_max`까지) |
 | `gold(d: i64)` `energy(d: f64)` | 골드, 기력 |
 | `prop(p, len, v: f64)` | 그 칸에 선 것의 속성 (`scale`) |
 | `say(p, len)` | 플레이어에게 한마디 |
@@ -70,6 +74,8 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | `xp(p, len, n: i64)` `friendship(p, len, n: i64)` | 경험치, 호감도 |
 | `open_shop(p, len)` | 가게 열기 |
 | `set_walk_speed(times: f64)` | 걸음 빠르기 |
+| `mount(id: i64, speed, seat: f64)` `dismount()` | 이 플러그인의 엔티티에 태우기 (걸음 `speed`배, `seat` m 위에 앉음), 내리기 ([탈것](moving#탈것)) |
+| `set_check(p, len, on: i32)` | 서버의 이동 검사 하나(`speed` `walls` `air` `teleport` `reach`)를 그 플레이어에게만 끄고 켬 ([이동 방식 만들기](moving#서버의-이동-검사)) |
 | `death(hold: i32)` `respawn()` | 쓰러뜨림 (`hold` 0이 아니면 쓰러진 채 대기), 일으킴 |
 | `set_model(p, len)` | [커스텀 모델](models) (빈 문자열: 원래 모습) |
 | `play_anim(p, len)` `stop_anim()` | [감정 표현](models) 재생, 끝내기 |
@@ -121,7 +127,7 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 | 함수 | |
 |---|---|
 | `ent_spawn(p, len, x, y, z: f64) -> i64` | 엔티티 만들기 (id, 0 실패) |
-| `ent_get(id, k, kl) -> f64` `ent_set(id, k, kl, v)` | `x` `y` `z` `yaw` `scale` (`alive`) |
+| `ent_get(id, k, kl) -> f64` `ent_set(id, k, kl, v)` | `x` `y` `z` `yaw` `scale` (`alive`); `glide`(초)를 먼저 쓰고 `x` `y` `z`를 쓰면 그만큼에 걸쳐 그려지며 감 (SDK의 `glide_to`) |
 | `ent_anim(id, p, len)` `ent_remove(id)` | 클립 (아바타: 동작, 부를 때마다 한 번) |
 | `ent_look(id, p, len)` `ent_held(id, p, len)` | 아바타(`ent_spawn("avatar", …)`)의 CatLook JSON, 손에 든 아이템 id |
 | `ent_name(id, p, len)` | 아바타 머리 위 이름 (`""` 없음) |
@@ -184,3 +190,20 @@ SDK가 감싸는 서버 함수들입니다. Rust SDK로는 `greenhaven_plugin::s
 ## 이벤트 말고 내보내는 것
 
 `reel(tick: i64, fish_y: f64, level: f64, roll: f64) -> f64` — 낚시 물고기의 길 ([낚시의 손맛](rules#낚시의-손맛)).
+
+## 게임 쪽 (`"ghc"`)
+
+[게임 쪽 코드](client)(`client.wasm`)가 가져다 쓸 수 있는 것은 모듈 `"ghc"`의 여섯 함수뿐입니다(`greenhaven_client::sys`). 게임은
+이것 말고는 아무것도 연결하지 않고, 다른 것을 가져다 쓰는 모듈은 로드하지 않습니다. 글을 넘기고 받는 약속은 [위](#약속)와 같습니다.
+상태를 바꾸는 함수는 없습니다: 모두 이번 호출에 게임이 알려 준 것을 읽거나, 게임이 그릴 작업을 남깁니다.
+
+| 함수 | |
+|---|---|
+| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>`; 없으면 NaN) |
+| `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `channel` `data` `key`) |
+| `send(cp, cl, dp, dl)` | 서버 쪽에 채널 `cp`로 패킷 (서버의 `packet` 이벤트; 플러그인 하나가 1초에 8개까지) |
+| `op(kp, kl, jp, jl)` | 게임이 그릴 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지) |
+| `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON |
+| `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
+
+내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).

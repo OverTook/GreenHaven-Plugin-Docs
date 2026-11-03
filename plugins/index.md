@@ -24,17 +24,21 @@ has_children: true
   <a class="card" href="sdk"><strong>SDK 레퍼런스</strong><span>Player, World, Server, OfflinePlayer, Npc, Gui</span></a>
   <a class="card" href="rules"><strong>규칙 등록</strong><span>Enable에서 아이템·작물·블록·주민·스킬·땅 바꾸기</span></a>
   <a class="card" href="screen"><strong>화면</strong><span>HUD 요소, 미니맵, 키, 채널, 인벤토리 창</span></a>
+  <a class="card" href="client"><strong>게임 쪽 코드</strong><span>client.wasm: 매 프레임 HUD, 카메라, 화면 효과, 키</span></a>
+  <a class="card" href="moving"><strong>이동 방식 만들기</strong><span>비행, 탈것, 도구 동작, 서버의 이동 검사</span></a>
   <a class="card" href="models"><strong>커스텀 모델</strong><span>플레이어 모델과 감정 표현, 뼈대 규격과 검사 규칙</span></a>
   <a class="card" href="world"><strong>월드와 하루</strong><span>블록과 새 블록 종류, 청크, 구조물, 주민, 시계, 저장</span></a>
-  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>스무 개의 예제와 쓰는 기능</span></a>
+  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>스물네 개의 예제와 쓰는 기능</span></a>
 </div>
 
-플러그인은 코드와 에셋으로 되어 있습니다. 규칙(가격, 작물, 아이템, 블록, 주민, 대사, 스킬, 몬스터, 땅 …)도 코드에서
+플러그인은 코드와 에셋으로 되어 있습니다. 코드는 크레이트 하나에서 **두 부분**으로 빌드됩니다: 모든 것을 정하는 서버 쪽
+`server.wasm`과, 원하면 접속한 게임 안에서 보이고 느껴지는 것만 다루는 게임 쪽 `client.wasm`. 규칙(가격, 작물, 아이템, 블록, 주민, 대사, 스킬, 몬스터, 땅 …)도 코드에서
 등록합니다(Bukkit의 `onEnable`처럼 [`Enable`](events#enable) 이벤트에서 `Registry`로).
 
 | 무엇 | 파일 | 하는 일 | 문서 |
 |---|---|---|---|
-| 코드 | `code.wasm` | 켜질 때 규칙 등록, 이벤트를 받아 값을 바꾸거나 막고, 아이템·골드·창·화면·엔티티·블록… 을 다룸 (서버에서만 돎) | [이벤트](events), [SDK](sdk), [규칙 등록](rules), [화면](screen), ["gh" 함수](abi) |
+| 서버 쪽 코드 | `server.wasm` | 켜질 때 규칙 등록, 이벤트를 받아 값을 바꾸거나 막고, 아이템·골드·이동 판정·창·화면·엔티티·블록… 을 다룸 (서버에서만 돎) | [이벤트](events), [SDK](sdk), [규칙 등록](rules), [화면](screen), ["gh" 함수](abi) |
+| 게임 쪽 코드 (없어도 됨) | `client.wasm` | 접속한 게임 안의 샌드박스에서: 매 프레임 HUD, 카메라, 화면 효과, 자기에게만 보이는 파티클·소리, 키, 이동 넘겨받기. 상태를 바꾸는 함수는 없음 | [게임 쪽 코드](client), [이동 방식 만들기](moving) |
 | 에셋 | `assets/` | 접속자에게 보낼 그림·소리·모델 (게임의 `res://` 경로 그대로; 없어도 됨) | [규칙 등록 › 에셋](rules#에셋) |
 
 ## 넣는 곳
@@ -46,7 +50,8 @@ has_children: true
 ```
 <data>/plugins/my_plugin/
   plugin.json   이름, 버전, 화면(버튼·바), 설정
-  code.wasm     규칙 등록(Enable)과 이벤트 핸들러 (WebAssembly)
+  server.wasm   규칙 등록(Enable)과 이벤트 핸들러 (WebAssembly; 예전 이름 code.wasm도 읽음)
+  client.wasm   게임 쪽 코드 (없어도 됨; assets/와 함께 접속자에게 감)
   assets/       접속자에게 보낼 그림·소리·모델
 ```
 
@@ -112,18 +117,22 @@ fn haste(c: Command) {
 
 ```sh
 cargo build --release --target wasm32-unknown-unknown
-cp target/wasm32-unknown-unknown/release/my_plugin.wasm code.wasm
+cp target/wasm32-unknown-unknown/release/my_plugin.wasm server.wasm
 ```
 
 GreenHaven-Server 안의 `plugins/` 아래에 두었다면 `python tools/build_plugins.py my_plugin`이 위 두 줄을 대신하고,
-`--zip <폴더>`는 서버가 받는 모양 그대로 zip으로 묶습니다.
+`--zip <폴더>`는 서버가 받는 모양 그대로 zip으로 묶습니다. 크레이트에 `client` feature가 있으면 `client.wasm`도 함께 빌드하고,
+두 파일이 저마다 가져다 쓰는 것을 검사합니다([게임 쪽 코드 › 빌드](client#빌드)).
 
-폴더째(`plugin.json`, `code.wasm`, 있으면 `assets/`) 서버의 `plugins/`에 넣고 서버를 켜면 됩니다.
+폴더째(`plugin.json`, `server.wasm`, 있으면 `client.wasm`과 `assets/`) 서버의 `plugins/`에 넣고 서버를 켜면 됩니다.
 
 ## 알아 둘 것
 
-- **코드는 서버에서만 돕니다.** 접속하는 게임에는 데이터(규칙, 그림·소리·모델)와 서버가 보낸 결과만 가고 코드는 가지
-  않습니다. 그래서 플러그인의 결과는 서버 대답(온라인이면 수십 ms) 뒤에 보입니다.
+- **결과는 서버가 정합니다.** `server.wasm`은 서버에서만 돌고 게임에 가지 않습니다. 플러그인의 결과는 서버 대답(온라인이면
+  수십 ms) 뒤에 보입니다.
+- **게임 쪽 코드는 보이는 것만.** `client.wasm`은 로블록스의 LocalScript처럼 접속한 게임 안에서 돌아, 기다림 없이 매 프레임
+  그리고 키를 받고 새 이동 방식을 예측합니다. 아이템·돈·위치 같은 상태를 바꾸는 함수는 아예 없어서(쓰면 컴파일되지 않음)
+  권한은 서버에 남습니다. 게임은 접속할 때 그런 플러그인이 있다고 알립니다. [게임 쪽 코드](client) 참고.
 - **휴대폰의 자체 서버는 플러그인을 쓰지 않습니다.** 휴대폰에서 연 혼자 하기·LAN 농장에는 플러그인이 하나도 없습니다.
   플러그인이 있는 서버에는 휴대폰으로도 들어갈 수 있고, 그 서버의 코드가 돌아 휴대폰에서도 그대로 보입니다.
 - **모듈은 월드마다 하나 만들어져 계속 쓰입니다.** 전역 변수가 다음 이벤트에도 남아 캐시로 써도 되지만, 자고 일어나지

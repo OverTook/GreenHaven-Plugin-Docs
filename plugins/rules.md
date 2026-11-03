@@ -80,6 +80,8 @@ fn enable(_e: Enable) {
 | `price`, `sell` | 상점 값, 파는 값 (`{id: 골드}`; 새 아이템도 여기 값이 있으면 사고팔 수 있음) |
 | `crops`, `trees` | 작물·과일나무 (`days` `regrow` `seasons` `name` `seed_price` `sell` …). 새 작물은 `look`(모델을 빌릴 작물) `tint`(`"rrggbb"`) `stages`(`res://` 모델 셋)로 그려지고, `<id>_seeds` 값이 있으면 그 계절 잡화점에 나옴 |
 | `items` | 게임이 보여 줄 아이템: `{id: {name, desc, icon(아이템 id 또는 res:// png), color, type, model}}` — 원래 아이템 이름 바꾸기도 됨 |
+| `items`의 `usable` `action` `hit` | 쓸 수 있는 플러그인 아이템과 그 동작 (`cast` `attack` … `emote:<id>`, 클립 경로), 동작의 몇 할에서 `Use`인지: [도구 동작](moving#도구-동작-플러그인-아이템) |
+| `checks` | 서버의 이동 검사 `{"speed", "walls", "air", "teleport", "reach"}` (기본 모두 `true`): `Registry::set("checks.air", "false")` — [이동 방식 만들기](moving#서버의-이동-검사) |
 | `edible` | 먹을 수 있는 것과 기력 `{id: 150}` |
 | `texts` | 화면 글자 바꾸기 `{"가방": "큰 가방"}` (글자 전체가 같을 때) |
 | `bag` | `{"slots": 48}` 가방 칸 수 (단축바 12 포함, 24~132) |

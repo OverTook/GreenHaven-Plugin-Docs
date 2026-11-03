@@ -81,7 +81,7 @@ fn cmd(c: Command) { /* … */ }
 | [`Damage`](#damage) | `damage` | ✔ | 몬스터가 플레이어를 침 |
 | [`Strike`](#strike) | `strike` | ✔ | 플레이어가 몬스터를 침 |
 | [`Spawn`](#spawn) | `spawn` | ✔ | 몬스터가 나옴 (밤, 광산 층) |
-| [`Tick`](#tick) | `tick` | | 누가 있는 월드에서 1초에 두 번 |
+| [`Tick`](#tick) | `tick` | | 누가 있는 월드의 스텝마다 (server.properties `tick-rate`, 기본 1초에 20번) |
 | [`ServerTick`](#servertick) | `server.tick` | | 서버의 틱, 아무도 없어도 1초에 두 번 |
 | [`DayEnd`](#dayend) | `day.end` | ✔ | 하루가 끝나려 함 |
 | [`DayChange`](#daychange) | `day.change` | ✔ | 아침에 날짜가 넘어가려 함 |
@@ -91,13 +91,13 @@ fn cmd(c: Command) { /* … */ }
 | [`Join`](#join--leave) | `join` | | 월드에 들어옴 |
 | [`Leave`](#join--leave) | `leave` | | 월드에서 나감 |
 | [`PlayerLogin`](#playerlogin) | `login` | ✔ | 서버에 들어오기 직전 |
-| [`PlayerItemHeld`](#playeritemheld) | `held` | | 손에 든 도구가 바뀜 |
+| [`PlayerItemHeld`](#playeritemheld) | `held` | | 단축바의 다른 칸을 고르거나 고른 칸의 것이 바뀜 |
 | [`PlayerVisit`](#playervisit) | `visit` | ✔ | 열기구 여행 |
 | [`Chat`](#chat) | `chat` | ✔ | 채팅 한 줄 |
 | [`Words`](#words) | `words` | ✔ | 주민에게 말을 걸음 |
 | [`MobStep`](#mobstep) | `mob` | | `script` 몬스터의 한 걸음 |
 | [`MineFloor`](#minefloor) | `mine.floor` | | 광산 층이 그날 처음 만들어짐 |
-| [`PlayerMove`](#playermove) | `move` | ✔ | 플레이어가 걸음 |
+| [`PlayerMove`](#playermove) | `move` | ✔ | 플레이어가 움직임 (가로나 위아래로) |
 | [`WorldCreate`](#worldcreate) | `world.create` | | 월드가 만들어짐 |
 | [`ChunkGenerate`](#chunkgenerate) | `chunk.generate` | | 청크가 처음 만들어짐 |
 | [`PlayerDeath`](#playerdeath) | `death` | | 플레이어가 쓰러짐 |
@@ -110,6 +110,8 @@ fn cmd(c: Command) { /* … */ }
 | [`Packet`](#packet) | `packet` | | 게임이 이 플러그인의 채널로 보낸 패킷 (HUD 버튼·입력·키) |
 | [`InventoryClick`](#inventoryclick) | `inventory` | | 이 플러그인의 인벤토리 창을 누름 |
 | [`EntityInteract`](#entityinteract) | `entity.interact` | | 플레이어가 이 플러그인의 엔티티를 E로 씀 |
+| [`WindowOpen`](#windowopen) | `packet`의 `"window"` | | 이 플러그인이 가져간(`Hud::replace`) 게임의 창을 엶 |
+| [`Dismount`](#dismount) | `dismount` | | 서버가 플레이어를 탈것에서 내림 (문, 열기구, 집, 나감) |
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
 ### 별칭
@@ -200,6 +202,7 @@ fn no_sleep(e: PlayerSleep) { e.cancel("이 서버에선 잠들 수 없어요") 
 ### Use
 
 게임에 쓰임새가 없는 아이템(플러그인이 [등록](rules)한 것 등)을 썼을 때. `id()` 아이템. 가져가려면 `player().take(id, 1)`.
+아이템에 `"action"`(동작)이 있으면 게임이 그 동작을 하고 `"hit"`의 순간에 옵니다: [도구 동작](moving#도구-동작-플러그인-아이템).
 
 ## 농사와 장사
 
@@ -265,7 +268,7 @@ fn festival(e: Sell) {
 
 | | |
 |---|---|
-| `mob()` → [`Mob`](sdk#mob) | 그 몬스터 (`get("x")` `"z"` `"hp"` `"tier"` `"speed"` `"damage"` `"size"` `"t"`(나온 뒤 초)) |
+| `mob()` → [`Mob`](sdk#enemyentity) | 그 몬스터 (`get("x")` `"z"` `"hp"` `"tier"` `"speed"` `"damage"` `"size"` `"t"`(나온 뒤 초)) |
 | `kind_id()` | 종류 |
 | `target()` → `Option<(이름, x, z, 거리)>` | 같은 층의 가장 가까운 플레이어 |
 | `num("floor")` | 광산 층 (0 지상) |
@@ -311,11 +314,28 @@ fn circle(e: MobStep) {
 
 ### PlayerMove
 
-플레이어가 걸을 때 (1초에 5번까지). `from()` → `(x, z)`, `to()` → `(x, y, z)` (y는 발). 취소: 있던 곳으로 돌려보냄.
+플레이어가 가로나 위아래로 움직일 때마다 (플레이어당 1초에 5~30번). 취소: 있던 곳으로 돌려보냄.
+
+| | |
+|---|---|
+| `from()` → `(x, z)` / `from_y()` | 지난 걸음의 자리와 발 높이 |
+| `to()` → `(x, y, z)` | 이번 자리 (y는 발) |
+| `dt()` | 지난 걸음부터의 초 (`from` → `to`에 걸린 시간) |
+| `on_ground()` | 서버가 본 발밑에 무언가 있음 (땅, 지붕, 갑판) |
+| `mode()` | 게임 쪽 코드가 알린 이동 모드 (`Me::set_move_mode`; `""` 게임 그대로). 주장일 뿐이니 믿지 말고 판단의 근거로만 |
+| `mount()` | 탄 엔티티의 번호 (0 없음; [`Player::mount`](sdk#player)) |
+
+걸음마다 오니 핸들러를 가볍게 두세요. 새 이동 방식을 판정하는 법은 [이동 방식 만들기](moving#playermove로-판정하기).
 
 ### PlayerItemHeld
 
-손에 든 도구가 바뀔 때. `item()` 그 모델 (`""` 빈손).
+단축바의 다른 칸을 고르거나, 고른 칸의 것이 바뀔 때. 알리기만 합니다.
+
+| | |
+|---|---|
+| `new_slot()` / `previous_slot()` | 지금 고른 칸 / 전의 칸 (−1: 아직 없음, 또는 칸을 알리지 않는 옛 게임) |
+| `item_id()` / `previous_item_id()` | 지금 칸의 아이템 / 전에 손에 있던 아이템 (`""` 없음) |
+| `item()` | 손에 그려지는 모델 (`""`: 없음. 씨앗·음식 …은 손에 그리지 않음) |
 
 ### PlayerVisit
 
@@ -325,7 +345,52 @@ fn circle(e: MobStep) {
 |---|---|---|
 | `"fly"` | 그 월드로 떠남 | 못 감 |
 | `"land"` | 내려옴 | 못 내림 (떠 있음) |
-| `"home"` | 집으로 돌아감 | 알리기만 |
+| `"home"` | 집으로 돌아감, 또는 그 월드에서 서버를 나감 | 알리기만 |
+
+| | |
+|---|---|
+| `owner()` | 이벤트가 불린 월드의 주인: `"fly"` `"land"`는 가는 월드, `"home"`은 떠난 월드 |
+| `from_world()` / `to_world()` | 떠난 월드 / 가는 월드 (주인 이름; `who()`와 같으면 집) |
+| `keep_inventory(true)` | `"fly"`: 이번 여행에 자기 가방을 그대로 들고 감 (아래) |
+
+개별 월드(`shared-world=false`)에서 방문자는 기본으로 월드마다 따로인 가방을 씁니다(처음 가면 기본 도구를 빌려 받고, 거기서
+얻은 것은 거기 남음). `keep_inventory(true)`면 자기 가방을 들고 가서 거기서 얻은 것도 집으로 가져옵니다(거기서 쓰러지면 잃음:
+[`PlayerDeath`](#playerdeath)의 `keep_inventory`로 지킬 수 있음). 들고 가면 안 되는 것은 `"fly"`에서 빼 두었다가 `"home"`에서
+돌려주면 됩니다. 이 이벤트의 `inventory()` `give` `take`는 그 사람의 **집 가방**입니다.
+
+```rust
+#[on(PlayerVisit)]
+fn visit(e: PlayerVisit) {
+    let (p, inv) = (e.player(), e.player().inventory());
+    match e.kind().as_str() {
+        "fly" => {
+            e.keep_inventory(true);
+            if e.from_world() == e.who() {          // 집에서 떠날 때 마나 수정은 맡겨 둠
+                p.set("kept", p.get("kept") + inv.count("mana_crystal") as f64);
+                inv.remove("mana_crystal", inv.count("mana_crystal"));
+            }
+        }
+        "home" => {                                 // 돌아오면 돌려줌 (거기서 접속이 끊겨도 불림)
+            inv.add("mana_crystal", p.get("kept") as i64);
+            p.set("kept", 0.0);
+        }
+        _ => {}
+    }
+}
+```
+
+### Dismount
+
+서버가 플레이어를 탈것([`Player::mount`](sdk#player))에서 내렸을 때(Bukkit의 EntityDismountEvent). 알리기만 합니다. 플러그인이
+부른 `Player::dismount()`에는 오지 않습니다.
+
+| | |
+|---|---|
+| `reason()` | `"door"` 건물 안으로 (방 안에는 탈것 없음), `"balloon"` 열기구로 떠남, `"home"` 집으로 돌아감, `"quit"` 서버를 나감 |
+| `mount()` → `ModelEntity` | 탔던 엔티티 (내린 자리에 남음) |
+| `player()` | 내린 사람 |
+
+예: `plugins/riding`([이동 방식 만들기 › 탈것](moving#탈것)).
 
 ### LevelUp
 
@@ -380,6 +445,31 @@ fn pressed(e: Button) {
 | `data()` | 함께 온 것 (버튼: `""`, 입력 칸: 쓴 글; 4 KB까지) |
 | `player()` | 보낸 사람 |
 
+이 플러그인의 [게임 쪽 코드](client)가 `send(채널, 데이터)`로 보낸 것도 여기로 옵니다(게임 쪽은 1초에 8개까지). 받은 데이터는
+요청일 뿐이니 판단은 여기서 하세요.
+
+### WindowOpen
+
+이 플러그인이 [`Hud::replace(window)`](screen#게임의-창-바꾸기)로 가져간 게임의 창을 플레이어가 열었을 때(Bukkit의
+InventoryOpenEvent와 비슷하지만 인벤토리가 아닌 창(대화, 잠자기 물음, 아침 결산 …)에도 옵니다). **이미 취소된 것**입니다: 게임은
+아무것도 열지 않았으니 자기 것을 보여 주거나, `Hud::open`으로 게임의 것을 열어 줍니다. 같은 것이 채널 `"window"`의 `Packet`으로도 옵니다.
+
+| | |
+|---|---|
+| `window()` | `"bag"` `"shop"` `"chest"` `"dialogue"` `"sleep"` … |
+| `get(key)` | 무엇이었는지, 글로 (`"tab"` `"shop"` `"selling"` `"x"` `"z"` …; 숫자는 `"12"`처럼; `""` 없음) |
+
+```rust
+#[on(WindowOpen)]
+fn opened(e: WindowOpen) {
+    if e.window() == "bag" {
+        e.player().open_inventory(&Inventory::new("bag", "보따리", 1, 3).with_bag());
+    }
+}
+```
+
+예전 이름 `InventoryOpen`은 없어졌습니다(별칭도 없음).
+
 ### EntityInteract
 
 플레이어가 이 플러그인의 엔티티(`Entity::set_interact`로 쓸 수 있게 한 것)에 가까이 가서 E를 눌렀을 때(Bukkit의
@@ -420,8 +510,21 @@ PlayerInteractEntityEvent). 서버가 거리를 확인합니다. 무엇을 할�
 
 ### Tick
 
-누가 있는 월드에서 1초에 두 번. `players()`가 월드의 모두를 차례로 줍니다: 그 `Player`에 하는 일은 그 사람에게
-갑니다(단, `give` `take` `add_gold` `add_energy` `say`는 tick에서 월드 주인에게).
+누가 있는 월드의 스텝마다: server.properties의 `tick-rate`(기본 20, 1~20)번 1초에(마인크래프트의 월드 틱과 같음).
+`players()`가 월드의 모두를 차례로 줍니다: 그 `Player`에 하는 일은 그 사람에게 갑니다(단, `give` `take` `add_gold` `add_energy`
+`say`는 tick에서 아무것도 하지 않음).
+
+`dt()`는 한 틱의 초(1 / `tick-rate`)입니다. **시간에 따라 바뀌는 것은 `dt()`만큼씩** 바꾸세요: 틱 수를 세면 서버마다 빠르기가
+달라집니다(샘플은 모두 `dt()`나 `now()`로 잽니다).
+
+```rust
+#[on(Tick)]
+fn regen(t: Tick) {
+    for p in t.players() {
+        p.set("mana", (p.get("mana") + 5.0 * t.dt()).min(100.0)); // 1초에 5씩, tick-rate와 상관없이
+    }
+}
+```
 
 ### ServerTick
 
