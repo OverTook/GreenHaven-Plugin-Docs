@@ -117,7 +117,8 @@ fn stepped(e: PlayerMove) {
 | `Me::set_move_mode("fly")` | 서버에 알리는 이동 모드 (서버 쪽 `PlayerMove::mode()`; `""` 게임 그대로) |
 | `Me::velocity()` / `Me::on_ground()` | 게임이 움직이는 속도, 발이 땅에 닿았는지 |
 
-서버로 가는 위치 보고와 판정은 그대로입니다. 서버가 막은 걸음은 되돌려집니다.
+서버로 가는 위치 보고와 판정은 그대로입니다. 서버가 막은 걸음(검사나 `PlayerMove`의 `cancel`)은 되돌려지는데, 서버는 마지막으로
+받아들인 곳의 **높이**도 함께 보내므로(`{"t":"back","y"}`) 날던 사람은 땅바닥이 아니라 그 높이로 돌아갑니다.
 
 카메라는 `Camera::set`(매 프레임 위치·바라볼 곳) `follow` `orbit` `first_person` `mouse_look` `yaw` `release`([게임 쪽 코드 › Camera](client#camera)).
 플러그인이 내려놓거나 서버를 떠나면 키·이동·중력·점프·카메라가 모두 게임으로 돌아옵니다.

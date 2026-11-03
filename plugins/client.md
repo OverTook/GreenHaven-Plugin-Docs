@@ -97,7 +97,7 @@ GreenHaven-Server의 `plugins/` 아래에서 `python tools/build_plugins.py <이
 use crate::shared::*;
 use greenhaven_client::*;
 
-greenhaven_client::client! { load => loaded, frame => frame, packet => heard, input => key }
+greenhaven_client::client! { load => loaded, frame => frame, packet => heard, input => key }  // 그리고 click => …
 
 fn loaded(_: Load) { log("내 플러그인: 게임 쪽 로드됨"); }
 
@@ -114,7 +114,7 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 }
 ```
 
-`client!`에는 넷 중 쓰는 것만 적습니다.
+`client!`에는 다섯 중 쓰는 것만 적습니다.
 
 | 핸들러 | 언제 | |
 |---|---|---|
@@ -122,6 +122,7 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 | `frame` → `Frame` | 게임이 그리는 매 프레임 | `dt()` 지난 프레임부터의 초, `time()` 로드된 뒤의 초 |
 | `packet` → `Packet` | 서버 쪽이 이 플러그인의 채널로 보낸 것(`Hud::send_text` …, 빠른 패킷 `Hud::send_fast`), 게임의 `"window"` 패킷 | `channel()` `data()`, `fast()` 빠른 패킷으로 왔는지 |
 | `input` → `Input` | 게임의 패널이 열려 있지 않을 때 키·마우스 버튼을 누르거나 뗌 | `key()` 이름(`"Q"` `"F5"` `"Space"` `"Shift"` `"Mouse1"`), `pressed()` |
+| `click` → `Click` | 이 플러그인의 버튼·입력 칸을 누름 (HUD에서든 [월드 속 패널](#직접-그리는-ui)에서든; 같은 누름이 서버 쪽 `Packet`으로도 감) | `on()` 그 요소의 `on`, `data()` 입력 칸에 쓴 글 |
 
 전역 변수(`static mut`)는 서버를 떠날 때까지 남습니다. 시간은 프레임 수가 아니라 `Frame::time()` / `dt()`로 재세요.
 
@@ -232,6 +233,51 @@ fn frame(f: Frame) {
 **월드에 붙이기**: `pin(id, Some((x, y, z)))`는 이 플러그인의 HUD 요소(`Hud::add`)를 월드의 한 점 위에 붙여 둡니다(머리 위 바,
 물건 위 이름표; 카메라 뒤로 가면 숨김). `pin(id, None)`이면 앵커의 자리로 돌아갑니다.
 
+**월드 속 UI 패널**: `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → id. 어떤 HUD 요소든(패널·글·그림·바·
+버튼·입력 칸·캔버스, 자식까지) `(px_w, px_h)` 픽셀로 그려 월드에 선 너비 `width_m` m의 판에 붙입니다(`face_camera`면 늘 카메라를 봄).
+그 버튼은 마우스로 누르고 입력 칸에는 씁니다: HUD에서처럼 동작하고, 그 클릭은 게임의 도구로 가지 않습니다.
+`Local::set_panel(id, &El)`로 다시 그리고, `Local::remove(id)`로 없앱니다.
+
+버튼이나 입력 칸을 누르면(HUD에서든 월드 속 패널에서든) 서버 쪽에는 그 `on` 채널의 [`Packet`](events#packet)이, 게임 쪽에는
+`click` 이벤트(`Click::on()` `data()`)가 함께 옵니다. 게임 쪽은 바로 반응하고(흔들림, 소리), 결과는 서버 쪽이 정해 보냅니다.
+
+```rust
+// shared.rs
+pub const PRESS: &str = "press";     // 패널의 버튼
+pub const PRESSED: &str = "pressed"; // 서버 → 게임: 센 횟수
+
+// client.rs
+greenhaven_client::client! { load => loaded, packet => heard, click => clicked }
+static mut PANEL: i64 = 0;
+
+fn board(n: &str) -> El {
+    El::panel("parch").anchor(Anchor::TopLeft).size(360.0, 220.0)
+        .child(El::text(&format!("서버가 센 누름: {n}")).anchor(Anchor::Top).pos(0.0, 40.0).font_size(20))
+        .child(El::button("눌러 보세요", PRESS).anchor(Anchor::Bottom).pos(0.0, -20.0).size(200.0, 56.0))
+}
+fn loaded(_: Load) {
+    let (x, y, z) = Me::position();
+    unsafe { PANEL = Local::spawn_panel(&board("0"), x + 3.0, y + 1.6, z, 1.8, (360.0, 220.0), true) };
+}
+fn clicked(c: Click) {
+    if c.on() == PRESS { Camera::shake(0.05, 0.2) }   // 바로 (서버의 답보다 먼저)
+}
+fn heard(p: Packet) {
+    if p.channel() == PRESSED { Local::set_panel(unsafe { PANEL }, &board(&p.data())) }
+}
+
+// server.rs
+#[on(Packet)]
+fn asked(e: Packet) {
+    if e.channel() == PRESS {
+        let p = e.player();
+        let n = p.get("presses") + 1.0;
+        p.set("presses", n);
+        p.hud().send_text(PRESSED, &format!("{n}"));
+    }
+}
+```
+
 ## 그래픽
 
 **셰이더 재질**: Godot 셰이딩 언어로 이 플러그인의 재질을 만듭니다.
@@ -330,6 +376,7 @@ fn loaded(_: Load) {
 | `Local::play_anim(id, clip)` | 클립 |
 | `Local::remove(id)` | 없앰 |
 | `Local::spawn_text` `set_text` `set_material` `set_transform` | 3D 글자, 재질, 회전·크기 ([그래픽](#그래픽)) |
+| `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → `i64` / `Local::set_panel(id, &El)` | 월드에 선 UI 패널 (마우스로 누르고 씀), 다시 그리기 ([월드 속 UI 패널](#직접-그리는-ui)) |
 | `Entities::play_anim(id, clip)` | 서버 쪽 엔티티의 클립을 이 게임에서만 (모두가 보는 것은 서버 쪽 `play_anim`) |
 | `Me::play_anim(id)` | [감정 표현](models)을 자기 몸에 이 게임에서만 (서 있을 때; 모두가 보는 것은 서버 쪽 `Player::play_anim`) |
 
@@ -363,5 +410,5 @@ fn loaded(_: Load) {
 - `plugins/cutscene` 연출: G(서버 쪽 단축키)를 누르면 서버가 종 울리기를 판정(10초에 한 번, 마나석 하나)하고, 게임 쪽이 카메라를
   종으로 돌리고 번쩍이며 위쪽에 다음 종까지 남은 시간을 매 프레임 그립니다.
 - `plugins/showcase` 화면 실험실: 앞에 셰이더로 빛나는 피라미드(실행 중 만든 메시)와 3D 글자, 그 위에 붙어 다니는 HUD, 오른쪽 위
-  직접 그린 게이지, 은은한 배경 소리, U로 화면 물결 효과, 서버와 빠른 패킷 왕복 횟수.
+  직접 그린 게이지, 월드 속 패널의 버튼(서버가 누름을 셈), 은은한 배경 소리, U로 화면 물결 효과, 서버와 빠른 패킷 왕복 횟수.
 - `plugins/riding` 탈것과 지팡이, `plugins/flight` 비행: [이동 방식 만들기](moving).

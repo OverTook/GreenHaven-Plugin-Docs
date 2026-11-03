@@ -201,10 +201,10 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | 함수 | |
 |---|---|
 | `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>`; 없으면 NaN) |
-| `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `channel` `data` `key`) |
+| `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `channel` `data` `key` `on`) |
 | `send(cp, cl, dp, dl)` | 서버 쪽에 채널 `cp`로 패킷 (서버의 `packet` 이벤트; 플러그인 하나가 1초에 8개까지) |
 | `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]` |
 | `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON |
 | `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
 
-내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).
+내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).
