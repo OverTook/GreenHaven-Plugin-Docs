@@ -408,6 +408,20 @@ fn loaded(_: Load) {
 | `World::raycast(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸) |
 | `World::ground(x, z)` → `f64` | 게임이 가진 그곳의 땅 높이 (모르면 NaN) |
 | `World::path(from, to)` → `Vec<(x, z)>` | 마을 길 (주민의 길찾기): 꺾이는 점들, 없으면 `[]` |
+| `World::id()` → `String` | 지금 있는 월드 (`"world"` 모두의 것, 아니면 서버 쪽 `Server::create_world`로 만든 id) |
+| `World::ready()` → `bool` | 월드가 오고 주변 땅이 다 그려졌는지 (서버가 다른 월드로 옮긴 뒤, 보여 줄 때) |
+
+### Balloon — 열기구
+
+게임의 열기구 여행 그대로의 장면입니다(플레이어에게 가장 가까운 정거장의 열기구). 보이는 것뿐이고, 플레이어를 옮기는 것은 서버
+쪽(`Player::move_world(.., true)`)입니다: 오르는 동안 옮기면 새 월드의 땅이 그 뒤에서 들어옵니다(이륙하는 열기구는 정거장에서 떼어
+두어, 마을이 다시 지어져도 그대로 날아감).
+
+| | |
+|---|---|
+| `Balloon::lift_off()` | 이륙: 열기구 앞에서 올려다보는 시점, 바구니에 탄 플레이어, HUD는 숨김. 다 오르면 하늘에 둔 채 멈춤 (그동안 카메라는 플러그인 것: `Camera::set` …) |
+| `Balloon::land()` | 그때 있는 월드의 가장 가까운 정거장으로 하늘에서 내려앉는 장면 (열기구 앞 시점). 갑판에 내려서면 HUD가 돌아옴 |
+| `Balloon::state()` → `i64` | 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중 |
 
 ### Input과 Me
 
@@ -430,4 +444,6 @@ fn loaded(_: Load) {
   종으로 돌리고 번쩍이며 위쪽에 다음 종까지 남은 시간을 매 프레임 그립니다.
 - `plugins/showcase` 화면 실험실: 앞에 셰이더로 빛나는 피라미드(실행 중 만든 메시)와 3D 글자, 그 위에 붙어 다니는 HUD, 오른쪽 위
   직접 그린 게이지, 월드 속 패널의 버튼(서버가 누름을 셈), 은은한 배경 소리, U로 화면 물결 효과, 서버와 빠른 패킷 왕복 횟수.
+- `plugins/friend_lands` 친구 땅: 친구를 고르면 `Balloon::lift_off`로 떠오르는 동안 서버에 이동을 청하고, `World::id` `ready`로 친구의
+  땅이 그려지길 기다려 그 위 상공에서 내려다보다가(`Camera::set`) 「착륙하기」로 `Balloon::land`. `plugins/camera_modes`: F5로 시점 바꾸기.
 - `plugins/riding` 탈것과 지팡이, `plugins/flight` 비행: [이동 방식 만들기](moving).

@@ -60,8 +60,7 @@ redirect_from:
 | `where_text(line)` | 화면의 장소 문구 (`""`: 게임의 것) |
 | `open_shop(shop)` | 가게 열기 (`VillagerData.SHOPS`의 id) |
 | `play_music(track)` | 지금 곡 틀기 (`Music.TRACKS`의 id나 `res://….ogg`; `""`: 원래 목록으로) |
-| `visit(owner)` | 열기구로 그 사람 월드에 바로 내림 (`PlayerVisit`이 불림) |
-| `home()` | 자기 월드로 |
+| `move_world(world, by_station)` | 서버의 다른 월드로 옮김 (`world`: [`Server::create_world`](#server)로 만든 id, `""` 모두의 월드). `by_station`이면 그 월드의 열기구 정거장으로, 아니면 농장 집 앞으로. 떠난 월드에서 `Leave`, 간 월드에서 `Join`; 가방·돈·스킬은 그대로 따라감 |
 | `show(&Gui)` | 창 띄우기 ([`Gui`](#gui)). `PlayerLogin`에서는 들어오기 전의 입력 창 |
 | `hud()` → `Hud` | 그 사람의 화면: HUD 요소, 게임 HUD 숨기기, 키, 채널 ([화면](screen)) |
 | `open_inventory(&Inventory)` / `close_inventory(id)` | 이 플러그인의 인벤토리 창 열기(다시 부르면 지금 칸으로) / 닫기 ([인벤토리 창](screen#인벤토리-창)) |
@@ -71,7 +70,7 @@ redirect_from:
 | `data_del(key)` | |
 
 {: .note }
-`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerVisit` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다. `PlayerVisit`에서 `give` `take` `inventory()`는 그 사람의 집 가방입니다.
+`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
 
 ## PlayerInventory
 
@@ -85,9 +84,9 @@ redirect_from:
 | `remove(id, n)` | 빼기: 있는 만큼만 (`Player::take`는 모자라면 아무것도 안 가져감) |
 | `clear(include_tools)` | 비우기. `false`면 도구는 남김 (착용한 장비는 가방에 없으므로 늘 그대로) |
 
-- 읽는 것은 **이벤트가 시작될 때**의 모습, 바꾸는 것은 **이벤트가 끝난 뒤**에 됩니다(`give`가 되는 이벤트와 `PlayerVisit`에서만).
+- 읽는 것은 **이벤트가 시작될 때**의 모습, 바꾸는 것은 **이벤트가 끝난 뒤**에 됩니다(`give`가 되는 이벤트에서만).
 - 그 이벤트의 플레이어 것만 됩니다(`Tick::players()`의 다른 사람은 비어 보임).
-- 행동의 이벤트에선 그 월드에서 쓰는 가방(방문 중이면 그 월드의 가방), `PlayerVisit`에선 집 가방입니다.
+- 가방은 그 사람의 것 하나로, 어느 월드에 있든 같습니다.
 
 ## Gear
 
@@ -112,7 +111,7 @@ fn efficiency(c: Command) {
 
 ## World
 
-이벤트의 월드 (`e.world()`).
+이벤트의 월드 (`e.world()`). `id()`: 어느 월드인지 (`"world"` 모두의 월드, 아니면 [`Server::create_world`](#server)로 만든 id).
 
 ### 알림과 효과
 
@@ -207,7 +206,11 @@ fn efficiency(c: Command) {
 |---|---|
 | `get(k)` → `f64` | 어느 이벤트에서나 읽음 |
 | `set(k, v)` | `PlayerLogin`과 그 입력 창의 `Button`, `ServerTick`에서만 |
-| `set_shared_world(on)` | 모두의 월드 ([월드와 하루](world#모두의-월드)). `ServerTick`이나 `PlayerLogin`에서만 |
+| `create_world(id)` → `bool` | 플러그인의 월드 하나 (바닐라 땅과 마을, 저만의 씨앗, 여느 월드처럼 저장; `id`는 영문·숫자·`_ - .` 32자까지, `false`: 쓸 수 없는 이름). 그 월드에서 `WorldCreate`·`ChunkGenerate`가 불림 ([플러그인의 월드](world#플러그인의-월드)) |
+| `data_put(key, &[u8])` → `bool` | 서버 하나의 바이트: 어느 월드의 이벤트에서든 같은 것 (월드를 오가도 따라가야 하는 것: 서버 안 친구 목록, 순위). **넣는 즉시 디스크에** 저장 ([데이터 저장](#데이터-저장)) |
+| `data_get(key)` → `Option<Vec<u8>>` | |
+| `data_del(key)` | |
+| `data_keys(prefix)` → `Vec<String>` | 이 플러그인의 서버 키 중 `prefix`로 시작하는 것 |
 
 ```rust
 #[on(ServerTick)]
@@ -452,6 +455,8 @@ fn ask(e: PlayerLogin) {
 - 다른 플러그인의 키는 보이지 않습니다.
 - 저장 시점은 게임과 같습니다 (아침, `save_now`, 실시간 저장). 그 전에도 읽으면 방금 넣은 것이 보입니다.
 - 위치: `<data>/plugin_data/<월드>/<플러그인>/`.
+- 서버 하나의 것은 `Server.data_*`: 어느 월드에서나 같은 것을 읽고 쓰고, 아침을 기다리지 않고 넣는 즉시 저장됩니다. 플러그인마다
+  따로, 모든 플러그인 합쳐 100 MB. 위치: `<data>/plugin_data/@server/<플러그인>/`.
 
 ```rust
 let w = e.world();

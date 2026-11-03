@@ -92,7 +92,6 @@ fn cmd(c: Command) { /* … */ }
 | [`Leave`](#join--leave) | `leave` | | 월드에서 나감 |
 | [`PlayerLogin`](#playerlogin) | `login` | ✔ | 서버에 들어오기 직전 |
 | [`PlayerItemHeld`](#playeritemheld) | `held` | | 단축바의 다른 칸을 고르거나 고른 칸의 것이 바뀜 |
-| [`PlayerVisit`](#playervisit) | `visit` | ✔ | 열기구 여행 |
 | [`Chat`](#chat) | `chat` | ✔ | 채팅 한 줄 |
 | [`Words`](#words) | `words` | ✔ | 주민에게 말을 걸음 |
 | [`MobStep`](#mobstep) | `mob` | | `script` 몬스터의 한 걸음 |
@@ -112,7 +111,7 @@ fn cmd(c: Command) { /* … */ }
 | [`InventoryClick`](#inventoryclick) | `inventory` | | 이 플러그인의 인벤토리 창을 누름 |
 | [`EntityInteract`](#entityinteract) | `entity.interact` | | 플레이어가 이 플러그인의 엔티티를 E로 씀 |
 | [`WindowOpen`](#windowopen) | `packet`의 `"window"` | | 이 플러그인이 가져간(`Hud::replace`) 게임의 창을 엶 |
-| [`Dismount`](#dismount) | `dismount` | | 서버가 플레이어를 탈것에서 내림 (문, 열기구, 집, 나감) |
+| [`Dismount`](#dismount) | `dismount` | | 서버가 플레이어를 탈것에서 내림 (문, 다른 월드로 감, 나감) |
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
 ### 별칭
@@ -310,7 +309,7 @@ fn circle(e: MobStep) {
 
 ### Join / Leave
 
-`Join`: 월드에 들어옴 — 접속, 열기구 착륙, 집에 돌아옴, LAN 일꾼이 들어옴. `Leave`: 나감 — 접속 끊김, 열기구로 떠남.
+`Join`: 월드에 들어옴 — 접속, LAN 일꾼이 들어옴, [`Player::move_world`](sdk#player)로 옴. `Leave`: 나감 — 접속 끊김, `move_world`로 떠남.
 `who()` 누구.
 
 ### PlayerMove
@@ -338,48 +337,6 @@ fn circle(e: MobStep) {
 | `item_id()` / `previous_item_id()` | 지금 칸의 아이템 / 전에 손에 있던 아이템 (`""` 없음) |
 | `item()` | 손에 그려지는 모델 (`""`: 없음. 씨앗·음식 …은 손에 그리지 않음) |
 
-### PlayerVisit
-
-열기구 여행, `owner()`의 월드에서 불림. `who()` 누가, `kind()`:
-
-| `kind()` | | 취소 |
-|---|---|---|
-| `"fly"` | 그 월드로 떠남 | 못 감 |
-| `"land"` | 내려옴 | 못 내림 (떠 있음) |
-| `"home"` | 집으로 돌아감, 또는 그 월드에서 서버를 나감 | 알리기만 |
-
-| | |
-|---|---|
-| `owner()` | 이벤트가 불린 월드의 주인: `"fly"` `"land"`는 가는 월드, `"home"`은 떠난 월드 |
-| `from_world()` / `to_world()` | 떠난 월드 / 가는 월드 (주인 이름; `who()`와 같으면 집) |
-| `keep_inventory(true)` | `"fly"`: 이번 여행에 자기 가방을 그대로 들고 감 (아래) |
-
-개별 월드(`shared-world=false`)에서 방문자는 기본으로 월드마다 따로인 가방을 씁니다(처음 가면 기본 도구를 빌려 받고, 거기서
-얻은 것은 거기 남음). `keep_inventory(true)`면 자기 가방을 들고 가서 거기서 얻은 것도 집으로 가져옵니다(거기서 쓰러지면 잃음:
-[`PlayerDeath`](#playerdeath)의 `keep_inventory`로 지킬 수 있음). 들고 가면 안 되는 것은 `"fly"`에서 빼 두었다가 `"home"`에서
-돌려주면 됩니다. 이 이벤트의 `inventory()` `give` `take`는 그 사람의 **집 가방**입니다.
-
-```rust
-#[on(PlayerVisit)]
-fn visit(e: PlayerVisit) {
-    let (p, inv) = (e.player(), e.player().inventory());
-    match e.kind().as_str() {
-        "fly" => {
-            e.keep_inventory(true);
-            if e.from_world() == e.who() {          // 집에서 떠날 때 마나 수정은 맡겨 둠
-                p.set("kept", p.get("kept") + inv.count("mana_crystal") as f64);
-                inv.remove("mana_crystal", inv.count("mana_crystal"));
-            }
-        }
-        "home" => {                                 // 돌아오면 돌려줌 (거기서 접속이 끊겨도 불림)
-            inv.add("mana_crystal", p.get("kept") as i64);
-            p.set("kept", 0.0);
-        }
-        _ => {}
-    }
-}
-```
-
 ### Dismount
 
 서버가 플레이어를 탈것([`Player::mount`](sdk#player))에서 내렸을 때(Bukkit의 EntityDismountEvent). 알리기만 합니다. 플러그인이
@@ -387,7 +344,7 @@ fn visit(e: PlayerVisit) {
 
 | | |
 |---|---|
-| `reason()` | `"door"` 건물 안으로 (방 안에는 탈것 없음), `"balloon"` 열기구로 떠남, `"home"` 집으로 돌아감, `"quit"` 서버를 나감 |
+| `reason()` | `"door"` 건물 안으로 (방 안에는 탈것 없음), `"world"` 다른 월드로 감 (`Player::move_world`), `"quit"` 서버를 나감 |
 | `mount()` → `ModelEntity` | 탔던 엔티티 (내린 자리에 남음) |
 | `player()` | 내린 사람 |
 
@@ -544,7 +501,7 @@ fn regen(t: Tick) {
 ### ServerTick
 
 서버의 틱: 아무도 없어도 1초에 두 번, 어느 월드에도 속하지 않습니다. 여기서 [`Server::set`](sdk#server)으로 서버 값을
-바꾸고(월드의 이벤트들은 읽기만), `Server::set_shared_world`를 부를 수 있습니다. `num("players")` 지금 접속 수, `now()` 벽시계.
+바꾸고(월드의 이벤트들은 읽기만), `Server::create_world`(플러그인의 월드)를 부를 수 있습니다. `num("players")` 지금 접속 수, `now()` 벽시계.
 
 ### DayEnd
 

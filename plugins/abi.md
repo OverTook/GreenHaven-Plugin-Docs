@@ -80,7 +80,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_model(p, len)` | [커스텀 모델](models) (빈 문자열: 원래 모습) |
 | `play_anim(p, len)` `stop_anim()` | [감정 표현](models) 재생, 끝내기 |
 | `set_time(minute: i64)` | 그 월드의 시각 |
-| `visit(p, len)` `home()` | 열기구로 그 월드에 / 집으로 |
+| `move_world(p, len, station: i32)` | 그 플레이어를 서버의 그 월드로 (`""` 모두의 월드; `station` 1: 그 월드의 열기구 정거장으로, 0: 농장 집 앞으로) |
 | `music_play(p, len)` `music_all(p, len)` | 그 플레이어 / 월드 모두에게 곡 |
 | `player(i: i32) -> i32` | tick: i번째 플레이어를 고름 (뒤의 `pget` `me` 등이 그 사람) |
 
@@ -96,10 +96,12 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `data_del(k, kl)` | |
 | `data_keys(prefix, pl, p, cap) -> i64` | 키들, 줄바꿈으로 |
 | `player_data_put` `player_data_get` `player_data_del` | 그 플레이어(`me`)의 바이트 (같은 모양) |
+| `server_data_put` `server_data_get` `server_data_del` `server_data_keys` | 서버 하나의 바이트 (같은 모양; 어느 월드에서나 같은 것, 넣는 즉시 저장) |
 | `save_now()` | 월드를 지금 저장 |
 | `set_live_saving(on: i32)` | 실시간 저장 |
 | `set_quit_warning(p, len)` | 나가기 경고 |
-| `set_shared_world(on: i32)` | 모두의 월드 |
+| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름) |
+| `world_id(p, cap) -> i32` | 이벤트의 월드 (`"world"` 모두의 것), 길이 |
 
 ## 접속하지 않은 플레이어
 
@@ -200,10 +202,10 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 
 | 함수 | |
 |---|---|
-| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>`; 없으면 NaN) |
-| `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `channel` `data` `key` `on`) |
+| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>` `balloon`(열기구: 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중) `world.ready`; 없으면 NaN) |
+| `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `world`(지금 있는 월드) `channel` `data` `key` `on`) |
 | `send(cp, cl, dp, dl)` | 서버 쪽에 채널 `cp`로 패킷 (서버의 `packet` 이벤트; 플러그인 하나가 1초에 8개까지) |
-| `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]` |
+| `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh` `balloon`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]`, `balloon`은 `{"do": "up"}` 이륙 / `{"do": "down"}` 착륙 |
 | `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON |
 | `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
 
