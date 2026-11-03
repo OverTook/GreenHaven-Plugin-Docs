@@ -24,11 +24,11 @@ has_children: true
   <a class="card" href="sdk"><strong>SDK 레퍼런스</strong><span>Player, World, Server, OfflinePlayer, Npc, Gui</span></a>
   <a class="card" href="rules"><strong>규칙 등록</strong><span>Enable에서 아이템·작물·블록·주민·스킬·땅 바꾸기</span></a>
   <a class="card" href="screen"><strong>화면</strong><span>HUD 요소, 미니맵, 키, 채널, 인벤토리 창</span></a>
-  <a class="card" href="client"><strong>게임 쪽 코드</strong><span>client.wasm: 매 프레임 HUD, 카메라, 화면 효과, 키</span></a>
+  <a class="card" href="client"><strong>게임 쪽 코드</strong><span>client.wasm: 매 프레임 HUD, 카메라, 셰이더, 소리, 빠른 통신</span></a>
   <a class="card" href="moving"><strong>이동 방식 만들기</strong><span>비행, 탈것, 도구 동작, 서버의 이동 검사</span></a>
   <a class="card" href="models"><strong>커스텀 모델</strong><span>플레이어 모델과 감정 표현, 뼈대 규격과 검사 규칙</span></a>
   <a class="card" href="world"><strong>월드와 하루</strong><span>블록과 새 블록 종류, 청크, 구조물, 주민, 시계, 저장</span></a>
-  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>스물네 개의 예제와 쓰는 기능</span></a>
+  <a class="card" href="samples"><strong>샘플 플러그인</strong><span>스물다섯 개의 예제와 쓰는 기능</span></a>
 </div>
 
 플러그인은 코드와 에셋으로 되어 있습니다. 코드는 크레이트 하나에서 **두 부분**으로 빌드됩니다: 모든 것을 정하는 서버 쪽
@@ -135,6 +135,7 @@ GreenHaven-Server 안의 `plugins/` 아래에 두었다면 `python tools/build_p
   권한은 서버에 남습니다. 게임은 접속할 때 그런 플러그인이 있다고 알립니다. [게임 쪽 코드](client) 참고.
 - **휴대폰의 자체 서버는 플러그인을 쓰지 않습니다.** 휴대폰에서 연 혼자 하기·LAN 농장에는 플러그인이 하나도 없습니다.
   플러그인이 있는 서버에는 휴대폰으로도 들어갈 수 있고, 그 서버의 코드가 돌아 휴대폰에서도 그대로 보입니다.
+  게임 쪽 코드(`client.wasm`)는 PC에서 확인했습니다. Android(Cranelift JIT)와 iOS(Pulley 인터프리터)는 네이티브 라이브러리 설정만 되어 있고 아직 빌드해 확인하지 않았습니다.
 - **모듈은 월드마다 하나 만들어져 계속 쓰입니다.** 전역 변수가 다음 이벤트에도 남아 캐시로 써도 되지만, 자고 일어나지
   않은 하루가 버려질 때 새로 만들어집니다. 오래 남길 것은 `World::set` / `Player::set`이나 [데이터 저장](sdk#데이터-저장)에.
 - **저장은 바닐라 규칙**: 자고 일어난 아침에만 저장됩니다. [저장](world#저장) 참고.

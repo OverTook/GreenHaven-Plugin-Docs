@@ -180,11 +180,12 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `register(p, len)` | 규칙 위에 덮을 JSON 객체 ([규칙 등록](rules)). `enable` 이벤트에서만 (다른 때는 무시), 한 번에 1 MB까지 |
 | `hud(p, len)` `hud_all(p, len)` | HUD 작업 하나 (그 플레이어 / 월드 모두): `{"op", …}` (`op`: `add` `set` `remove` `clear` `hide` `show` `key`) ([화면](screen#sdk-없이)), 64 KB까지 |
 | `send(cp, cl, p, len)` `send_all(cp, cl, p, len)` | 채널 `cp`에 바이트 (그 플레이어 / 모두), 256 KB까지 |
+| `send_fast(cp, cl, p, len)` `send_fast_all(cp, cl, p, len)` | 게임 쪽 코드에 빠른 패킷 (그 플레이어 / 모두): 데이터그램, 1000바이트까지 |
 | `send_png(cp, cl, w, h: i32, p, len, all: i32) -> i32` | RGBA8 픽셀(`w` × `h`, 512까지)을 PNG로 채널에 (`all` 0이 아니면 모두에게). PNG의 바이트 수, `len`이 `w × h × 4`가 아니면 0 |
 | `columns(x0, z0, w, d: i64, p, cap) -> i64` | 위에서 본 땅: 기둥마다 2바이트(가장 높은 단단한 블록 번호(위에 물이면 물), 높이 − (−8)), `w`개씩 줄로, 256 × 256까지. 전체 바이트 수 |
 | `inv_open(p, len)` | 인벤토리 창 `{"id", "title", "rows", "cols", "slots", "bag"}` / 닫기 `{"id", "close": true}` |
 
-게임에서 오는 것은 이벤트로: `packet`(`text("channel")` `text("data")`), `inventory`(`text("inv")` `text("side")` `n()` 칸
+게임에서 오는 것은 이벤트로: `packet`(`text("channel")` `text("data")`), `fast`(게임 쪽 코드의 빠른 패킷: 같은 키), `inventory`(`text("inv")` `text("side")` `n()` 칸
 `text("click")` `text("bag_item")`).
 
 ## 이벤트 말고 내보내는 것
@@ -199,10 +200,10 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 
 | 함수 | |
 |---|---|
-| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>`; 없으면 NaN) |
+| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>`; 없으면 NaN) |
 | `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `channel` `data` `key`) |
 | `send(cp, cl, dp, dl)` | 서버 쪽에 채널 `cp`로 패킷 (서버의 `packet` 이벤트; 플러그인 하나가 1초에 8개까지) |
-| `op(kp, kl, jp, jl)` | 게임이 그릴 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지) |
+| `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]` |
 | `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON |
 | `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
 

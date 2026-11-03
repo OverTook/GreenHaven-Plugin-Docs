@@ -414,7 +414,7 @@ fn fireball(e: Button) {
 ## 화면 (`Hud`, `El`, `Inventory`)
 
 `Player::hud()` / `World::hud()`의 `Hud`: `add(id, &El)` `set(id, &El)` `remove(id)` `clear()` `hide(part)` `show(part)` `key(key, on)`
-`send(chan, &[u8])` `send_text(chan, text)` `send_png(chan, w, h, &rgba)`. `El::panel` `text` `image` `bar` `button` `input`에
+`send(chan, &[u8])` `send_text(chan, text)` `send_png(chan, w, h, &rgba)` `send_fast(chan, text)`(게임 쪽 코드에 빠른 패킷: 데이터그램, 1000바이트까지, 순서 없음; [빠른 통신](client#빠른-통신)). `El::panel` `text` `image` `bar` `button` `input`에
 `anchor(Anchor::…)` `pos` `size` `color` `bind` `follow` `zoom` `rotate` `round` `marker` `child` …. `Inventory::new(id, title, rows, cols)`
 `.slot(i, item, n, name, lore)` `.with_bag()`. 모두 [화면](screen)에.
 

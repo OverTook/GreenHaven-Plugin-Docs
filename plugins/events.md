@@ -108,6 +108,7 @@ fn cmd(c: Command) { /* … */ }
 | [`BlockBreak`](#blockplace--blockbreak) | `block.break` | ✔ | 플레이어가 플러그인 블록을 부숨 |
 | [`ChunkLoad`](#chunkload) | `chunk.load` | | 청크가 서버의 메모리에 들어옴 |
 | [`Packet`](#packet) | `packet` | | 게임이 이 플러그인의 채널로 보낸 패킷 (HUD 버튼·입력·키) |
+| [`FastPacket`](#fastpacket) | `fast` | | 게임 쪽 코드가 보낸 빠른 패킷 (데이터그램) |
 | [`InventoryClick`](#inventoryclick) | `inventory` | | 이 플러그인의 인벤토리 창을 누름 |
 | [`EntityInteract`](#entityinteract) | `entity.interact` | | 플레이어가 이 플러그인의 엔티티를 E로 씀 |
 | [`WindowOpen`](#windowopen) | `packet`의 `"window"` | | 이 플러그인이 가져간(`Hud::replace`) 게임의 창을 엶 |
@@ -447,6 +448,20 @@ fn pressed(e: Button) {
 
 이 플러그인의 [게임 쪽 코드](client)가 `send(채널, 데이터)`로 보낸 것도 여기로 옵니다(게임 쪽은 1초에 8개까지). 받은 데이터는
 요청일 뿐이니 판단은 여기서 하세요.
+
+### FastPacket
+
+이 플러그인의 [게임 쪽 코드](client)가 `send_fast(채널, 데이터)`로 보낸 빠른 패킷([빠른 통신](client#빠른-통신)). 데이터그램이라
+플레이어 한 명에 1초에 60개까지, 순서가 없고, 잃은 것은 다시 오지 않습니다. 이 플러그인에만 옵니다. 알리기만 합니다.
+
+| | |
+|---|---|
+| `channel()` | 채널 |
+| `data()` | 함께 온 것 (1000바이트까지) |
+| `player()` | 보낸 사람 |
+
+**행동이 아니라서** 플레이어의 것을 바꾸지 못합니다(`give` `add_gold` … 없음). 플레이어 값(`Player::set`)에 담아 두었다가 `Tick`
+등에서 쓰거나, 서버 쪽 `hud().send_fast`로 답하세요.
 
 ### WindowOpen
 
