@@ -284,12 +284,31 @@ fn asked(e: Packet) {
 
 | | |
 |---|---|
-| `Material::create(id, kind, code)` | `kind` `"spatial"`(월드의 물체) / `"canvas_item"`(화면). `shader_type` 줄은 게임이 붙이니 쓰지 말고, `#include`는 안 됨, 16 KB까지 |
+| `Material::create(id, kind, code)` | `kind` `"spatial"`(월드의 물체) / `"canvas_item"`(화면). 코드는 16 KB까지, 게임이 컴파일하기 전에 검사함 (아래 「셰이더 검사」) |
 | `Material::set(id, name, v)` | uniform 숫자 |
 | `Material::set_vec(id, name, &[..])` | uniform 벡터·색 (숫자 2~4개) |
 | `Local::set_material(local_id, id)` | 자기에게만 보이는 물체에 (`""` 원래대로) |
 | `Entities::set_material(entity_id, id)` | 서버 쪽 엔티티를 이 게임에서만 그 재질로 (`""` 원래대로) |
 | `Screen::shader(id)` | 화면 전체를 `"canvas_item"` 재질로 (셰이더에서 `uniform sampler2D screen : hint_screen_texture;`로 화면을 읽음; `""` 끄기) |
+
+**셰이더 검사**: 플러그인의 셰이더가 게임을 멈추지 못하게, 게임은 컴파일하기 **전에** 코드를 검사하고 걸리면 그 재질을 만들지
+않습니다(게임의 로그에 이유가 한 줄).
+
+| 안 되는 것 | 까닭 |
+|---|---|
+| 반복문 `for` `while` `do` | GLSL에는 재귀가 없으니, 반복만 없으면 한 픽셀의 계산이 코드 길이로 묶입니다: 셰이더가 GPU를 멈출 수 없음 |
+| 텍스처 읽기 16번 넘게 | (`texture…` `texelFetch`) 한 픽셀의 비용을 묶음 |
+| `#` (`#include` `#define` …) | 다른 파일·매크로 없음 |
+| 자기 `shader_type` | 게임이 `kind`로 붙임 |
+| (`spatial`만) `POSITION`, `render_mode`의 `skip_vertex_transform` `world_vertex_coords`, `vertex()` 안의 `return` | 월드 곡률을 벗어남 (아래) |
+
+**월드 곡률**: `spatial` 셰이더에는 게임이 월드의 곡률을 넣습니다. 곡률 함수를 포함하고 `vertex()`의 끝에 꼭짓점을 휘게 하는 줄을
+붙이며, `vertex()`가 없으면 그 줄만 든 `vertex()`를 줍니다. 그래서 플러그인이 그린 물체도 다른 것처럼 멀리서 지평선 아래로
+내려갑니다. 위 표의 마지막 줄이 막히는 것은 이 줄을 건너뛰거나 무효로 만들기 때문입니다.
+
+**실행 중 감시**: 플러그인 재질이 쓰이는 동안 GPU의 한 프레임이 80 ms를 넘는 것이 30프레임 이어지면, 게임은 플러그인의 재질을
+**모두** 떼고(자기에게만 보이는 것, 서버 엔티티의 재질, 화면 셰이더) 플레이어에게 "서버 플러그인의 셰이더가 너무 무거워서
+껐어요."라고 알립니다.
 
 **실행 중 메시**: `mesh(id, vertices, normals, colors, indices)` — 삼각형(인덱스 셋마다 하나), 꼭짓점 x y z(m), 법선과 색(r g b a)은
 없어도 되고 있으면 꼭짓점 수만큼, 65536 꼭짓점까지. `Local::spawn("mesh:<id>", x, y, z)`로 세웁니다.
