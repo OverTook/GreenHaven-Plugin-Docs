@@ -81,7 +81,7 @@ fn cmd(c: Command) { /* … */ }
 | [`Damage`](#damage) | `damage` | ✔ | 몬스터가 플레이어를 침 |
 | [`Strike`](#strike) | `strike` | ✔ | 플레이어가 몬스터를 침 |
 | [`Spawn`](#spawn) | `spawn` | ✔ | 몬스터가 나옴 (밤, 광산 층) |
-| [`Tick`](#tick) | `tick` | | 누가 있는 월드의 스텝마다 (server.properties `tick-rate`, 기본 1초에 20번) |
+| [`Tick`](#tick) | `tick` | | 누가 있는 월드에서 플러그인마다 기본 1초에 한 번 (`Registry::tick_rate(n)`, `#[every(초)]`) |
 | [`ServerTick`](#servertick) | `server.tick` | | 서버의 틱, 아무도 없어도 1초에 두 번 |
 | [`DayEnd`](#dayend) | `day.end` | ✔ | 하루가 끝나려 함 |
 | [`DayChange`](#daychange) | `day.change` | ✔ | 아침에 날짜가 넘어가려 함 |
@@ -482,18 +482,30 @@ PlayerInteractEntityEvent). 서버가 거리를 확인합니다. 무엇을 할�
 
 ### Tick
 
-누가 있는 월드의 스텝마다: server.properties의 `tick-rate`(기본 20, 1~20)번 1초에(마인크래프트의 월드 틱과 같음).
+누가 있는 월드에서 **플러그인마다 기본 1초에 한 번**. 월드 자체는 server.properties의 `tick-rate`(기본 20, 1~20)번 1초에
+스텝을 돌지만(마인크래프트의 월드 틱), 대부분의 플러그인 일은 그렇게 자주 할 필요가 없어 서버의 플러그인 CPU 몫([CPU 예산](server#cpu-예산))을
+아끼려고 1초에 한 번만 부릅니다. 더 자주 필요하면(움직임처럼 매끄러워야 하는 것) `Enable`에서 `Registry::tick_rate(n)`으로
+1초에 n번을 요청합니다(월드의 `tick-rate`보다 자주는 못 함). 함수 하나만 따로 정하려면 `#[on(Tick)]` 대신 `#[every(초)]`
+(Bukkit의 `runTaskTimer`: 그 초마다 한 번, 첫 틱에는 바로).
 `players()`가 월드의 모두를 차례로 줍니다: 그 `Player`에 하는 일은 그 사람에게 갑니다(단, `give` `take` `add_gold` `add_energy`
 `say`는 tick에서 아무것도 하지 않음).
 
-`dt()`는 한 틱의 초(1 / `tick-rate`)입니다. **시간에 따라 바뀌는 것은 `dt()`만큼씩** 바꾸세요: 틱 수를 세면 서버마다 빠르기가
-달라집니다(샘플은 모두 `dt()`나 `now()`로 잽니다).
+`dt()`는 **그 함수가 지난번에 불린 뒤 지난 초**입니다(처음에는 그 주기). **시간에 따라 바뀌는 것은 `dt()`만큼씩** 바꾸세요:
+불리는 횟수를 세면 서버와 플러그인의 빈도마다 빠르기가 달라집니다(샘플은 모두 `dt()`나 `now()`로 잽니다).
 
 ```rust
+#[on(Enable)]
+fn enable(_e: Enable) {
+    Registry::tick_rate(20);          // 이 플러그인의 Tick을 1초에 20번 (기본 1번)
+}
+
 #[on(Tick)]
+fn fly(t: Tick) { /* 매끄러워야 하는 것: 1초에 20번 */ }
+
+#[every(1.0)]
 fn regen(t: Tick) {
     for p in t.players() {
-        p.set("mana", (p.get("mana") + 5.0 * t.dt()).min(100.0)); // 1초에 5씩, tick-rate와 상관없이
+        p.set("mana", (p.get("mana") + 5.0 * t.dt()).min(100.0)); // 1초에 5씩, 몇 번 불리든
     }
 }
 ```

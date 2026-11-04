@@ -110,7 +110,7 @@ fn haste(c: Command) {
 {"name": "my_plugin", "title": "내 플러그인", "version": "1.0", "description": "호박 두 배, 밤낚시 금지, /신속"}
 ```
 
-이벤트와 명령어는 코드의 속성(`#[on]`, `#[command]`)에서 선언되므로 plugin.json에 적지 않아도 됩니다. 서버가 모듈의
+이벤트와 명령어는 코드의 속성(`#[on]`, `#[every]`, `#[command]`)에서 선언되므로 plugin.json에 적지 않아도 됩니다. 서버가 모듈의
 "gh" 커스텀 섹션을 읽습니다.
 
 빌드:

@@ -413,6 +413,7 @@ fn fireball(e: Button) {
 | `Registry::block(id, &BlockKind)` | 블록 종류 ([새 블록 종류](world#새-블록-종류)): `BlockKind::new(name, look, tint)` `textured(name, png)` `model(name, glb, size)`, `solid` `item` `texture` `top` `bottom` `alpha` `model` `side` `size` |
 | `Registry::item` `crop` `monster` `animal` `villager` `model` `emote` `(id, json)` | `items` `crops` `monsters_add` `animals_add` `villagers_add` `models_add` `emotes_add` |
 | `Registry::text(from, to)` | 화면 글자 바꾸기 |
+| `Registry::tick_rate(n)` | 이 플러그인의 [`Tick`](events#tick)을 1초에 n번 (기본 1번; 월드의 `tick-rate`보다 자주는 아님). `Enable`에서 |
 
 ## 화면 (`Hud`, `El`, `Inventory`)
 
