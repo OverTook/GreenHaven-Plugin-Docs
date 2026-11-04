@@ -63,7 +63,8 @@ pub fn allowed(from: (f64, f64), to: (f64, f64, f64), dt: f64) -> Result<(), &'s
 
 ## PlayerMove로 판정하기
 
-[`PlayerMove`](events#playermove)는 플레이어가 가로나 위아래로 움직일 때마다(플레이어당 초당 5~30번) 옵니다. `cancel`이면
+[`PlayerMove`](events#playermove)는 플레이어가 가로나 위아래로 움직일 때마다 옵니다(서버가 걷기를 검사하는 0.19초마다 한 번까지:
+플레이어당 초당 약 5번). `cancel`이면
 있던 곳으로 되돌려 보냅니다.
 
 | | |

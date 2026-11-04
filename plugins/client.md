@@ -408,6 +408,9 @@ fn loaded(_: Load) {
 | `World::raycast(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸) |
 | `World::ground(x, z)` → `f64` | 게임이 가진 그곳의 땅 높이 (모르면 NaN) |
 | `World::path(from, to)` → `Vec<(x, z)>` | 마을 길 (주민의 길찾기): 꺾이는 점들, 없으면 `[]` |
+
+이 셋은 엔진이 메인 스레드에서 하는 일이라 연료에 잡히지 않아요. 그래서 핸들러 한 번에 32번까지만 답하고, 그 뒤는 모르는 것처럼
+답해요(`None`, `NaN`, `[]`). 한 번의 op 전체 크기도 8 MB까지예요(mesh 하나는 4 MB).
 | `World::id()` → `String` | 지금 있는 월드 (`"world"` 모두의 것, 아니면 서버 쪽 `Server::create_world`로 만든 id) |
 | `World::ready()` → `bool` | 월드가 오고 주변 땅이 다 그려졌는지 (서버가 다른 월드로 옮긴 뒤, 보여 줄 때) |
 
