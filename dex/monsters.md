@@ -18,11 +18,11 @@ parent: 도감
 
 |  | 이름 | 체력 | 피해 | 속도 | 나오는 곳 |
 |---|---|---|---|---|---|
-| <img class="ico" src="/assets/wiki/monsters/slime.png" alt=""> | [꼬마 버섯](#slime) | 3 | 8 | 1.6 | 밤 레벨 1 |
-| <img class="ico" src="/assets/wiki/monsters/bat.png" alt=""> | [파리](#bat) | 2 | 6 | 3.0 | 밤 레벨 2 |
-| <img class="ico" src="/assets/wiki/monsters/skeleton.png" alt=""> | [버섯 괴물](#skeleton) | 6 | 12 | 2.1 | 밤 레벨 3 |
-| <img class="ico" src="/assets/wiki/monsters/shadow.png" alt=""> | [유령](#shadow) | 12 | 18 | 1.3 | 밤 레벨 4 |
-| <img class="ico" src="/assets/wiki/monsters/ember.png" alt=""> | [불꽃 정령](#ember) | 8 | 15 | 2.8 | 밤 레벨 5 |
+| <img class="ico" src="/assets/wiki/monsters/slime.png" alt=""> | [꼬마 버섯](#slime) | 3 | 8 | 1.6 | 밤 (드문 정도 1) |
+| <img class="ico" src="/assets/wiki/monsters/bat.png" alt=""> | [파리](#bat) | 2 | 6 | 3.0 | 밤 (드문 정도 2) |
+| <img class="ico" src="/assets/wiki/monsters/skeleton.png" alt=""> | [버섯 괴물](#skeleton) | 6 | 12 | 2.1 | 밤 (드문 정도 3) |
+| <img class="ico" src="/assets/wiki/monsters/shadow.png" alt=""> | [유령](#shadow) | 12 | 18 | 1.3 | 밤 (드문 정도 4) |
+| <img class="ico" src="/assets/wiki/monsters/ember.png" alt=""> | [불꽃 정령](#ember) | 8 | 15 | 2.8 | 밤 (드문 정도 5) |
 | <img class="ico" src="/assets/wiki/monsters/gem_bug.png" alt=""> | [보석 벌레](#gem_bug) | 4 | 7 | 1.7 | 광산 1층 |
 | <img class="ico" src="/assets/wiki/monsters/pot.png" alt=""> | [깨진 항아리](#pot) | 6 | 9 | 1.5 | 광산 4층 |
 | <img class="ico" src="/assets/wiki/monsters/firefly.png" alt=""> | [반딧불이](#firefly) | 4 | 8 | 3.0 | 광산 8층 |
@@ -33,7 +33,7 @@ parent: 도감
 
 ## 밤의 몬스터
 
-해가 지면 나오고, 해가 뜨면 사라집니다. [밤 레벨](/play/night)이 오를수록 종류와 수가 늘어납니다.
+해가 지면 나오고, 해가 뜨면 사라집니다. 몇 초마다 확률로 나타나고, 어떤 종류일지도 확률입니다(드문 정도가 높을수록 드물게). [밤](/play/night) 참고.
 
 새벽 2시부터 해가 뜰 때까지는 체력과 피해가 1.5배가 되고 수도 늘어납니다.
 
@@ -48,7 +48,7 @@ parent: 도감
 | 피해 | 8 |
 | 속도 | 1.6 m/s |
 | 움직임 | 깡충 뛰며 다가옴 |
-| 나오는 곳 | 밤 레벨 1부터 |
+| 나오는 곳 | 밤 (드문 정도 1) |
 | 쓰러뜨리는 데 | 검 돌 2대 · 구리 1대 · 철 1대 · 금 1대 · 미스릴 1대 |
 
 </div></div>
@@ -63,7 +63,7 @@ parent: 도감
 | 피해 | 6 |
 | 속도 | 3 m/s |
 | 움직임 | 날아서 흔들리며 다가옴 (공중) |
-| 나오는 곳 | 밤 레벨 2부터 |
+| 나오는 곳 | 밤 (드문 정도 2) |
 | 쓰러뜨리는 데 | 검 돌 1대 · 구리 1대 · 철 1대 · 금 1대 · 미스릴 1대 |
 
 </div></div>
@@ -78,7 +78,7 @@ parent: 도감
 | 피해 | 12 |
 | 속도 | 2.1 m/s |
 | 움직임 | 걸어서 다가옴 |
-| 나오는 곳 | 밤 레벨 3부터 |
+| 나오는 곳 | 밤 (드문 정도 3) |
 | 쓰러뜨리는 데 | 검 돌 3대 · 구리 2대 · 철 1대 · 금 1대 · 미스릴 1대 |
 
 </div></div>
@@ -93,7 +93,7 @@ parent: 도감
 | 피해 | 18 |
 | 속도 | 1.3 m/s |
 | 움직임 | 돌진 |
-| 나오는 곳 | 밤 레벨 4부터 |
+| 나오는 곳 | 밤 (드문 정도 4) |
 | 쓰러뜨리는 데 | 검 돌 6대 · 구리 3대 · 철 2대 · 금 2대 · 미스릴 1대 |
 
 </div></div>
@@ -108,7 +108,7 @@ parent: 도감
 | 피해 | 15 |
 | 속도 | 2.8 m/s |
 | 움직임 | 지그재그 (공중) |
-| 나오는 곳 | 밤 레벨 5부터 |
+| 나오는 곳 | 밤 (드문 정도 5) |
 | 쓰러뜨리는 데 | 검 돌 4대 · 구리 2대 · 철 2대 · 금 1대 · 미스릴 1대 |
 
 </div></div>

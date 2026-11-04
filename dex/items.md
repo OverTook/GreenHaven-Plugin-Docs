@@ -201,6 +201,8 @@ parent: 도감
 | 이름 | 값 | 설명 |
 |---|---|---|
 | <span id="compass"></span><img class="ico" src="/assets/wiki/icons/compass.png" alt="" loading="lazy">나침반 | 1,000G | 성문 밖 바깥 세상으로 나갈 수 있게 해 줘요. 집 방향도 알려 줘요. |
+| <span id="bouquet"></span>꽃다발 | 200G | 하트 8개가 된 사람에게 건네면 사귀기 시작해요. |
+| <span id="shell_necklace"></span>조개 목걸이 | 5,000G | 하트 10개인 연인에게 건네면 청혼이에요. 농가에 가구가 있어야 해요. |
 
 ---
 {: .fs-2 }

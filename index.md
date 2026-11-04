@@ -24,7 +24,7 @@ permalink: /
   <a class="card" href="/growth/tools"><strong>도구와 검</strong><span>강화, 공격력, 마법 부여</span></a>
   <a class="card" href="/town/people"><strong>주민</strong><span>생일, 좋아하는 것, 하루 일과</span></a>
   <a class="card" href="/town/mine"><strong>광산</strong><span>층마다 나오는 광석과 쉼터</span></a>
-  <a class="card" href="/play/night"><strong>밤과 쓰러짐</strong><span>밤 레벨, 새벽, 쓰러지면 잃는 것</span></a>
+  <a class="card" href="/play/night"><strong>밤과 쓰러짐</strong><span>확률로 나오는 몬스터, 새벽, 쓰러지면 잃는 것</span></a>
   <a class="card" href="/plugins/"><strong>플러그인</strong><span>서버 운영자와 제작자를 위한 API 문서</span></a>
 </div>
 

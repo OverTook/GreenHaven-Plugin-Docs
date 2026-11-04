@@ -29,6 +29,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `server_password` 서버 비밀번호 | 처음 들어올 때 비밀번호를 정하고, 그 뒤로는 들어올 때마다 물어봄 (세 번 틀리면 돌려보냄) | `PlayerLogin`의 입력 창, `Gui::secret`, `Server` 값 |
 | `server_clock` 서버 공통 시계 | 모든 월드의 시각을 서버 시계 하나로 (하루 길이는 설정), `/시계` | `Tick`, `now()`, `Player::set_time`, `settings` |
 | `keep_day` 하루 이어서 하기 | 자지 않고 나가도 그날이 남음 (1분마다·나갈 때 저장) | `World::set_live_saving` |
+| `stay_up` 밤새기 | 새벽 2시에 기절하지 않음: 아침 6시에 하루가 저절로 넘어가고 그 자리에서 이어서 함, 자지 않은 아침엔 정산 화면 대신 출하 대금 한마디 | 규칙 `day_end` `pass_out` `summary_awake` |
 | `rpg` RPG: 모험가 서버 | 전사 / 마법사 직업과 스킬 트리, 기술 버튼(Q), 마나·투지 바, 서버 하나의 시계, 농사와 잠 막기(설정), `/직업` | `ServerTick`, `PlayerSleep`·`PlayerTill` … 막기, `MobDeath` 경험치, `progress.skills`, `settings` |
 | `town_helper` 마을 도우미 | 귀환 주문서(쓰면 집 앞으로), 체력 150, 고운 말 채팅, 환영 인사, 광산 층 이름 '지하 n층', `/비` `/맑음` | `Use`, `Chat::replace`, `Join`, `where_text`, `set_weather` |
 | `second_wind` 기절과 긴 밤 | 쓰러져도 물건을 지키고 10초 뒤 일어남, `/기절`, `/긴밤` | `PlayerDeath`, `death`, `respawn`, `set_night_time` |
