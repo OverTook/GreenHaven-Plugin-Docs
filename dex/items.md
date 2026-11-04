@@ -165,6 +165,7 @@ parent: 도감
 | <span id="stone_path"></span><img class="ico" src="/assets/wiki/icons/stone_path.png" alt="" loading="lazy">돌길 | 0 |
 | <span id="wood_floor"></span><img class="ico" src="/assets/wiki/icons/wood_floor.png" alt="" loading="lazy">나무 바닥 | 0 |
 | <span id="chest"></span><img class="ico" src="/assets/wiki/icons/chest.png" alt="" loading="lazy">나무 상자 | 0 |
+| <span id="cot"></span><img class="ico" src="/assets/wiki/icons/cot.png" alt="" loading="lazy">간이 침대 | 0 |
 | <span id="big_chest"></span><img class="ico" src="/assets/wiki/icons/big_chest.png" alt="" loading="lazy">큰 상자 | 0 |
 | <span id="scarecrow"></span><img class="ico" src="/assets/wiki/icons/scarecrow.png" alt="" loading="lazy">허수아비 | 0 |
 | <span id="preserves_jar"></span><img class="ico" src="/assets/wiki/icons/preserves_jar.png" alt="" loading="lazy">보존 항아리 | 0 |
