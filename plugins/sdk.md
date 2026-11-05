@@ -63,6 +63,10 @@ redirect_from:
 | `open_shop(shop)` | 가게 열기 (`VillagerData.SHOPS`의 id) |
 | `play_music(track)` | 지금 곡 틀기 (`Music.TRACKS`의 id나 `res://….ogg`; `""`: 원래 목록으로) |
 | `move_world(world, by_station)` | 서버의 다른 월드로 옮김 (`world`: [`Server::create_world`](#server)로 만든 id, `""` 모두의 월드). `by_station`이면 그 월드의 열기구 정거장으로, 아니면 농장 집 앞으로. 떠난 월드에서 `Leave`, 간 월드에서 `Join`; 가방·돈·스킬은 그대로 따라감 |
+| `has_permission(perm)` → `bool` | 권한이 있는지 (준 것·막은 것, 없으면 plugin.json `permissions`의 `default`; 선언하지 않은 권한은 운영자만) ([권한](server#권한과-운영자)) |
+| `set_permission(perm, on)` `unset_permission(perm)` | 권한 주기·막기 / 기본값으로 (서버의 `permissions.json`에 저장; `"*"` 모든 권한) |
+| `is_op()` `set_op(on)` | 서버의 운영자 (`ops.json`) |
+| `kick(reason)` `ban(reason)` | 내보내기 / 차단하고 내보내기 (`/unban 이름`으로 풀기) |
 | `show(&Gui)` | 창 띄우기 ([`Gui`](#gui)). `PlayerLogin`에서는 들어오기 전의 입력 창 |
 | `hud()` → `Hud` | 그 사람의 화면: HUD 요소, 게임 HUD 숨기기, 키, 채널 ([화면](screen)) |
 | `open_inventory(&Inventory)` / `close_inventory(id)` | 이 플러그인의 인벤토리 창 열기(다시 부르면 지금 칸으로) / 닫기 ([인벤토리 창](screen#인벤토리-창)) |
@@ -72,7 +76,7 @@ redirect_from:
 | `data_del(key)` | |
 
 {: .note }
-`give` `take` `add_gold` `add_energy` `say`(그리고 `drop_item` `fx` `prop`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)에서만 됩니다. `Tick` `Join` `Leave` `Chat` `PlayerMove` `PlayerItemHeld` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 거기서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
+`give` `take` `add_gold` `add_energy`와 가방 바꾸기(`inventory()`의 `add` `remove` `clear`, `set_enchant`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)와 그 플레이어의 이벤트(`Join`, `Leave`, `Chat`, `PlayerMove`, `PlayerItemHeld`, `FastPacket`, `EntityDismount`)에서 그 사람의 가방·돈·기력에 됩니다 (Bukkit의 `PlayerJoinEvent#getPlayer().getInventory().addItem`처럼; 게임에도 바로 보임). `Leave`에서 준 것은 그날이 저장되는 서버(`save-mode=live`, `World::set_live_saving`)에서만 남습니다. `say` `drop_item` `fx` `prop`는 플레이어가 한 일의 이벤트에서만 됩니다. `Tick` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 이것들이 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 그 플레이어의 이벤트와 이것들에서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
 
 ## PlayerInventory
 
@@ -150,7 +154,8 @@ fn efficiency(c: Command) {
 | `save_now()` | 월드를 아침처럼 지금 저장 (게임, 블록, 데이터; 날은 그대로 이어짐) |
 | `set_live_saving(on)` | 1분마다·플레이어가 나갈 때 저장 (잠이 없는 서버). server.properties `save-mode`보다 우선 |
 | `set_spawn(x, y, z, yaw)` | 월드의 스폰: 칸, 발 높이(높이 y 블록의 윗면은 y + 0.5), 바라보는 쪽(도). 침대·의료실·정거장이 없는 월드에서는 아침, 쓰러진 뒤, 내릴 때도 여기. 월드에 저장 ([월드 만들기](world#월드-만들기)) |
-| `set_vanilla(feature, on)` | 게임의 기능 하나 켜고 끄기, 월드에 저장: `"villagers"` `"night"`(땅 위 밤 몬스터) `"farming"` `"wild"` `"tutorial"` `"shops"` `"sleep"`. 정하지 않으면 바닐라 마을이 있는 월드는 켜짐, 없는 월드는 꺼짐 |
+| `set_vanilla(feature, on)` → `bool` | 게임의 기능 하나 켜고 끄기, 월드에 저장 ([월드](world#월드-만들기)의 목록); `false`: 그런 기능 없음. 정하지 않으면 바닐라 마을이 있는 월드는 켜짐, 없는 월드는 `fishing` `crafting` `energy` `fall` `day_end`만 켜짐 |
+| `is_vanilla(feature)` → `Option<bool>` | 그 기능이 켜졌는지 (이벤트가 시작될 때; `None` 그런 기능 없음) |
 | `set_quit_warning(text)` | 자기 전에 나갈 때 게임이 띄우는 경고 (`""` 없음, 200자까지). server.properties `quit-warning`보다 우선 |
 
 ### 하루
@@ -161,6 +166,7 @@ fn efficiency(c: Command) {
 | `set_morning_time(minute)` `clear_morning_time()` | 밤이 끝나는 시각 (해가 뜨고 몬스터가 사라짐, 6:30 = 390) / 계절의 해 뜨는 시각으로 |
 | `set_night_time(minute)` `clear_night_time()` | 밤이 시작되는 시각 (해가 지고 몬스터가 나옴, 18:00 = 1080) / 계절의 해 지는 시각으로 |
 | `set_dawn_time(minute)` `clear_dawn_time()` | 몬스터가 강해지는 시각 (2:00 = 120), 아침까지 / 기본값으로 |
+| `set_day_end_time(minute)` `clear_day_end_time()` | 시계로 하루가 끝나는 시각 (자정부터 분, 26 * 60 = 다음 날 2:00, 48 * 60까지) / 규칙의 `day_end`로 |
 | `end_day()` | 지금 하루를 끝냄, 모두 잔 것처럼 (먼저 `DayEnd` `"end_day"`) |
 
 ### 블록
@@ -189,7 +195,7 @@ fn efficiency(c: Command) {
 | `ground_drop(item, n, x, y, z, floor)` → `Option<ItemEntity>` | 땅에 놓인 아이템(누구나 바로 주움; 게임이 모르는 아이템은 놓이지 않음) |
 | `ground_remove(id)` | 그 번호의 것 치우기 (`ItemEntity::remove`) |
 | `path((x0, z0), (x1, z1))` → `Vec<(f64, f64)>` | 마을 안의 걸어갈 길(주민의 길찾기와 같음: 지은 것을 돌아서, 길은 싸게): 첫 걸음 뒤로 꺾이는 점들, 마지막이 목적지. 비어 있으면 길이 없음. 한쪽이라도 마을 격자 밖이거나 마을 없는 월드면 `path_blocks`로(각 기둥 맨 위에서), 칸마다 |
-| `path_blocks((x, y, z), (x, y, z), max)` → `Vec<(f64, f64, f64)>` | 어느 월드 어디서나 블록 위로 걷는 길: 첫 걸음부터 목적지까지 칸마다 `(x, 발 높이, z)`, 비어 있으면 길이 없음. 끝은 발 아래(조금 묻혀도) 가장 높은 설 수 있는 칸, 물속이면 물 위. 설 수 있는 칸: 단단한 블록 위에 몸 들어갈 두 칸(1.6 m)이 비었거나 물 맨 위(헤엄). 한 번에 한 칸 위로(플레이어 점프 1.5 m, 물에서 나올 때도), 네 칸까지 아래로, 여덟 방향, 모서리는 몸이 들어갈 때만. 플러그인의 단단하지 않은 블록은 지나감. `max`: 살필 칸 수(16384까지), 시작에서 가로세로 64칸 안. 엔진의 A*: 연료가 아니라 걸린 시간으로 셈 |
+| `path_blocks((x, y, z), (x, y, z), max)` → `Vec<(f64, f64, f64)>` | 어느 월드 어디서나 블록 위로 걷는 길: 첫 걸음부터 목적지까지 칸마다 `(x, 발 높이, z)`, 비어 있으면 길이 없음. 끝은 발 아래(조금 묻혀도) 가장 높은 설 수 있는 칸, 물속이면 물 위. 설 수 있는 칸: 단단한 블록 위에 몸 들어갈 두 칸(1.6 m)이 비었거나 물 맨 위(헤엄). 한 번에 한 칸 위로(플레이어 점프 1.5 m, 물에서 나올 때도), 네 칸까지 아래로, 여덟 방향, 모서리는 몸이 들어갈 때만. 플러그인의 단단하지 않은 블록은 지나감. `max`: 살필 칸 수(16384까지), 시작에서 가로세로 64칸 안; 두 끝이 그보다 멀거나 한쪽이 한 번도 만들어진 적 없는 청크면 찾지 않고 바로 빈 것. 엔진의 A*: 연료가 아니라 걸린 시간으로 셈 |
 | `room(name)` → `Option<Room>` | 건물 방(`"Farmhouse"` …): `x` `z` 가운데, `y` 바닥(땅 아래), `door` 안쪽 문 앞, `out` 바깥 문 앞, `size`. 엔티티를 `(door.0, y, door.1)`로 옮기면 방 안 |
 
 ### 구조물과 주민
@@ -211,7 +217,7 @@ fn efficiency(c: Command) {
 |---|---|
 | `get(k)` → `f64` | 어느 이벤트에서나 읽음 |
 | `set(k, v)` | `PlayerLogin`과 그 입력 창의 `Button`, `ServerTick`에서만 |
-| `create_world(id)` → `bool` | 플러그인의 월드 하나 (바닐라 땅과 마을, 저만의 씨앗, 여느 월드처럼 저장; `id`는 영문·숫자·`_ - .` 32자까지, `false`: 쓸 수 없는 이름). 그 월드에서 `WorldCreate`·`ChunkGenerate`가 불림 ([플러그인의 월드](world#플러그인의-월드)) |
+| `create_world(id)` → `bool` | 플러그인의 월드 하나 (바닐라 땅과 마을, 저만의 씨앗, 여느 월드처럼 저장; `id`는 영문·숫자·`_ - .` 32자까지, `false`: 쓸 수 없는 이름). 그 월드에서 `WorldCreate`·`ChunkGenerate`가 불림 ([플러그인의 월드](world#플러그인의-월드)). 서버가 함께 돌리는 월드는 16 + 접속 한도의 두 배(256까지): 넘으면 만들어지지 않음(서버 로그) |
 | `create_world_with(id, generator, town)` → `bool` | 생성기를 골라: `"vanilla"` `"flat"` `"void"`, `town` false면 바닐라 땅에 마을 없이 ([월드 만들기](world#월드-만들기)) |
 | `data_put(key, &[u8])` → `bool` | 서버 하나의 바이트: 어느 월드의 이벤트에서든 같은 것 (월드를 오가도 따라가야 하는 것: 서버 안 친구 목록, 순위). **넣는 즉시 디스크에** 저장 ([데이터 저장](#데이터-저장)) |
 | `data_get(key)` → `Option<Vec<u8>>` | |

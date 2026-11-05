@@ -10,7 +10,7 @@ redirect_from:
 # 샘플 플러그인
 
 GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 모두 Rust SDK로 쓰여 있고, 규칙을 바꾸는 것은 모두
-`#[on(Enable)] fn enable`의 `Registry`로 합니다([규칙 등록](rules)). `cutscene` `riding` `flight` `showcase` `friend_lands` `camera_modes`는 서버 쪽과 [게임 쪽 코드](client)를
+`#[on(Enable)] fn enable`의 `Registry`로 합니다([규칙 등록](rules)). `cutscene` `riding` `flight` `showcase` `friend_lands` `camera_modes` `arcade`는 서버 쪽과 [게임 쪽 코드](client)를
 함께 가집니다(`src/shared.rs` `server.rs` `client.rs`). 몇몇은 게임에도 zip으로 들어 있어 월드 선택 › 편집 › 플러그인에서
 켤 수 있습니다(PC).
 
@@ -42,6 +42,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `cutscene` 연출 | G를 누르면 게임이 서버에 '종 울리기'를 요청하고, 서버가 판정(10초에 한 번, 마나석 하나)한 뒤 결과를 보내면 게임이 카메라를 종으로 돌리고 화면을 번쩍이며 위쪽에 다음 종까지 남은 시간을 매 프레임 그림 | [게임 쪽 코드](client): `client!` `Frame` `Packet`, `Camera::look_at` `shake` `release`, `Screen::flash`, 게임 쪽 `Hud`; 서버 쪽 `Hud::key_action` `send_text` |
 | `riding` 탈것과 지팡이 | 마을 소에 E로 올라타면 두 배 빨리 달림(서버가 그 빠르기로 판정), J로 내림, `/소`로 옆에 부름; `/지팡이`로 받는 마법 지팡이를 쓰면 시전 동작과 함께 앞쪽에 번개 구슬이 날아가 몬스터를 침 | [탈것](moving#탈것): `Player::mount` `dismount`, `Dismount`, `glide_to`; [도구 동작](moving#도구-동작-플러그인-아이템): 아이템의 `action` `model` `hit`, `Use`; 게임 쪽 `Local` `World::ground` `Camera::fov` |
 | `showcase` 화면 실험실 | 앞에 셰이더로 빛나는 피라미드(실행 중 만든 메시)와 3D 글자, 그 위에 붙어 다니는 HUD, 오른쪽 위 직접 그린 게이지, 월드 속 패널의 버튼(서버가 누름을 세어 보냄), 은은한 배경 소리, U로 화면 물결 효과, 서버와 빠른 패킷 왕복 횟수 | [게임 쪽 코드](client): `mesh` `Material::create` `Local::set_material` `spawn_text`, `pin`, `Draw`, `Local::spawn_panel` `set_panel` + `click`, `Sound::play`, `Screen::shader`, `send_fast` + `FastPacket` + `Hud::send_fast` |
+| `arcade` 오락실 | K(부스트)와 O(빛) 액션(휴대폰에선 화면 버튼, 설정 › 조작키에서 키 바꾸기), 누를 때마다 서버에 요청하고 답을 HUD에, 마우스 이동량·이동 축·장치·고정 스텝을 HUD에, 어두운 공포 조명, 자기 외곽선, 머리 위 반짝이, 부스트 불꽃, 따라오는 별의 궤적 | [게임 쪽 코드](client): `Input::bind` `Action` `Step` `axis` `mouse_delta` `device`, `request` + 서버 쪽 `split_request` `reply_data`, `Lighting::set` `reset`, `Highlight::add`, `Particles::emit`, `Local::trail` |
 | `friend_lands` 친구 땅 | 플레이어마다 자기 땅(플러그인의 월드)이 생기고, 서버 안 친구 기능(신청·수락·거절·끊기: 열기구 창의 「친구 관리」나 `/친구`)을 더함. 열기구 창은 친구 목록(내 땅, 모두의 월드, 게임의 사막 노선도)이 되어, 친구를 고르면 열기구가 떠오르는 동안(열기구 앞 시점) 서버가 뒤에서 그 친구의 땅으로 옮기고, 다 오르면 그 땅 바로 위 상공에서 가만히 내려다보며 「착륙하기」(하늘에서 그 땅의 정거장으로 내려앉는 장면, 열기구 앞 시점) / 「돌아가기」(떠나온 곳으로 옮겨져 거기 내려앉음) | `Server::create_world`, `Player::move_world`, `Server::data_*`(친구 목록), `Hud::replace("balloon")` `open`, `WindowOpen`, `Gui`; 게임 쪽 `Balloon::lift_off` `land` `state`, `World::id` `ready`, `Camera::set` |
 | `camera_modes` 카메라 시점 | F5로 시점 바꾸기: 기본 → 영화처럼(천천히 도는 시점) → 내려다보기 → 옆에서(횡스크롤) → 어깨 너머 → 1인칭 → 드론(W A S D, Q / E로 나는 자유 카메라) | [게임 쪽 코드](client): 매 프레임 `Camera::set` `follow` `first_person` `release` |
 | `economy` 코인 경제 | 서버의 코인: 잔고·넣기·빼기를 다른 플러그인에 내보냄, `/코인` | [플러그인끼리](interop): `#[export]`, `caller()`, `provides`, API 크레이트(`economy/api`: `api!`) |

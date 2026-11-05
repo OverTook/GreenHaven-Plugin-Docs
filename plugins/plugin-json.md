@@ -58,7 +58,8 @@ redirect_from:
 | `depend` | 꼭 있어야 하는 플러그인(또는 서비스) 이름들: 그것들 뒤에 로드, 없으면 켜지지 않음 ([플러그인끼리](interop#depend-soft_depend)) |
 | `soft_depend` | 있으면 먼저 로드할 것들 (없어도 켜짐) |
 | `provides` | 이 플러그인이 맡는 서비스 이름들 (`"economy"`): 다른 플러그인이 이 이름으로 찾아 부름 |
-| `commands` | (SDK 없이 쓸 때) 채팅 명령어 `[{"name": "축제", "desc": "…"}]` |
+| `commands` | (SDK 없이 쓸 때) 채팅 명령어 `[{"name": "축제", "desc": "…", "permission": "축제.시작"}]` (`permission`: 없는 사람은 서버가 거절; SDK는 `#[command("축제", "…", "축제.시작")]`) |
+| `permissions` | 플러그인의 권한 `{"축제.시작": {"description": "…", "default": "op"}}` (`default`: `op` 운영자만(기본), `true` 모두, `false` 준 사람만, `notop` 운영자 아닌 사람) |
 
 ## 휴대폰
 

@@ -103,7 +103,12 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_quit_warning(p, len)` | 나가기 경고 |
 | `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void", "town": false}` |
 | `set_spawn(x: f64, y: f64, z: f64, yaw: f64)` | 월드의 스폰 |
-| `set_vanilla(p, len, on: i32)` | 게임의 기능 하나 켜고 끄기 (`villagers` `night` `farming` `wild` `tutorial` `shops` `sleep`) |
+| `set_vanilla(p, len, on: i32)` | 게임의 기능 하나 켜고 끄기 (`villagers` `night` `farming` `wild` `tutorial` `shops` `sleep` `mining` `dungeon` `balloon` `quests` `mail` `love` `festivals` `furniture` `fishing` `crafting` `energy` `fall` `day_end`; 모르는 이름은 서버 로그에 한 줄) |
+| `vanilla_on(p, len) -> i32` | 그 기능이 켜졌는지 (1 / 0, -1 그런 기능 없음) |
+| `set_day_end_time(m: i64)` | 월드의 하루 끝 시각 (자정부터 분; 음수: 규칙 값) |
+| `has_permission(p, len) -> i32` `set_permission(p, len, v: i32)` | 그 플레이어의 권한 (v: 1 줌, 0 막음, -1 기본값으로) |
+| `is_op() -> i32` `set_op(on: i32)` | 운영자인지, 운영자로 / 빼기 |
+| `kick(p, len)` `ban(p, len)` | 이유를 띄우고 내보내기 / 차단(서버의 차단 목록)하고 내보내기 |
 | `world_id(p, cap) -> i32` | 이벤트의 월드 (`"world"` 모두의 것), 길이 |
 
 ## 접속하지 않은 플레이어
@@ -220,11 +225,11 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 
 | 함수 | |
 |---|---|
-| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>` `balloon`(열기구: 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중) `world.ready`; 없으면 NaN) |
-| `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `world`(지금 있는 월드) `channel` `data` `key` `on`) |
+| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>` `balloon`(열기구: 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중) `world.ready`, 입력의 `mouse.dx` `mouse.dy` `wheel` `move.x` `move.y` `look.x` `look.y`, `step` `step.dt`; 없으면 NaN) |
+| `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `world`(지금 있는 월드) `channel` `data` `key` `on` `action` `input.device`) |
 | `send(cp, cl, dp, dl)` | 서버 쪽에 채널 `cp`로 패킷 (서버의 `packet` 이벤트; 플러그인 하나가 1초에 8개까지) |
-| `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh` `balloon`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]`, `balloon`은 `{"do": "up"}` 이륙 / `{"do": "down"}` 착륙 |
+| `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh` `balloon`, 입력의 `bind`, 연출의 `light` `highlight` `particles` `trail`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]`, `balloon`은 `{"do": "up"}` 이륙 / `{"do": "down"}` 착륙 |
 | `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON |
 | `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
 
-내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).
+내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` `ghc_action` `ghc_step` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).

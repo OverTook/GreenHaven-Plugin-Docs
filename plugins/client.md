@@ -114,7 +114,7 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 }
 ```
 
-`client!`에는 다섯 중 쓰는 것만 적습니다.
+`client!`에는 일곱 중 쓰는 것만 적습니다.
 
 | 핸들러 | 언제 | |
 |---|---|---|
@@ -123,10 +123,17 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 | `packet` → `Packet` | 서버 쪽이 이 플러그인의 채널로 보낸 것(`Hud::send_text` …, 빠른 패킷 `Hud::send_fast`), 게임의 `"window"` 패킷 | `channel()` `data()`, `fast()` 빠른 패킷으로 왔는지 |
 | `input` → `Input` | 게임의 패널이 열려 있지 않을 때 키·마우스 버튼을 누르거나 뗌 | `key()` 이름(`"Q"` `"F5"` `"Space"` `"Shift"` `"Mouse1"`), `pressed()` |
 | `click` → `Click` | 이 플러그인의 버튼·입력 칸을 누름 (HUD에서든 [월드 속 패널](#직접-그리는-ui)에서든; 같은 누름이 서버 쪽 `Packet`으로도 감) | `on()` 그 요소의 `on`, `data()` 입력 칸에 쓴 글 |
+| `action` → `Action` | [액션](#액션과-터치-버튼)(`Input::bind`)의 키·마우스·패드·터치 버튼을 누르거나 뗌 | `name()` 액션 이름, `pressed()` |
+| `step` → `Step` | 고정 스텝, 1초에 60번 (게임의 물리 틱): 서버와 같은 코드(`src/shared.rs`)로 미리 계산할 것. 그리기는 `frame`에서 | `n()` 몇 번째, `dt()` 한 스텝의 초 |
 
 전역 변수(`static mut`)는 서버를 떠날 때까지 남습니다. 시간은 프레임 수가 아니라 `Frame::time()` / `dt()`로 재세요.
 
 ## 서버 쪽과 주고받기
+
+**요청과 답** (로블록스의 RemoteFunction 흉내, 엔진 변경 없이): 게임 쪽 `request(채널, 데이터)`는 번호를 붙여(`"<번호>|<데이터>"`)
+보내고 그 번호를 돌려줍니다. 서버 쪽은 `split_request(&e.data())`로 번호와 데이터를 꺼내 판정하고, 답을 `reply_data(번호, 답)`으로
+써서 자기 채널로 보냅니다. 게임 쪽 `packet`에서 `p.reply()`가 `Some((번호, 답))`이면 그 요청의 답입니다. 기다리는 함수는 없습니다
+(게임 쪽은 멈추지 않음): 짝은 번호로 맞추세요. 예: `plugins/arcade`.
 
 로블록스의 RemoteEvent와 같습니다.
 
@@ -339,10 +346,11 @@ fn loaded(_: Load) {
 
 | | |
 |---|---|
-| `num(k)` → `f64` | 이번 호출에 게임이 알려 준 숫자 (없으면 NaN): `dt` `time` `me.x` `me.y` `me.z`(이 플레이어, 칸) `me.yaw` `cam.x` `cam.y` `cam.z` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute`(하루의 시각) `day` |
+| `num(k)` → `f64` | 이번 호출에 게임이 알려 준 숫자 (없으면 NaN): `dt` `time` `me.x` `me.y` `me.z`(이 플레이어, 칸) `me.yaw` `cam.x` `cam.y` `cam.z` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute`(하루의 시각) `day`, 입력의 `mouse.dx` `mouse.dy` `wheel` `move.x` `move.y` `look.x` `look.y` ([액션과 터치 버튼](#액션과-터치-버튼)) |
 | `text(k)` → `String` | `me`(이 플레이어 이름) `server`(어디), 이벤트의 `channel` `data` `key` |
 | `log(t)` | 게임의 로그에 한 줄 |
 | `send(channel, data)` | 서버 쪽에 패킷 (위) |
+| `request(channel, data)` → `u32` | 번호를 붙인 요청 ([서버 쪽과 주고받기](#서버-쪽과-주고받기)) |
 | `send_fast(channel, data)` | 서버 쪽에 빠른 패킷 ([빠른 통신](#빠른-통신)) |
 
 ### Hud
@@ -426,6 +434,42 @@ fn loaded(_: Load) {
 | `Balloon::land()` | 그때 있는 월드의 가장 가까운 정거장으로 하늘에서 내려앉는 장면 (열기구 앞 시점). 갑판에 내려서면 HUD가 돌아옴 |
 | `Balloon::state()` → `i64` | 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중 |
 
+### 액션과 터치 버튼
+
+키 하나에 직접 묶지 말고 **액션**을 만드세요(로블록스의 ContextActionService). 한 액션에 키보드 키 하나, 마우스 버튼, 패드 버튼,
+휴대폰 화면 버튼을 같이 묶고, 무엇으로 누르든 `action` 핸들러가 받습니다.
+
+```rust
+greenhaven_client::client! { load => loaded, action => act }
+
+fn loaded(_: Load) {
+    Input::bind("boost", &Bind { label: "부스트", keys: &["K"], pad: &["RB"],
+        touch: Some(TouchButton { label: "부스트", icon: "" }) });
+}
+
+fn act(a: Action) {
+    if a.name() == "boost" && a.pressed() { request("boost", ""); }   // 판정은 서버 쪽
+}
+```
+
+| | |
+|---|---|
+| `Input::bind(name, &Bind { label, keys, pad, touch })` | 액션 만들기 (다시 부르면 바꿈; 플러그인 하나에 16개까지). `keys`: 키보드 키 하나(`"K"`)와 마우스 버튼(`"Mouse1"` …), `pad`: `"A"` `"B"` `"X"` `"Y"` `"LB"` `"RB"` `"L2"` `"R2"` `"LS"` `"RS"` `"Up"` `"Down"` `"Left"` `"Right"` (Start·Back은 메뉴의 것이라 안 됨), `touch`: 휴대폰 화면 버튼 (`label` 6자까지, 또는 `icon`에 `res://` 그림) |
+| `Input::unbind(name)` | 액션 지우기 |
+| `Input::axis("move")` → `(x, y)` | 걷기 방향: 화면 조이스틱, W A S D, 패드 왼쪽 스틱 (x 오른쪽, y 앞, -1..1) |
+| `Input::axis("look")` → `(x, y)` | 시선: 마우스, 화면 드래그, 패드 오른쪽 스틱 (이번 프레임의 픽셀, x 오른쪽, y 아래) |
+| `Input::mouse_delta()` → `(dx, dy)` / `Input::wheel()` | 이번 프레임의 마우스 이동량 (픽셀), 휠 (위로 +) |
+| `Input::lock_mouse(bool)` | 마우스 포인터를 가두고 숨김 (FPS 조준: `mouse_delta`를 읽음). 게임의 창이 열리면 풀리고, 놓거나 서버를 떠나면 돌아옴 |
+| `Input::device()` → `"kbm"` `"touch"` `"pad"` | 마지막으로 쓴 장치 (HUD를 그에 맞게) |
+
+- **키 바꾸기**: 액션은 서버 쪽 단축키(`Hud::key_action`)처럼 설정 › 조작키에 `label`로 보라색 칩으로 나오고, 플레이어가 다른 키로
+  바꿀 수 있습니다(서버마다 저장). 게임이 쓰는 키나 다른 단축키가 먼저 가진 키는 묶이지 않고 접속할 때 알려 줍니다. Esc는 언제나
+  게임의 것입니다(`Input::capture`로도 못 가져감).
+- **터치 버튼**은 게임의 버튼들 위의 한 줄에 게임이 놓습니다(모든 플러그인 합쳐 8개). 플러그인이 자리를 정하지 않으므로 게임의 버튼·메뉴를
+  가리지 못합니다. 화면 버튼과 손가락 탭은 마우스 버튼으로 치지 않습니다(휴대폰에선 터치 버튼이 그 몫).
+- 액션으로 묶어도 마우스 버튼의 게임 동작은 그대로입니다: 막으려면 `Input::capture`(예: `"Mouse1"` 도구 사용)를 같이 쓰세요.
+- 채팅에 글을 쓰는 중이나 게임의 창이 열려 있을 때는 누름이 오지 않습니다(떼는 것은 옴: 눌린 채로 남지 않음).
+
 ### Input과 Me
 
 키를 넘겨받고 플레이어를 직접 움직이는 함수(`Input::capture`, `Me::set_velocity` …)는 [이동 방식 만들기](moving#게임-쪽에서-조작-넘겨받기)에 있습니다.
@@ -435,6 +479,22 @@ fn loaded(_: Load) {
 | `Me::position()` → `(x, y, z)` / `Me::yaw()` / `Me::name()` | 게임이 그리는 이 플레이어 (판정은 서버의 것) |
 | `Me::velocity()` / `Me::on_ground()` | 게임이 움직이는 속도 (칸/초), 발이 땅에 닿았는지 |
 | `Input::held(key)` → `bool` | 그 키를 지금 누르고 있는지 |
+
+### 연출: 빛, 외곽선, 파티클, 궤적
+
+모두 이 플레이어의 화면에서만입니다. 서버를 떠나면 게임의 것으로 돌아옵니다. 대상(`Target`)은 `Target::Me`(자기),
+`Target::Local(id)`(자기 `Local` 물체), `Target::Entity(id)`(서버 쪽 엔티티가 이 게임에 그려진 것).
+
+| | |
+|---|---|
+| `Lighting::set(&Light { fog_end, fog_color, ambient, ambient_energy, exposure, glow, saturation, brightness, contrast }, 초)` | 빛 덮어쓰기: `Some`인 것만, 나머지는 게임의 것 (낮밤·날씨는 그 밑에서 계속). `fog_end` 안개 끝 (m), `ambient` 사방의 빛 색, `exposure` 노출 (1 그대로), `glow` 번짐 (0 없음), `saturation` `brightness` `contrast` (1 그대로). `초`에 걸쳐 바뀜 |
+| `Lighting::reset(초)` | 게임의 빛으로 되돌림 |
+| `Highlight::add(key, target, fill, outline, width, through_walls)` / `remove(key)` | 외곽선과 채움 (로블록스의 Highlight, 모든 플러그인 합쳐 16개): 색 `"rrggbb"` 또는 `"rrggbbaa"` (채움은 알파만큼: `"ff000040"`), `width` m, `through_walls` 벽 너머로도 |
+| `Particles::emit(&Emitter { at, on, offset, texture, color, color_end, size, life, rate, count, speed, dir, spread, gravity })` → `i64` / `stop(id)` | 파티클 (로블록스의 ParticleEmitter): `count`개 한 번에 (`life` 뒤 사라짐) 또는 `rate` 초당 (`stop`까지; 이때 `count: 0`), `at` 그 자리 (칸) 또는 `on` 대상에 붙어 `offset`만큼, `texture` `res://` 그림 (`""` 부드러운 점), `color`에서 `color_end`로, `size` m, `speed` m/초로 `dir` 쪽 `spread`도 안에서, `gravity` 아래로 m/초². 모든 플러그인 합쳐 32개, 입자 4096개 |
+| `Local::trail(id, color, width, 초)` / `Trail::on(key, target, color, width, 초)` | 지나간 자리에 남는 띠 (로블록스의 Trail): 점마다 `초` 동안 (0: 없앰), 모든 플러그인 합쳐 32개 |
+
+`Emitter`는 `..Default::default()`로 필요한 것만 쓰세요. 값이 이상하면(범위 밖, 글자 대신 숫자 …) 게임은 범위 안으로 줄이거나
+무시하고, 멈추지 않습니다.
 
 ## 원본 함수 (`"ghc"`)
 
@@ -450,3 +510,5 @@ fn loaded(_: Load) {
 - `plugins/friend_lands` 친구 땅: 친구를 고르면 `Balloon::lift_off`로 떠오르는 동안 서버에 이동을 청하고, `World::id` `ready`로 친구의
   땅이 그려지길 기다려 그 위 상공에서 내려다보다가(`Camera::set`) 「착륙하기」로 `Balloon::land`. `plugins/camera_modes`: F5로 시점 바꾸기.
 - `plugins/riding` 탈것과 지팡이, `plugins/flight` 비행: [이동 방식 만들기](moving).
+- `plugins/arcade` 오락실: K(부스트)와 O(빛) 액션(휴대폰에선 화면 버튼, 설정에서 키 바꾸기), 누를 때마다 서버에 `request`하고 답을 HUD에,
+  마우스 이동량·이동 축·장치·고정 스텝을 HUD에, 어두운 공포 조명(O로 켜고 끔), 자기 외곽선, 머리 위 반짝이, 부스트 불꽃, 발자국 궤적.

@@ -294,7 +294,7 @@ fn circle(e: MobStep) {
 
 ### PlayerDeath
 
-플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기.
+플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기. `respawn_at_spawn(true)`: 의료실 대신 월드의 스폰에서. `no_letter()`: 도구 편지 없음. 월드 전체로는 `World::set_vanilla("fall", false)`(잃는 것 없이 스폰에서). 그 사람을 쫓던 몬스터만 사라집니다.
 
 ## 플레이어
 
@@ -310,7 +310,7 @@ fn circle(e: MobStep) {
 ### Join / Leave
 
 `Join`: 월드에 들어옴 — 접속, LAN 일꾼이 들어옴, [`Player::move_world`](sdk#player)로 옴. `Leave`: 나감 — 접속 끊김, `move_world`로 떠남.
-`who()` 누구.
+`who()` 누구. `e.player().give(..)` `add_gold` `inventory().add(..)`는 그 사람의 가방에 들어가고 게임에 바로 보입니다(`Leave`에서는 그날이 저장되는 서버에서만 남음; [Player](sdk#player)).
 
 ### PlayerMove
 
