@@ -89,8 +89,43 @@ fn enable(_e: Enable) {
   `Block::named("ruby_block")`으로 찾아 `set_block` / `set_blocks`로 놓습니다. 접속하는 게임은 레지스트리의 `"blocks"`로 그립니다.
 - `item`이 있으면 플레이어가 그 아이템을 손에 들고 사용 버튼으로 앞 칸에 놓고(닿는 곳, 빈 칸, 옆에 단단한 블록이 있어야),
   곡괭이로 부숴 가방에 돌려받습니다: [`BlockPlace` / `BlockBreak`](events#blockplace--blockbreak). 바닐라 땅의 블록은
-  부서지지 않습니다.
+  월드의 블록 규칙이 허락할 때만 부서지고 놓입니다(아래).
 - 예: `plugins/blocks`.
+
+## 바닐라 블록 부수기·놓기
+
+`World::set_block_rules(json)` (월드와 함께 저장; 서버 전체는 규칙 키 `"block_rules"`): 어느 바닐라 블록(`grass` `sand`
+`snow` `stone` `dirt` `road` `bed`; 공기·물은 안 됨)을 사용 버튼으로 부술지, 무엇을 손에 들어야 하는지(`tool`, ""는 빈손이나
+동작이 없는 아이템), 무엇을 땅에 떨굴지(`drop`, ""는 없음, 안 쓰면 블록 이름의 아이템: 서버가 아는 것일 때만), 어느 아이템이
+어느 블록을 놓는지. 규칙이 없으면(바닐라 농장) 아무것도 부서지지 않습니다.
+
+```rust
+#[on(Join)]
+fn joined(e: Join) {
+    e.world().set_block_rules(r#"{"break": {"*": {}, "stone": {"tool": "pickaxe"}}, "place": ["dirt", "stone"]}"#);
+}
+```
+
+`"break": ["grass", "dirt"]`(이름만), `"place": {"cobble": "stone"}`(아이템 → 블록)도 됩니다. `"{}"`는 서버의 규칙으로
+돌아갑니다. 놓기·부수기는 플러그인 종류와 같은 검사(닿는 곳, 빈 칸, 옆의 단단한 블록, 사람 몸)를 거치고
+[`BlockPlace` / `BlockBreak`](events#blockplace--blockbreak)가 불립니다. 놓인 블록은 걷기 판정·길 찾기에 다른 블록과 똑같이 쓰입니다.
+
+## 블록 데이터
+
+`World::block_data(x, y, z, key)` / `set_block_data(x, y, z, key, value)` (""는 지움): 블록 하나에 짧은 값 몇 개(키 8개, 키
+32바이트, 값 256바이트, 청크마다 1024블록까지; 공기에는 없음). 청크와 함께 저장되고 보는 게임에 갑니다. 블록이 다른 것으로
+바뀌면 사라집니다(바꾼 뒤 다시 쓰기). 이벤트 안에서 쓴 값은 이벤트가 끝난 뒤에 들어갑니다. 게임이 그리는 키:
+
+| 키 | |
+|---|---|
+| `open` = `"1"` | 플러그인 종류의 모델을 모서리를 축으로 90° 돌려 그림 (문; 지나다닐지는 종류가 정하니 닫힌 문 / 열린 문 두 종류로) |
+| `text` | 블록 위에 글 (표지판) |
+
+## 가짜 블록
+
+`Player::show_block(x, y, z, block)` / `clear_fake_blocks()` (Bukkit의 sendBlockChange): 그 사람의 게임에만 그려지는 블록
+(미리보기, 힌트). 월드의 블록이 아니어서 서버는 판정에 쓰지 않습니다. 지우거나, 다른 월드로 가거나, 그 칸에 진짜 블록이
+놓이면 사라집니다. 예: `plugins/builder`의 `/미리보기` → `/짓기`.
 
 ## 구조물
 

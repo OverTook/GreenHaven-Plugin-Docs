@@ -71,6 +71,7 @@ redirect_from:
 | `set_spectator(on)` | 관전자: 아무에게도 안 보이고, 모든 것을 뚫고 날며(서버의 공중·벽 검사 꺼짐), 구경꾼처럼만 행동(도구·농사 없음), 몬스터도 안 따라옴 |
 | `set_public(key, value)` | 월드의 모든 게임이 읽는 값 (게임 쪽 [`Players::get(id).public(key)`](client#세상-읽기)): 숫자, 글(64자), `Public::None`(지움); 32키, 키 24자. 공개이니 비밀은 넣지 말 것. 연결된 동안만 |
 | `play_anim(id)` `stop_anim()` | [감정 표현](models) 재생 / 끝내기. 가만히 서 있을 때만, 움직이거나 행동하면 끝남 |
+| `show_block(x, y, z, b)` `clear_fake_blocks()` | 그 사람의 게임에만 보이는 [가짜 블록](world#가짜-블록), 모두 거두기 |
 | `say(line)` | 머리 위의 한마디 |
 | `message(line)` | 채팅 한 줄 |
 | `title(line)` | 화면 가운데 큰 제목 |
@@ -124,7 +125,9 @@ redirect_from:
 
 ## PlayerInventory
 
-`Player::inventory()` (Bukkit의 PlayerInventory). 아이템은 id와 개수뿐입니다.
+`Player::inventory()` (Bukkit의 PlayerInventory). 가방은 서버가 **칸으로** 갖고 있습니다(규칙 `bag.slots`, 앞의 12칸이 단축바):
+게임이 칸을 옮기면 서버가 판정하고(가진 것보다 많이, 다른 것 든 칸에 나눠 옮기기는 거절), 그 사람이 옮기는 것도
+[`InventoryClick`](events#inventoryclick)으로 모든 플러그인에게 갑니다(취소하면 안 옮겨짐). 한 칸은 [`ItemStack`](#itemstack).
 
 | 메서드 | |
 |---|---|
@@ -133,10 +136,34 @@ redirect_from:
 | `add(id, n)` | 넣기 (한 번에 999까지; `Player::give`) |
 | `remove(id, n)` | 빼기: 있는 만큼만 (`Player::take`는 모자라면 아무것도 안 가져감) |
 | `clear(include_tools)` | 비우기. `false`면 도구는 남김 (착용한 장비는 가방에 없으므로 늘 그대로) |
+| `size()` / `get(slot)` → `Option<ItemStack>` / `slots()` | 칸 수 / 한 칸 / 모든 칸 |
+| `set(slot, Some(&stack))` / `set(slot, None)` | 그 칸을 그것으로 / 비우기 (있던 것은 없어짐) |
+| `held_slot()` / `set_held_slot(i)` / `held()` | 손에 든 단축바 칸 / 그 칸을 들게 / 든 것 |
+| `add_stack(&stack)` | 메타 붙은 것을 넣기 (같은 것 위, 아니면 첫 빈 칸) |
+
+`Player`에도: `set_inventory(&[Option<ItemStack>])`(가방 전체를 칸 그대로: 키트, 미니게임; 착용 장비는 그대로)
+`clear_inventory()` `give_item(&stack)`. 다른 플레이어에게도 됩니다(그 사람 월드의 다음 걸음에).
 
 - 읽는 것은 **이벤트가 시작될 때**의 모습, 바꾸는 것은 **이벤트가 끝난 뒤**에 됩니다(`give`가 되는 이벤트에서만).
 - 그 이벤트의 플레이어 것만 됩니다(`Tick::players()`의 다른 사람은 비어 보임).
 - 가방은 그 사람의 것 하나로, 어느 월드에 있든 같습니다.
+
+## ItemStack
+
+한 칸: `id`(품질 `@2`까지) `n`과 메타(Bukkit의 ItemMeta): `name`(48자) `lore`(8줄, 80자) `tint`(`"rrggbb"`) `model`(손에 든
+모델 `res://..glb`) `data`(플러그인의 키-값 16개, PersistentDataContainer) `unbreakable` `glow`. 메타가 같은 것끼리만 쌓이고, 게임은
+이름·설명(툴팁)·색·반짝임·손의 모델을 그립니다. 규칙은 다 id로만 읽고, 쓰면(먹기, 버리기 ...) 메타 있는 묶음에서 먼저 빠집니다.
+바닥·상자·출하함으로 가면 메타는 없어집니다.
+
+```rust
+let blade = ItemStack::new("kit_blade", 1).name("붉은 대검").tint("e04a3a").lore("가까이 붙어 크게 베어요.")
+    .data("class", "전사").glow();
+p.set_inventory(&[Some(blade), Some(ItemStack::new("health_tonic", 3))]);
+p.inventory().set_held_slot(0);
+```
+
+`get_data(key)` → `Option<&str>`. 무기마다의 사거리·대기시간은 규칙 `tools`의 `reach`(m)·`cooldown`(초)
+(`Registry::add("tools", id, r#"{"energy":0,"damage":2,"reach":7,"cooldown":1.2}"#)`; 하나라도 있으면 가방에 있어야 휘두름). 예: `plugins/kits`.
 
 ## Gear
 
@@ -226,6 +253,8 @@ fn efficiency(c: Command) {
 | `set_block(x, y, z, b)` | 블록 놓기 (저장됨) |
 | `fill(from, to, b)` | 상자 모양 채우기, 양 끝 포함, 한 번에 청크 넷까지 |
 | `set_blocks(&[(x, y, z, Block)])` | 여러 블록을 한 번에 (65 536개까지). `ChunkGenerate` / `ChunkLoad`에서는 그 청크의 것만 |
+| `set_block_rules(json)` | 이 월드에서 부수고 놓는 바닐라 블록 ([블록 규칙](world#바닐라-블록-부수기놓기)) |
+| `block_data(x, y, z, key)` → `String` / `set_block_data(x, y, z, key, value)` | [블록 데이터](world#블록-데이터) ("" 없음 / 지움) |
 | `chunk_mark(x, z, name)` → `i64` / `set_chunk_mark(x, z, name, v)` | 청크 (x, z)에 이 플러그인이 남기는 숫자 (0: 없음; 월드와 함께 저장). 이미 넣은 것의 표시로 |
 | `columns(x0, z0, w, d)` → `Vec<(Block, i64)>` | 위에서 본 땅: `w` × `d` 기둥(256 × 256까지, `w`개씩 줄로), 각 기둥의 가장 높은 단단한 블록(위에 물이면 물)과 높이 |
 | `columns_raw(x0, z0, w, d)` → `Vec<u8>` | 같은 것을 기둥마다 두 바이트(블록 번호, 높이 − `Block::LOWEST`)로: 반복에서 읽기 쌈 ([미니맵](screen#미니맵)) |

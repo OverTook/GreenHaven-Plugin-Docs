@@ -55,6 +55,11 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `inv_count(p, len) -> i64` | 그 플레이어의 가방에 그 아이템이 몇 개 |
 | `inv_list(p, cap) -> i32` | 가방의 모든 것: 한 줄에 하나 `id	n	tier	마법:레벨,…` (이벤트가 시작될 때의 것) |
 | `inv_clear(tools: i32)` | 가방 비우기 (`tools` 0이 아니면 도구까지; 착용한 장비는 그대로) |
+| `inv_size() -> i32` `inv_held() -> i32` | 칸 수, 손에 든 단축바 칸 |
+| `inv_get(slot, p, cap) -> i32` | 한 칸: `id	n` 그리고 메타 한 줄씩 (`name	..` `lore	..` `tint	..` `model	..` `data	키	값` `unbreakable` `glow`); 비면 `""` |
+| `inv_set(slot, ip, il, n: i64, mp, ml)` | 그 칸을 n개의 `ip`로, 메타 `mp`(JSON, 빈 것: 없음; n 0: 비우기) |
+| `inv_fill(p, len)` | 가방 전체 `[[id, n, meta] 또는 null, ...]` |
+| `inv_set_held(slot)` `inv_give(ip, il, n: i64, mp, ml)` | 든 칸, 메타 붙여 주기 |
 | `inv_enchant(ip, il, ep, el, level: i64)` | 그 사람의 도구 `ip`에 마법 `ep`를 그 레벨로 (0: 떼기; 규칙의 `enchant_max`까지) |
 | `gold(d: i64)` `energy(d: f64)` | 골드, 기력 |
 | `prop(p, len, v: f64)` | 그 칸에 선 것의 속성 (`scale`) |
@@ -193,6 +198,10 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `block_id(p, len) -> i32` | 이름의 번호 (−1 없음) |
 | `top(x, z: i64) -> i64` | 가장 높은 단단한 블록 |
 | `set_block(x, y, z: i64, b: i32)` | |
+| `set_block_rules(p, len)` | 이 월드의 바닐라 블록 규칙 (JSON; `{}` 서버의 것으로) |
+| `block_data(x, y, z: i64, kp, kl, p, cap) -> i32` | 블록 데이터의 키 하나 ("" 없음) |
+| `set_block_data(x, y, z: i64, kp, kl, vp, vl)` | ("" 지움) |
+| `show_block(x, y, z: i64, b: i32)` `clear_fake_blocks()` | 그 플레이어의 게임에만 보이는 블록, 거두기 |
 | `fill(x0, y0, z0, x1, y1, z1: i64, b: i32)` | 양 끝 포함, 한 번에 청크 넷까지 |
 | `props_clear()` | `chunk.generate`: 그 청크의 덤불·풀·유목 치우기 |
 | `set_blocks(p, len)` | 블록 여럿을 한 번에: 블록마다 `i32` x, y, z, 번호 (리틀 엔디언, 16바이트), 65 536개까지. `chunk.generate` / `chunk.load`에서는 그 청크의 것만 |

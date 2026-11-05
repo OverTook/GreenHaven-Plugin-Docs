@@ -110,11 +110,12 @@ fn cmd(c: Command) { /* … */ }
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
 | [`BlockPlace`](#blockplace--blockbreak) | `block.place` | ✔ | 플레이어가 가방의 블록을 놓음 |
-| [`BlockBreak`](#blockplace--blockbreak) | `block.break` | ✔ | 플레이어가 플러그인 블록을 부숨 |
+| [`BlockBreak`](#blockplace--blockbreak) | `block.break` | ✔ | 플레이어가 블록을 부숨 (플러그인 종류, 규칙이 허락한 바닐라 블록) |
+| [`PlayerInteract`](#playerinteract) | `touch` | ✔ | 블록(이나 공기)에 사용 버튼 |
 | [`ChunkLoad`](#chunkload) | `chunk.load` | | 청크가 서버의 메모리에 들어옴 |
 | [`Packet`](#packet) | `packet` | | 게임이 이 플러그인의 채널로 보낸 패킷 (HUD 버튼·입력·키) |
 | [`FastPacket`](#fastpacket) | `fast` | | 게임 쪽 코드가 보낸 빠른 패킷 (데이터그램) |
-| [`InventoryClick`](#inventoryclick) | `inventory` | | 이 플러그인의 인벤토리 창을 누름 |
+| [`InventoryClick`](#inventoryclick) | `inventory` | 예 | 이 플러그인의 인벤토리 창을 누름, 자기 가방의 칸을 옮김 |
 | [`EntityInteract`](#entityinteract) | `entity.interact` | | 플레이어가 이 플러그인의 엔티티를 E로 씀 |
 | [`WindowOpen`](#windowopen) | `packet`의 `"window"` | | 이 플러그인이 가져간(`Hud::replace`) 게임의 창을 엶 |
 | [`Dismount`](#dismount) | `dismount` | | 서버가 플레이어를 탈것에서 내림 (문, 다른 월드로 감, 나감) |
@@ -131,7 +132,7 @@ fn cmd(c: Command) { /* … */ }
 |---|---|
 | `PlayerJoin` / `PlayerQuit` | `Join` / `Leave` |
 | `PlayerChat` / `PlayerCommand` | `Chat` / `Command` |
-| `PlayerInteract` / `PlayerInteractNpc` | `Use` / `Words` |
+| `PlayerInteractNpc` | `Words` |
 | `BlockGrow` | `Grow` |
 | `EntityDamage` / `EntityDamageByPlayer` | `Damage` / `Strike` |
 | `CreatureSpawn` / `EntityDeath` | `Spawn` / `MobDeath` |
@@ -509,6 +510,10 @@ PlayerInteractEntityEvent). 서버가 거리를 확인합니다. 무엇을 할�
 | `slot()` | 칸 번호 |
 | `click()` | `"left"` / `"right"` |
 | `bag_item()` | 누른 가방 칸의 아이템 (`""`: 없음, 또는 `"bag"`이 아님) |
+| `is_own_bag()` | 자기 가방의 칸 옮기기 (모든 플러그인에게: `inventory()` `"player"`, `side()` `"bag"`, `click()` `"move"`/`"sort"`) |
+| `to_slot()` / `count()` | 옮겨 간 칸 (정리는 -1) / 몇 개 (0: 칸 전부) |
+
+`cancel(이유)`: 자기 가방의 것은 옮겨지지 않습니다(게임의 가방도 그대로). 예: `plugins/kits`(직업 무기를 첫 칸에 고정).
 
 ### Words
 
@@ -622,10 +627,33 @@ fn timer(e: Timer) {
 | `size()` | 한 변의 칸 수 (32) |
 | `clear_props()` | 그 위의 덤불·풀·유목 치우기 |
 
+### PlayerInteract
+
+Bukkit의 PlayerInteractEvent: 손의 것이 그 칸에서 할 일이 없을 때(빈손, 게임이 쓰지 않는 아이템) 사용 버튼. 취소하면 막힘.
+
+| | |
+|---|---|
+| `block()` | 블록 종류 ("" 공기; 여러 칸 종류는 그 종류) |
+| `at()` → `(x, y, z)` | 그 칸 (여러 칸 종류는 기준 칸) |
+| `face()` | `"up"` (게임의 사용은 기둥 꼭대기에), 블록이 없으면 `"air"` |
+| `held()` | 손의 것 ("" 없음) |
+
+```rust
+#[on(PlayerInteract)]
+fn touched(e: PlayerInteract) {
+    let (x, y, z) = e.at();
+    if e.block() == "door" {
+        e.world().set_block(x, y, z, Block::named("door_open").unwrap());
+        e.world().set_block_data(x, y, z, "open", "1");
+    }
+}
+```
+
 ### BlockPlace / BlockBreak
 
 플레이어가 손에 든 블록(아이템 `"type": "block"`)을 사용 버튼으로 앞 칸에 놓을 때 / 플러그인이 [등록한 블록](world#새-블록-종류)을
-곡괭이로 부술 때(아이템이 있는 종류면 가방에). 바닐라 땅의 블록은 부서지지 않습니다. 취소하면 일어나지 않습니다.
+곡괭이로 부술 때(아이템이 있는 종류면 가방에), 월드의 [블록 규칙](world#바닐라-블록-부수기놓기)이 허락한 바닐라 블록을
+놓고 부술 때(`block()` "grass" "stone" …; 떨굼은 땅에). 취소하면 일어나지 않습니다.
 
 | | |
 |---|---|
