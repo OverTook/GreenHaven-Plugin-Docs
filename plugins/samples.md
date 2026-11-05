@@ -10,7 +10,7 @@ redirect_from:
 # 샘플 플러그인
 
 GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 모두 Rust SDK로 쓰여 있고, 규칙을 바꾸는 것은 모두
-`#[on(Enable)] fn enable`의 `Registry`로 합니다([규칙 등록](rules)). `cutscene` `riding` `flight` `showcase` `friend_lands` `camera_modes` `arcade`는 서버 쪽과 [게임 쪽 코드](client)를
+`#[on(Enable)] fn enable`의 `Registry`로 합니다([규칙 등록](rules)). `cutscene` `riding` `flight` `showcase` `friend_lands` `camera_modes` `arcade` `hide_blocks`는 서버 쪽과 [게임 쪽 코드](client)를
 함께 가집니다(`src/shared.rs` `server.rs` `client.rs`). 몇몇은 게임에도 zip으로 들어 있어 월드 선택 › 편집 › 플러그인에서
 켤 수 있습니다(PC).
 
@@ -24,6 +24,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `new_creatures` 새 생물 | 밤의 얼음 버섯(돌을 떨굼), 둘레를 돌다 덤비는 도깨비불(광산 2층부터도), 헛간의 염소(이틀에 한 번 염소 젖) | `monsters_add` `animals_add`, `MobStep`, `Mob::set` `attack` |
 | `new_neighbor` 새 이웃 하늘 | 새 주민 하늘(소율의 모습, 하루 일정, 대사), 말을 걸면 선택지 창, 이야기, `/하늘`로 부르면 걸어옴 | `WorldCreate`의 `spawn_npc`, `Words`, `Gui`, `Npc::say` `go_to`, 대사 패치 |
 | `woodcutter` 나무꾼 | `/나무꾼`: 곁에 나타난 나무꾼(아바타, 머리 위 이름)이 가장 가까운 나무로 걸어가 한 번씩 도끼질해(나무가 흔들림) 자기 쪽으로 베어 쓰러뜨리고, 떨어진 나무 하나를 먹고 하나는 모이를 쪼는 닭으로 꾸미며(나머지는 누구나 주움), 가까운 건물 방에 들렀다 나옴 | `spawn_avatar` `Avatar::set_look` `hold` `set_name` `play_anim` `debris_at` `debris_damage` `items_near` `ItemEntity::consume_by` `set_model` `play_anim` `room`, `Tick` |
+| `hitboxes` 히트박스 | `/벽세우기`: 동쪽 3칸에 히트박스(1 × 9칸, 3블록 높이)를 가진 상자 구조물, 서쪽 3칸에 같은 히트박스의 단단한 바위 엔티티: 서버의 걸음 판정과 게임의 몸이 둘 다 막음. `/벽치우기`로 치움 | `put_structure`의 `"hit"`, `set_hitbox` `set_solid` |
 | `void_arena` 허공 경기장 | 미니게임: 빈 월드(server.properties `level-type=void`) 한가운데 떠 있는 9×9 블록 발판, 마을·주민·농사·상점·밤 없이 발판 위에서 시작, 경기장 블록을 쌓고 곡괭이로 부숨, 떨어지면 가방 그대로 발판에서 다시 | `WorldCreate`의 `fill` `World::set_spawn` `set_vanilla` `set_live_saving`, `Join`의 `set_check("air")`, `PlayerMove`의 `death`, `PlayerDeath`의 `keep_inventory` |
 | `flat_world` 탁 트인 평지 | 성벽·성문·바위 둑·암초 없는 마을, 마을 밖은 나무 없는 평평한 풀밭 (새 월드에만) | `WorldCreate`의 `remove_plot`, `ChunkGenerate`의 `fill` `clear_props` |
 | `deep_mines` 거친 땅과 깊은 광산 | 성벽 밖 땅이 더 높고 험해짐(산, 눈, 큰 바위), 광산 층이 넓어지고 금이 일찍, 층마다 도착한 곳 근처에 금광석 | `terrain` `mine_layout`, `MineFloor::set_rock` |
@@ -34,6 +35,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `rpg` RPG: 모험가 서버 | 전사 / 마법사 직업과 스킬 트리, 기술 버튼(Q), 마나·투지 바, 서버 하나의 시계, 농사와 잠 막기(설정), `/직업` | `ServerTick`, `PlayerSleep`·`PlayerTill` … 막기, `MobDeath` 경험치, `progress.skills`, `settings` |
 | `town_helper` 마을 도우미 | 귀환 주문서(쓰면 집 앞으로), 체력 150, 고운 말 채팅, 환영 인사, 광산 층 이름 '지하 n층', `/비` `/맑음` | `Use`, `Chat::replace`, `Join`, `where_text`, `set_weather` |
 | `second_wind` 기절과 긴 밤 | 쓰러져도 물건을 지키고 10초 뒤 일어남, `/기절`, `/긴밤` | `PlayerDeath`, `death`, `respawn`, `set_night_time` |
+| `tag` 술래잡기 | `/술래 [초]`: 시작한 사람이 술래(팀), 나머지는 도망자. 술래가 E로 건드리거나 치면(그 판 동안 PvP, 피해 없음) 술래가 바뀜; 시간이 다 되면 도망자에게 30골드 | `PlayerInteractPlayer`, `PlayerDamage`, `World::team`, `set_pvp`, `Server::player`, Tick에서 남에게 `add_gold` |
 | `custom_model` 커스텀 모델 | `/변신`으로 파란 고양이가 되고 `/인사`로 손을 흔듦 | [`models_add`, `emotes_add`](models), `set_model`, `play_anim` |
 | `wild_fish` 거친 물고기 | 잉어는 느긋하게, 참치는 빠르게, 비단잉어는 물결처럼 오르내리다 갑자기 내달림 | `progress.fish.<id>.reel`, `reel` 내보내기, "gh" `register` (SDK 없이) |
 | `screen` 화면 꾸미기 | 그림이 든 환영 창, 설정에 나오는 단축키(하나는 게임 키와 겹쳐 꺼짐: 접속 때 알림), 오른쪽 아래 마나 바와 화염 버튼, 왼쪽 위 둥근 미니맵(M으로 켜고 끄기), H로 시계 숨기기, 마나 상점 창(가방의 물건을 마나로), 가방 대신 자기 보따리 창(K로 원래 가방) | [화면](screen): `Hud` `El` `Anchor`, `World::columns_raw` + `send_png`, `Hud::hide` `key` `replace` `restore`, `Packet`, `WindowOpen`, `Inventory`, `InventoryClick` |
@@ -47,6 +49,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `camera_modes` 카메라 시점 | F5로 시점 바꾸기: 기본 → 영화처럼(천천히 도는 시점) → 내려다보기 → 옆에서(횡스크롤) → 어깨 너머 → 1인칭 → 드론(W A S D, Q / E로 나는 자유 카메라) | [게임 쪽 코드](client): 매 프레임 `Camera::set` `follow` `first_person` `release` |
 | `economy` 코인 경제 | 서버의 코인: 잔고·넣기·빼기를 다른 플러그인에 내보냄, `/코인` | [플러그인끼리](interop): `#[export]`, `caller()`, `provides`, API 크레이트(`economy/api`: `api!`) |
 | `bounty` 수확 보상 | 수확마다 코인 1개, `/씨앗사기`(코인 5개로 순무 씨앗). 코인 경제가 필요 | `depend`, 다른 플러그인의 API(`economy_api::deposit` `withdraw`) |
+| `hide_blocks` 블록 숨바꼭질 | `/숨바꼭질 [숨는 초]`: 친 사람이 술래(빨간 이름표, 멈추고 눈가림), 나머지는 블록으로 변장해 숨음(가만히 있으면 칸에 맞춰 섬). 숨는 동안 술래의 게임에는 숨는 사람의 위치도 블록도 아예 가지 않고, 그다음 가짜 블록 8개 사이에서 E로 때려 찾음(가짜를 때리면 2초 멈춤). 찾힌 사람은 관전자, 모두 찾거나 3분이 지나면 끝 | `Player::disguise` `hide_from` `freeze` `set_spectator` `set_nametag` `set_public`, `"block:<kind>"` 엔티티, `EntityInteract`; 게임 쪽 `Players::list` `public_text`, `public` 이벤트, `Screen::fade` |
 | `flight` 비행 | Y로 날기 시작하고 다시 Y로 내려옴. W/S 앞뒤, A/D 돌기, Space 위로, Shift 아래로. 비행 규칙(최대 빠르기, 높이)은 `src/shared.rs` 하나에 있어 게임은 그대로 움직이고 서버는 그대로 검사 | [이동 방식 만들기](moving): `Player::set_check`, `PlayerMove`(`dt` `on_ground`), `Tick::dt`; 게임 쪽 `Input::capture` `Me::set_velocity` `set_gravity` `set_move_mode`, `Camera::follow` |
 
 빌드 (GreenHaven-Server에서):

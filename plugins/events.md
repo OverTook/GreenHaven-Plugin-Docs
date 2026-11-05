@@ -78,7 +78,7 @@ fn cmd(c: Command) { /* … */ }
 | [`Harvest`](#harvest) | `harvest` | ✔ | 수확 |
 | [`Price`](#price--sell) | `price` | | 상점의 값 |
 | [`Sell`](#price--sell) | `sell` | | 파는 값 |
-| [`Damage`](#damage) | `damage` | ✔ | 몬스터가 플레이어를 침 |
+| [`PlayerDamage`](#playerdamage) (`Damage`) | `damage` | ✔ | 플레이어가 다치려 함: 몬스터, `Player::damage`, 다른 플레이어의 타격 |
 | [`Strike`](#strike) | `strike` | ✔ | 플레이어가 몬스터를 침 |
 | [`Spawn`](#spawn) | `spawn` | ✔ | 몬스터가 나옴 (밤, 광산 층) |
 | [`Tick`](#tick) | `tick` | | 누가 있는 월드에서 플러그인마다 기본 1초에 한 번 (`Registry::tick_rate(n)`, `#[every(초)]`) |
@@ -99,7 +99,12 @@ fn cmd(c: Command) { /* … */ }
 | [`PlayerMove`](#playermove) | `move` | ✔ | 플레이어가 움직임 (가로나 위아래로) |
 | [`WorldCreate`](#worldcreate) | `world.create` | | 월드가 만들어짐 |
 | [`ChunkGenerate`](#chunkgenerate) | `chunk.generate` | | 청크가 처음 만들어짐 |
-| [`PlayerDeath`](#playerdeath) | `death` | | 플레이어가 쓰러짐 |
+| [`PlayerDeath`](#playerdeath) | `death` | | 플레이어가 쓰러짐 (`killer()`) |
+| [`PlayerRespawn`](#playerrespawn) | `respawn` | | 쓰러졌다 일어남 |
+| [`PlayerTeleport`](#playerteleport) | `teleport` | ✔ | 플러그인이 플레이어를 옮기려 함 |
+| [`PlayerInteractPlayer`](#playerinteractplayer) | `player.interact` | ✔ | 다른 플레이어에게 E |
+| [`ModelEntityDamage`](#modelentitydamage--modelentitydeath) | `entity.damage` | ✔ | 체력 있는 이 플러그인의 엔티티를 플레이어가 침 |
+| [`ModelEntityDeath`](#modelentitydamage--modelentitydeath) | `entity.death` | | 그 엔티티의 체력이 0 |
 | [`MobDeath`](#mobdeath) | `mob.death` | | 플레이어가 몬스터를 쓰러뜨림 |
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
@@ -249,9 +254,18 @@ fn festival(e: Sell) {
 
 ## 전투와 몬스터
 
-### Damage
+### PlayerDamage
 
-몬스터가 플레이어를 칠 때. `amount()` / `set_amount(n)` (0이면 안 다침). 취소: 안 다침.
+플레이어가 다치려 할 때(Bukkit의 EntityDamageEvent): 몬스터의 접촉, 플러그인의 [`Player::damage`](sdk#피해-체력-pvp-팀), PvP가 켜진
+월드에서 다른 플레이어의 휘두름. `amount()` / `set_amount(n)` (0이면 안 다침), `cause()` ("monster", "player", 또는 플러그인이 준 원인),
+`by()` 친 사람의 이름("" 없음), `attacker()` → `Option<Player>`. 취소: 안 다침. 예전 이름 `Damage`도 그대로.
+
+```rust
+#[on(PlayerDamage)]
+fn armor(e: PlayerDamage) {
+    if e.cause() == "player" && e.player().team() == "수비" { e.set_amount(e.amount() * 0.5) }
+}
+```
 
 ### Strike
 
@@ -294,7 +308,28 @@ fn circle(e: MobStep) {
 
 ### PlayerDeath
 
-플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기. `respawn_at_spawn(true)`: 의료실 대신 월드의 스폰에서. `no_letter()`: 도구 편지 없음. 월드 전체로는 `World::set_vanilla("fall", false)`(잃는 것 없이 스폰에서). 그 사람을 쫓던 몬스터만 사라집니다.
+플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `reason()` "monster" "plugin"(`death`) "damage"(`Player::damage`, 타격), `cause()`,
+`killer()` 마지막으로 친 사람("" 없음: 킬 피드). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기. `respawn_at_spawn(true)`: 의료실 대신 월드의 스폰에서. `no_letter()`: 도구 편지 없음. 월드 전체로는 `World::set_vanilla("fall", false)`(잃는 것 없이 스폰에서). 그 사람을 쫓던 몬스터만 사라집니다.
+
+### PlayerRespawn
+
+쓰러졌다 일어날 때(바로, 또는 `Player::respawn`; Bukkit의 PlayerRespawnEvent). `set_location(x, z)`: 거기서 일어남(팀 스폰).
+
+### PlayerTeleport
+
+플러그인이 플레이어를 옮기기 직전(`teleport`, `teleport_to`). `from()` / `to()` → `(x, y, z)` (y NaN: 땅 위), `set_to(x, y, z)`. 취소: 그대로.
+이 이벤트 안에서 한 다른 일은 하지 않습니다.
+
+### PlayerInteractPlayer
+
+다른 플레이어 가까이서 E(행동 `interact`의 `a`가 그 이름; 손 닿는 거리). `target()` → `Option<Player>`, `target_name()`, `held()` 손에 든 것. 취소 가능.
+술래의 터치, 거래. 예: `plugins/tag`.
+
+### ModelEntityDamage / ModelEntityDeath
+
+`ModelEntity::set_health(hp, max)`로 체력을 준 이 플러그인의 엔티티를 플레이어의 휘두름이 맞힐 때: `entity()`, `amount()` / `set_amount(n)`,
+`by()` 친 사람; 취소: 안 다침. 0이 되면 `ModelEntityDeath`(`drop_item`은 친 사람 자리에) 뒤 사라집니다. 그 플러그인에만 옵니다.
+(`EntityDamage` / `EntityDeath`는 예전부터 `Damage` / `MobDeath`의 별칭입니다.)
 
 ## 플레이어
 

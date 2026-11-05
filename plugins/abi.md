@@ -83,7 +83,26 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_time(minute: i64)` | 그 월드의 시각 |
 | `move_world(p, len, station: i32)` | 그 플레이어를 서버의 그 월드로 (`""` 모두의 월드; `station` 1: 그 월드의 열기구 정거장으로, 0: 농장 집 앞으로) |
 | `music_play(p, len)` `music_all(p, len)` | 그 플레이어 / 월드 모두에게 곡 |
-| `player(i: i32) -> i32` | tick: i번째 플레이어를 고름 (뒤의 `pget` `me` 등이 그 사람) |
+| `player(i: i32) -> i32` | tick: i번째 플레이어를 고름 (뒤의 `pget` `me` 등이 그 사람; -1: 이벤트의 그 사람으로 돌아감) |
+| `player_named(p, len) -> i32` | 서버 어디든 접속한 그 이름의 사람을 `player(i)`의 번호로 (-1: 없음; `num("player.i.x")` 등도 채움) |
+| `char_invisible(on: i32)` `char_hide_from(p, len, on: i32)` | 그 플레이어를 아무에게도 / 그 이름의 한 사람에게 보내지 않기 |
+| `char_disguise(ent: i64, snap: i32)` | 이 플러그인의 엔티티로 변장 (0: 끄기, 엔티티 지움) |
+| `char_nametag(p, len, cp, cl)` `char_nametag_visible(on: i32)` `char_scale(s: f64)` | 이름표 글과 색, 보이기, 크기 (0.25-4) |
+| `char_jump(s: f64)` `char_gravity(s: f64)` `char_freeze(on: i32)` `char_spectator(on: i32)` | 점프·중력 배율 (서버의 공중 검사도), 제자리, 관전자 |
+| `char_public(kp, kl, vp, vl)` `ent_public(id: i64, kp, kl, vp, vl)` | 공개 값 (값은 JSON: 숫자, 글, `null`) |
+| `online(p, cap) -> len` | 접속한 사람들 `"이름\t월드\n"` |
+| `broadcast_all(p, len)` | 서버 모두의 채팅 |
+| `teleport_to(x, y, z, yaw: f64)` | 3D로 옮기기 (NaN: 땅 위 / 바라보던 대로) |
+| `damage(amount: f64, cp, cl, bp, bl)` | 피해 (원인, 친 사람) — `plugin_api/combat.rs` |
+| `set_health(n: f64)` `set_max_health(n: f64)` | 체력, 최대 체력 |
+| `set_pvp(on: i32)` `pvp() -> i32` | 월드의 PvP |
+| `ent_set_health(id: i64, hp, max: f64)` `ent_health(id: i64) -> f64` | 엔티티의 체력 |
+| `team_set(p, len, jp, jl) -> i32` `team_remove(p, len)` | 팀 만들기·바꾸기(`{"color","friendly_fire"}`) / 없애기 — `plugin_api/teams.rs` |
+| `team_join(p, len) -> i32` `team_leave()` `team_of(p, cap) -> len` | 그 플레이어의 팀 |
+| `team_members(np, nl, p, cap) -> len` `teams(p, cap) -> len` | 팀의 사람들, 팀들 (줄마다 하나) |
+
+이벤트의 그 사람이 아닌 플레이어(`player`, `player_named`로 고른)에게 한 `give` `gold` `energy` `heal` `teleport` `damage` ... 는
+그 사람이 있는 월드의 다음 스텝에 그 사람의 몫에 됩니다(서버의 `srv.op` 대기열).
 
 ## 값과 데이터
 
@@ -143,6 +162,8 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `ent_name(id, p, len)` | 아바타 머리 위 이름 (`""` 없음) |
 | `ent_text(id, kp, kl, p, cap) -> i32` | `model` `anim` `held` `name` |
 | `ent_count() -> i64` `ent_at(i) -> i64` | 이 플러그인의 엔티티 |
+| `ent_solid(id, on: i32)` | 단단하게 (충돌층에; 히트박스가 없으면 모델 크기, 아니면 한 칸 두 블록) |
+| `ent_hitbox(id, p, len)` | 히트박스 JSON `[[x, z, w, d, y, h], …]` ([히트박스](world#히트박스와-충돌)) |
 | `npc_count() -> i64` `npc_id(i, p, cap) -> i32` | 주민 목록 |
 | `npc_get(ip, il, kp, kl) -> f64` | `x` `z` `moving` `hidden` `indoors` |
 | `npc_goto(ip, il, x, z, hold: f64)` `npc_say(ip, il, tp, tl)` | 보내기, 한마디 |
@@ -168,7 +189,9 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `structure_count() -> i64` `structure_id(i) -> i64` | 구조물 목록 |
 | `structure_get(id, k, kl) -> f64` | `x` `z` `y` `yaw` `w` `d` `scale` |
 | `structure_text(id, k, kl, p, cap) -> i32` | `k` `m` `plot` `n` `key` `kind` `label` `text` `s` `owner` |
-| `structure_put(p, len) -> i64` | 세우기 (id, 0 실패) |
+| `structure_put(p, len) -> i64` | 세우기 (id, 0 실패; `"hit"`: 히트박스) |
+| `solid_at(x, y, z: f64) -> i32` | 그 칸이 단단한가 (블록이나 충돌층의 상자: 1/0) |
+| `raycast(x, y, z, dx, dy, dz, most: f64) -> f64` | 광선이 처음 닿는 단단한 칸까지 m (−1 없음, 256 m까지) |
 | `structure_remove(id)` `structure_remove_plot(p, len)` `structure_move(id, x, z, yaw: f64)` | |
 | `debris_at(x, z: i64, p, cap) -> i32` | 그 칸(지상)의 야생 것 id (`""` 없음) |
 | `tree_fell(x, z: i64, tx, tz: f64) -> i32` | 나무를 마지막 도끼질처럼 (tx, tz) 쪽으로 베기 (1/0): 그루터기, 나무는 누구나 |
@@ -229,7 +252,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `world`(지금 있는 월드) `channel` `data` `key` `on` `action` `input.device`) |
 | `send(cp, cl, dp, dl)` | 서버 쪽에 채널 `cp`로 패킷 (서버의 `packet` 이벤트; 플러그인 하나가 1초에 8개까지) |
 | `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh` `balloon`, 입력의 `bind`, 연출의 `light` `highlight` `particles` `trail`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]`, `balloon`은 `{"do": "up"}` 이륙 / `{"do": "down"}` 착륙 |
-| `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON |
+| `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON; 이 게임에 온 것 읽기: `players` `[]` → `[id,x,y,z,yaw,doing,…]`, `player` `[id]` → 이름, `entities` `[]` → `[id,x,y,z,yaw,…]`, `entity` `[id]` → 모델, `mobs` `[r]` → `[n,x,y,z,hp,…]`, `mob` `[n]` → 종류, `public` `["p"\|"e", id, key]` → 값 |
 | `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
 
-내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` `ghc_action` `ghc_step` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).
+내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` `ghc_action` `ghc_step` `ghc_public` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).

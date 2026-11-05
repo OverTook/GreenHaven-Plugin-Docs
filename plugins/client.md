@@ -480,6 +480,23 @@ fn act(a: Action) {
 | `Me::velocity()` / `Me::on_ground()` | 게임이 움직이는 속도 (칸/초), 발이 땅에 닿았는지 |
 | `Input::held(key)` → `bool` | 그 키를 지금 누르고 있는지 |
 
+### 세상 읽기
+
+이 게임에 **온 것만** 읽습니다. 서버가 이 플레이어에게 숨긴 사람(서버 쪽 `hide_from` `set_invisible` `disguise`, `set_spectator`)은
+위치도 번호도 오지 않으므로 어떤 게임 쪽 코드로도 알 수 없습니다(그리지 않는 것이 아니라 보내지 않음). 하나하나가 게임의 답이라
+한 호출에 32번까지.
+
+| | |
+|---|---|
+| `Players::list()` / `get(id)` / `near(r)` → `PlayerView { id, pos, yaw, doing }` | 이 게임이 그리는 다른 플레이어 (그려진 자리, 칸; `doing` 0 서기, 1 걷기, 2 달리기, 3 잠, 4 도구, 5 수영, 6 점프, 7 떨어짐) |
+| `PlayerView::name()` / `public(key)` → `f64` / `public_text(key)` | 이름, 서버 쪽이 공개한 값 (서버 쪽 `Player::set_public`; 없으면 NaN / `""`) |
+| `Entities::list()` / `get(id)` / `near(r)` → `EntityView { id, pos, yaw }`, `model()`, `public(key)` | 서버 쪽 엔티티 (`"block:stone"` 같은 블록 모습도) |
+| `Mobs::near(r)` → `MobView { n, pos, hp }`, `kind()` | 이 층의 몬스터 (`hp` 남은 체력 0-1) |
+| `Me::id()` | 이 월드에서 내 번호 (`PlayerView::id`와 같은 것) |
+| `Net::ms()` / `Net::rtt()` | 서버 시계 (unix ms), 왕복 시간 (ms) |
+| 이벤트 `public` (`PublicChanged::who()` `id()`) | 누군가의 공개 값이 바뀜: `client! { public => f }` |
+| `Target::Player(id)` | 외곽선·파티클·궤적의 대상으로 다른 플레이어 |
+
 ### 연출: 빛, 외곽선, 파티클, 궤적
 
 모두 이 플레이어의 화면에서만입니다. 서버를 떠나면 게임의 것으로 돌아옵니다. 대상(`Target`)은 `Target::Me`(자기),
@@ -510,5 +527,6 @@ fn act(a: Action) {
 - `plugins/friend_lands` 친구 땅: 친구를 고르면 `Balloon::lift_off`로 떠오르는 동안 서버에 이동을 청하고, `World::id` `ready`로 친구의
   땅이 그려지길 기다려 그 위 상공에서 내려다보다가(`Camera::set`) 「착륙하기」로 `Balloon::land`. `plugins/camera_modes`: F5로 시점 바꾸기.
 - `plugins/riding` 탈것과 지팡이, `plugins/flight` 비행: [이동 방식 만들기](moving).
+- `plugins/hide_blocks` 블록 숨바꼭질: 술래의 눈가리개와 남은 시간, 숨는 사람에게는 `Players::list`와 술래의 공개 값 `role`로 술래까지의 거리.
 - `plugins/arcade` 오락실: K(부스트)와 O(빛) 액션(휴대폰에선 화면 버튼, 설정에서 키 바꾸기), 누를 때마다 서버에 `request`하고 답을 HUD에,
   마우스 이동량·이동 축·장치·고정 스텝을 HUD에, 어두운 공포 조명(O로 켜고 끔), 자기 외곽선, 머리 위 반짝이, 부스트 불꽃, 발자국 궤적.

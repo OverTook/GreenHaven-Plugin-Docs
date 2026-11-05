@@ -31,7 +31,7 @@ redirect_from:
 
 ## Player
 
-이벤트의 플레이어 (`e.player()`). `Tick::players()`가 주는 것은 그 사람.
+이벤트의 플레이어 (`e.player()`). `Tick::players()`, `Server::player(이름)`, `World::players()`가 주는 것은 그 사람.
 
 | 메서드 | |
 |---|---|
@@ -44,7 +44,12 @@ redirect_from:
 | `heal(n)` | 체력 |
 | `add_xp(skill, n)` | 스킬 경험치 |
 | `add_friendship(villager, points)` | 주민 호감도 |
-| `teleport(x, z)` | 옮기기 (서버의 이동 판정도 그 자리를 받아들임) |
+| `teleport(x, z)` | 옮기기 (서버의 이동 판정도 그 자리를 받아들임; `PlayerTeleport`가 먼저) |
+| `teleport_to(x, y, z, yaw)` | 3D로 옮기기 (`y` NaN: 그 자리의 땅 위, `yaw` NaN: 바라보던 대로; 라디안, 게임의 것) |
+| `y()` `yaw()` | 발의 높이, 바라보는 방향(라디안) — 그 게임이 마지막으로 알린 것 (pitch는 서버가 모름) |
+| `damage(amount, cause, by)` | 피해 (`cause` "": 플러그인 이름, `by` `Some(&친 사람)`): `PlayerDamage` 뒤 보호구가 몫을 덜고, 체력이 다하면 쓰러짐(`PlayerDeath`의 `killer()`). 방 안에서도 |
+| `set_health(n)` `set_max_health(n)` | 체력을 n으로 (0으로 쓰러지지는 않음: `damage`로) / 그 사람의 최대 체력 (저장됨; 0: 규칙의 `max_health`) |
+| `team()` `join_team(team)` `leave_team()` | 이 월드에서의 팀 ([피해, 체력, PvP, 팀](#피해-체력-pvp-팀)) |
 | `set_time(minute)` | 그 사람이 있는 월드의 시각 (6:00 = 360 ~ 2:00 = 1560; 날짜는 그대로), 그 월드의 게임에 바로 알림 |
 | `set_walk_speed(times)` | 걸음 빠르기 배수 (1이 원래). 게임의 걸음과 서버의 이동 판정이 함께 바뀜. 바꿀 때까지 유지 |
 | `inventory()` → [`PlayerInventory`](#playerinventory) | 그 사람의 가방 (Bukkit의 getInventory) |
@@ -55,6 +60,16 @@ redirect_from:
 | `death(hold)` | 쓰러뜨림 (`PlayerDeath`도 불림). `false`: 게임 규칙대로 진료소에서 바로 일어남. `true`: `respawn`까지 쓰러진 채 대기, 아침이 지나도 그대로. 다른 사람의 잠은 이 사람을 기다리지 않지만, 쓰러진 사람만으로 하루가 끝나지는 않음 |
 | `respawn()` | 쓰러진 채 대기 중인 사람을 진료소에서 일으킴 (체력 가득) |
 | `set_model(id)` `clear_model()` | [커스텀 모델](models)로 그림 / 원래 모습으로. 연결된 동안만, 계정은 그대로 |
+| `set_invisible(on)` | 아무에게도 안 보임: 위치·목소리·손에 든 것·모습·번호가 **어떤 게임에도 가지 않음**(보내지 않기; 자기 게임 빼고). 채팅은 그대로(`Chat`을 취소) |
+| `hide_from(other, on)` | `other`(이름) 한 사람에게만 숨김 (술래가 기다리는 동안). 변장의 엔티티도 그 사람에게는 가지 않음 |
+| `disguise(Disguise::Block(kind) \| Disguise::Model(path), snap)` → `Option<ModelEntity>` | 변장: 투명이 되고 이 플러그인의 엔티티(`"block:<kind>"` 블록 모습, 또는 모델)가 걷는 대로 따라감(`snap`: 칸 가운데). 다른 엔티티와 구별할 수 없음(그 사람과 이어진 필드 없음); 자기 게임에서만 반투명. `set_interact`로 맞힐 수 있게 |
+| `undisguise()` | 원래대로 (엔티티 지움; 나가거나 월드를 옮겨도) |
+| `set_nametag(text, colour)` `set_nametag_visible(on)` | 머리 위 이름 (`""` 이름 그대로; 색 `"ff3030"`, `""` 게임 색), 보이기 |
+| `set_scale(times)` | 모든 게임에서 그 크기로 (0.25-4) |
+| `set_jump_power(times)` `set_gravity(times)` | 점프 높이 배수 (0-10), 중력 배수 (0.1-5): 게임이 그렇게 움직이고 **서버의 공중 검사도 그 배율로** 판정 |
+| `freeze(on)` | 제자리 (게임의 걷기·점프 꺼짐, 걸음은 서버가 되돌림): 카운트다운 |
+| `set_spectator(on)` | 관전자: 아무에게도 안 보이고, 모든 것을 뚫고 날며(서버의 공중·벽 검사 꺼짐), 구경꾼처럼만 행동(도구·농사 없음), 몬스터도 안 따라옴 |
+| `set_public(key, value)` | 월드의 모든 게임이 읽는 값 (게임 쪽 [`Players::get(id).public(key)`](client#세상-읽기)): 숫자, 글(64자), `Public::None`(지움); 32키, 키 24자. 공개이니 비밀은 넣지 말 것. 연결된 동안만 |
 | `play_anim(id)` `stop_anim()` | [감정 표현](models) 재생 / 끝내기. 가만히 서 있을 때만, 움직이거나 행동하면 끝남 |
 | `say(line)` | 머리 위의 한마디 |
 | `message(line)` | 채팅 한 줄 |
@@ -76,7 +91,30 @@ redirect_from:
 | `data_del(key)` | |
 
 {: .note }
-`give` `take` `add_gold` `add_energy`와 가방 바꾸기(`inventory()`의 `add` `remove` `clear`, `set_enchant`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)와 그 플레이어의 이벤트(`Join`, `Leave`, `Chat`, `PlayerMove`, `PlayerItemHeld`, `FastPacket`, `EntityDismount`)에서 그 사람의 가방·돈·기력에 됩니다 (Bukkit의 `PlayerJoinEvent#getPlayer().getInventory().addItem`처럼; 게임에도 바로 보임). `Leave`에서 준 것은 그날이 저장되는 서버(`save-mode=live`, `World::set_live_saving`)에서만 남습니다. `say` `drop_item` `fx` `prop`는 플레이어가 한 일의 이벤트에서만 됩니다. `Tick` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `MobStep` `MineFloor`에서는 이것들이 아무것도 하지 않고, `heal` `add_xp` `add_friendship` `set_walk_speed`는 그 플레이어의 이벤트와 이것들에서 월드 주인에게만 닿습니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람입니다.
+**아무 플레이어에게나** (Bukkit의 `Server#getPlayer`): 이벤트의 그 사람이 아닌 사람(`Tick::players()`, `Server::player`, `PlayerDamage::attacker()`,
+남의 명령어 ...)에게 한 `give` `take` `add_gold` `add_energy` `heal` `add_xp` `add_friendship` `set_walk_speed` `teleport` `teleport_to` `damage`
+`set_health` `set_max_health` `set_check` `mount` `death` `respawn`은 그 사람이 있는 월드의 다음 스텝(1/5초 안)에 그 사람의 몫에 되고
+그 게임에 알려집니다(`{"t":"own"}`). 어느 이벤트에서든: `Tick`, `ServerTick`, `Chat`, `FastPacket`, `PlayerMove` ...
+
+{: .note }
+그 사람 자신에게는: `give` `take` `add_gold` `add_energy`와 가방 바꾸기(`inventory()`의 `add` `remove` `clear`, `set_enchant`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)와 그 플레이어의 이벤트(`Join`, `Leave`, `Chat`, `PlayerMove`, `PlayerItemHeld`, `FastPacket`, `EntityDismount`)에서 그 사람의 가방·돈·기력에 됩니다 (Bukkit의 `PlayerJoinEvent#getPlayer().getInventory().addItem`처럼; 게임에도 바로 보임). `Leave`에서 준 것은 그날이 저장되는 서버(`save-mode=live`, `World::set_live_saving`)에서만 남습니다. `say` `drop_item` `fx` `prop`는 플레이어가 한 일의 이벤트에서만 됩니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람이고, 남을 고른 뒤의 `e.player()`도 다시 이벤트의 그 사람입니다.
+
+## 피해, 체력, PvP, 팀
+
+`plugin_api/combat.rs`, `teams.rs`; 예: `plugins/tag`(술래잡기).
+
+| | |
+|---|---|
+| `World::set_pvp(on)` `pvp()` | 플레이어의 휘두름이 플레이어를 침 (월드에 저장, 기본 꺼짐). 몬스터처럼 그 부채꼴(사거리 `night.reach`, 앞쪽, 위아래 2 m) 안의 사람마다 `PlayerDamage`(cause `"player"`, by 친 사람). 꺼져 있으면 낮에 몬스터 없는 휘두름은 거절 |
+| `World::team(name, color, friendly_fire)` → `bool` | 팀 만들기·바꾸기 (`color` 이름표 색 `"#ff4040"`; 64개까지) |
+| `World::remove_team(name)` `teams()` `team_members(name)` | |
+| `Player::join_team(name)` → `bool` `leave_team()` `team()` | 한 팀에만; 같은 팀끼리는 `friendly_fire`일 때만 맞음 |
+| `ModelEntity::set_health(hp, max)` `health()` | 엔티티의 체력: 휘두름이 맞히면 [`ModelEntityDamage`](events#modelentitydamage--modelentitydeath), 0이면 사라짐 |
+| `Server::player(name)` → `Option<Player>` | 서버 어디든 접속한 사람 (위치는 1초마다의 것) |
+| `Server::players()` → `Vec<(이름, 월드)>` `worlds()` → `Vec<(월드, 사람 수)>` `broadcast(line)` | 접속한 사람들, 누가 있는 월드, 서버 모두의 채팅 |
+| `World::players()` → `Vec<Player>` | 이 월드에 있는 사람들 |
+
+게임은 팀을 `{"t":"teams","l":{팀: {"color","ff","members"}},"pvp"}`로(상태의 `teams` `pvp`도) 받습니다: `Net.teams`, `Net.team_of(name)`, `Net.pvp`.
 
 ## PlayerInventory
 
@@ -196,6 +234,8 @@ fn efficiency(c: Command) {
 | `ground_remove(id)` | 그 번호의 것 치우기 (`ItemEntity::remove`) |
 | `path((x0, z0), (x1, z1))` → `Vec<(f64, f64)>` | 마을 안의 걸어갈 길(주민의 길찾기와 같음: 지은 것을 돌아서, 길은 싸게): 첫 걸음 뒤로 꺾이는 점들, 마지막이 목적지. 비어 있으면 길이 없음. 한쪽이라도 마을 격자 밖이거나 마을 없는 월드면 `path_blocks`로(각 기둥 맨 위에서), 칸마다 |
 | `path_blocks((x, y, z), (x, y, z), max)` → `Vec<(f64, f64, f64)>` | 어느 월드 어디서나 블록 위로 걷는 길: 첫 걸음부터 목적지까지 칸마다 `(x, 발 높이, z)`, 비어 있으면 길이 없음. 끝은 발 아래(조금 묻혀도) 가장 높은 설 수 있는 칸, 물속이면 물 위. 설 수 있는 칸: 단단한 블록 위에 몸 들어갈 두 칸(1.6 m)이 비었거나 물 맨 위(헤엄). 한 번에 한 칸 위로(플레이어 점프 1.5 m, 물에서 나올 때도), 네 칸까지 아래로, 여덟 방향, 모서리는 몸이 들어갈 때만. 플러그인의 단단하지 않은 블록은 지나감. `max`: 살필 칸 수(16384까지), 시작에서 가로세로 64칸 안; 두 끝이 그보다 멀거나 한쪽이 한 번도 만들어진 적 없는 청크면 찾지 않고 바로 빈 것. 엔진의 A*: 연료가 아니라 걸린 시간으로 셈 |
+| `is_solid(x, y, z)` → `bool` | 그 칸이 단단한가: 블록, 또는 충돌층의 상자(구조물의 히트박스, 건물 벽, 울타리, 성벽, 단단한 엔티티) |
+| `raycast(from, dir, most)` → `Option<f64>` | `from`에서 `dir`로 처음 닿는 단단한 칸까지 m (`most`, 256 m까지 안에서) |
 | `room(name)` → `Option<Room>` | 건물 방(`"Farmhouse"` …): `x` `z` 가운데, `y` 바닥(땅 아래), `door` 안쪽 문 앞, `out` 바깥 문 앞, `size`. 엔티티를 `(door.0, y, door.1)`로 옮기면 방 안 |
 
 ### 구조물과 주민
@@ -203,7 +243,7 @@ fn efficiency(c: Command) {
 | 메서드 | |
 |---|---|
 | `structures()` → `Vec<Structure>` | 월드에 선 것들 (건물, 울타리, 성벽, 성문, 정거장 …) |
-| `put_structure(json)` → `Option<Structure>` | 세우기: `{"k": "building", "m": "house_Lv1", "x", "z", "yaw", "plot"}`, 칸 사각형 종류는 `{"k": "block", "cells": [x, z, w, d]}` |
+| `put_structure(json)` → `Option<Structure>` | 세우기: `{"k": "building", "m": "house_Lv1", "x", "z", "yaw", "plot"}`, 칸 사각형 종류는 `{"k": "block", "cells": [x, z, w, d]}`, 히트박스 `"hit": [[x, z, w, d, y, h], …]` ([히트박스](world#히트박스와-충돌)) |
 | `remove_plot(plot)` | 구획 통째로 치우기 (`"wall"`: 성벽·성문·바위 둑·암초, `"station"`, `"core"` 마을 한가운데 …) |
 | `spawn_npc(json)` → `bool` | 주민 더하기 (`{"id", "name", "look", "home", "shop", "schedule": [[480, "square"]] …}`) |
 
@@ -309,6 +349,7 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | `distance_to(&dyn Entity)` → `f64` | 땅 위의 거리 |
 | `set_interact(label)` | 플레이어가 E로 쓸 수 있음: 가까이 가면 「E: label」, 누르면 [`EntityInteract`](events#entityinteract) (이 플러그인에만). `""` 끄기. 플러그인의 엔티티(`ModelEntity` `Avatar`)만 |
 | `say(text)` | 머리 위 말풍선 (가까운 모두에게). 플러그인의 엔티티만 |
+| `set_solid(on)` | 아무도 지나가지 못함: 서버의 걸음·길·몬스터와 게임의 몸이 그 히트박스에 부딪힘. 플러그인의 엔티티만 |
 
 ### ModelEntity
 
@@ -319,6 +360,9 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | `get(k)` / `set(k, v)` | `"x"` `"y"` `"z"` `"yaw"`(라디안, 0이 +z) `"scale"` (`get`은 `"alive"`도) |
 | `text(k)` → `String` | `"model"` `"anim"` `"held"` `"name"` |
 | `as_avatar()` → `Option<Avatar>` | 아바타면 그것으로 |
+| `set_public(key, value)` | 모든 게임이 읽는 값 (`Player::set_public`처럼; 게임 쪽 `Entities::get(id).public(key)`) |
+| `set_hitbox(&[[x, z, w, d, y, h]])` | 히트박스 (`set_solid`가 단단하게 하는 모양; [히트박스](world#히트박스와-충돌)) |
+| `set_health(hp, max)` / `health()` | 체력 (0: 없음, 맞지 않음): 플레이어의 휘두름 → `ModelEntityDamage`, 0이면 `ModelEntityDeath` 뒤 사라짐 |
 
 ### Avatar
 
