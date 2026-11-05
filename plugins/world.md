@@ -248,6 +248,40 @@ fn made(e: WorldCreate) {
 
 예제 [`void_arena`](samples)(허공 경기장).
 
+### 월드마다의 규칙·가방·시계, 월드의 수명 (미니게임 허브)
+
+Multiverse처럼 월드마다 다르게 (예제 [`minigame_hub`](samples)):
+
+- **규칙** `World::set_rule("max_health", "60")`: rules.json의 값 하나를 그 월드에서만 (그 키의 값을 통째로; 점으로 이은 키 `"starter.items"`,
+  `"sell.carrot"`, `"checks.air"`; `"null"`이면 서버의 것으로, `clear_rules()` 전부). 그 월드의 행동·걸음·밤·하루는 그 규칙으로 판정되고,
+  들어오는 게임은 그 규칙의 콘텐츠(레지스트리)를 받습니다. 같은 패치의 월드들은 규칙 하나를 함께 씁니다. 블록 종류(`blocks_add`)는 안 됨.
+  규칙은 바뀔 때만 다시 만들어지며(약 0.1초) 보통 `WorldCreate`에서 한 번 정합니다.
+- **시계** `World::set_clock_rate(f)`: 규칙의 f배 (0 멈춤: 시계로는 하루가 끝나지 않음), `clear_clock_rate()`.
+- **가방 그룹** `World::set_inventory_group("arena")`: 다른 그룹의 월드에서 오면 자기 몫(가방·돈·기력·체력·스킬·호감도·장비)은 떠난
+  그룹에 맡겨지고 이 그룹의 것을 받음 (지난번 그대로, 처음이면 이 월드 규칙의 `starter`로 새로). `""`은 모두의 월드의 그룹.
+  `Player::reset()`: 지금 그룹의 몫을 새 손으로 (경기마다 새 장비).
+- **동기화** `World::set_sync(&[(30.0, 0), (80.0, 50)], Some(0.0))`: 다른 사람의 위치를 거리별로 얼마나 자주 (m, ms; 6개까지, ms 0~1000),
+  채팅이 닿는 거리 (0이면 월드 전체, `None` 48 m).
+- **수명** (그 월드를 만든 플러그인만, 모두의 월드는 안 됨): `Server::create_world_from(id, template)` 틀의 지금 모습(블록, 구조물,
+  주민, 플러그인 데이터, 위의 설정들, 지금의 엔티티)을 복사; `Server::reset_world(id, to)` 만든 그대로 다시 (안의 사람은 `to`로, `""`이면
+  모두의 월드로 갔다 다시 들어옴); `Server::remove_world(id, to)` 지움. 아무도 없는 플러그인 월드는 server.properties
+  `world-unload-seconds`(기본 300, 0 안 내림) 뒤 저장하고 내렸다가, 누가 오면 다시 읽습니다. `Server::worlds()`, `Server::world_loaded(id)`.
+
+```rust
+#[on(WorldCreate)]
+fn made(e: WorldCreate) {
+    let w = e.world();
+    if w.id() == "arena_tpl" {
+        w.set_pvp(true);
+        w.set_inventory_group("arena");
+        w.set_rule("starter", r#"{"gold": 0, "items": {"sword": 1, "salad": 3}}"#);
+        w.set_clock_rate(0.0);
+    }
+}
+// 경기 시작: Server.create_world_from("arena1", "arena_tpl"); p.move_world("arena1", false);  (Join에서 p.reset())
+// 경기 끝: Server.reset_world("arena1", "world");  모두 허브로(허브의 가방 그대로), 경기장은 틀의 모습으로
+```
+
 ## 저장
 
 - **바닐라 규칙: 자고 일어난 아침에만 저장됩니다.** 그 전에 주인이 나가거나 서버가 꺼지면 그날 한 일(블록, 플러그인 값과

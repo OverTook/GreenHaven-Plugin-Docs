@@ -97,6 +97,10 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_health(n: f64)` `set_max_health(n: f64)` | 체력, 최대 체력 |
 | `set_pvp(on: i32)` `pvp() -> i32` | 월드의 PvP |
 | `ent_set_health(id: i64, hp, max: f64)` `ent_health(id: i64) -> f64` | 엔티티의 체력 |
+| `cast(x, y, z, dx, dy, dz, len: f64, wp, wl, p, cap) -> len` | 광선 판정 → `"kind	who	x	y	z	nx	ny	nz	거리"`(`""` 없음; kind `block` `box` `player` `entity`); `wp` 이름이 있으면 그 사람의 한 발(되감기, 눈, PvP, 초당 20) |
+| `trail_at(wp, wl, ms_ago: f64, p, cap) -> len` | 그 사람(`""` 이벤트의 사람)이 있던 곳 `"x	y	z	yaw"` |
+| `projectile(mp, ml, x, y, z, vx, vy, vz, g, radius, life: f64) -> i64` | 발사체 엔티티 (−1 못 만듦) — `plugin_api/projectile.rs` |
+| `ent_gravity(id: i64, g: f64)` `ent_velocity(id: i64, vx, vy, vz: f64)` `ent_persist(id: i64, on: i32)` | 엔티티의 중력, 속도, 저장 |
 | `team_set(p, len, jp, jl) -> i32` `team_remove(p, len)` | 팀 만들기·바꾸기(`{"color","friendly_fire"}`) / 없애기 — `plugin_api/teams.rs` |
 | `team_join(p, len) -> i32` `team_leave()` `team_of(p, cap) -> len` | 그 플레이어의 팀 |
 | `team_members(np, nl, p, cap) -> len` `teams(p, cap) -> len` | 팀의 사람들, 팀들 (줄마다 하나) |
@@ -120,8 +124,16 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `save_now()` | 월드를 지금 저장 |
 | `set_live_saving(on: i32)` | 실시간 저장 |
 | `set_quit_warning(p, len)` | 나가기 경고 |
-| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void", "town": false}` |
+| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void", "town": false}`; `"template"`: 그 월드의 복사 |
 | `set_spawn(x: f64, y: f64, z: f64, yaw: f64)` | 월드의 스폰 |
+| `set_rule(kp, kl, jp, jl) -> i32` `clear_rules()` | 이 월드의 규칙 패치 (키, JSON 값; 1 / 0: JSON이 아니거나 월드마다 둘 수 없는 키) |
+| `set_clock_rate(f: f64)` | 이 월드의 시계 배율 (0 멈춤, 음수 규칙대로) |
+| `set_inventory_group(p, len)` | 이 월드의 가방 그룹 (`""` 서버의) |
+| `set_sync(p, len)` | JSON `{"tiers": [[m, ms], ...], "chat": m}` (`{}` 서버의 것으로) |
+| `world_list(p, cap) -> i32` | 만들었거나 읽은 월드마다 `id	players	loaded
+` |
+| `remove_world(ip, il, tp, tl) -> i32` `reset_world(...)` | 이 플러그인이 만든 월드를 지움 / 다시 만듦, 안의 사람은 먼저 `to`로 (1 / 0: 쓸 수 없는 이름) |
+| `player_reset()` | 이벤트의 플레이어 몫을 새 손으로 |
 | `set_vanilla(p, len, on: i32)` | 게임의 기능 하나 켜고 끄기 (`villagers` `night` `farming` `wild` `tutorial` `shops` `sleep` `mining` `dungeon` `balloon` `quests` `mail` `love` `festivals` `furniture` `fishing` `crafting` `energy` `fall` `day_end`; 모르는 이름은 서버 로그에 한 줄) |
 | `vanilla_on(p, len) -> i32` | 그 기능이 켜졌는지 (1 / 0, -1 그런 기능 없음) |
 | `set_day_end_time(m: i64)` | 월드의 하루 끝 시각 (자정부터 분; 음수: 규칙 값) |
@@ -248,11 +260,23 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 
 | 함수 | |
 |---|---|
-| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>` `balloon`(열기구: 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중) `world.ready`, 입력의 `mouse.dx` `mouse.dy` `wheel` `move.x` `move.y` `look.x` `look.y`, `step` `step.dt`; 없으면 NaN) |
+| `num(k, kl) -> f64` | 게임이 알려 준 숫자 (`fast` `dt` `time` `me.x` `me.y` `me.z` `me.yaw` `me.vx` `me.vy` `me.vz` `me.ground` `cam.x` `cam.y` `cam.z` `cam.yaw` `cam.pitch` `cam.fx` `cam.fy` `cam.fz` `screen.w` `screen.h` `mouse.x` `mouse.y` `minute` `day` `pressed` `held.<키>` `balloon`(열기구: 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중) `world.ready`, 입력의 `mouse.dx` `mouse.dy` `wheel` `move.x` `move.y` `look.x` `look.y`, `step` `step.dt`; 없으면 NaN) |
 | `text(k, kl, p, cap) -> i32` | 게임이 알려 준 글 (`me` `server` `world`(지금 있는 월드) `channel` `data` `key` `on` `action` `input.device`) |
 | `send(cp, cl, dp, dl)` | 서버 쪽에 채널 `cp`로 패킷 (서버의 `packet` 이벤트; 플러그인 하나가 1초에 8개까지) |
-| `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh` `balloon`, 입력의 `bind`, 연출의 `light` `highlight` `particles` `trail`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]`, `balloon`은 `{"do": "up"}` 이륙 / `{"do": "down"}` 착륙 |
-| `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON; 이 게임에 온 것 읽기: `players` `[]` → `[id,x,y,z,yaw,doing,…]`, `player` `[id]` → 이름, `entities` `[]` → `[id,x,y,z,yaw,…]`, `entity` `[id]` → 모델, `mobs` `[r]` → `[n,x,y,z,hp,…]`, `mob` `[n]` → 종류, `public` `["p"\|"e", id, key]` → 값 |
+| `op(kp, kl, jp, jl)` | 게임이 할 작업 하나: 종류 `kp`(`hud` `camera` `screen` `fx` `log` `local` `entity` `me` `input` `fast` `sound` `draw` `material` `mesh` `balloon`, 입력의 `bind`, 조준의 `aim`(`kick` `attach` `detach` `beam`), 연출의 `light` `highlight` `particles` `trail`)와 그 JSON `jp` (호출 한 번에 256개, 하나 64 KB까지, `mesh`는 4 MB까지). `fast`는 빠른 패킷 `[채널, 데이터]`, `balloon`은 `{"do": "up"}` 이륙 / `{"do": "down"}` 착륙 |
+| `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]`, `path` `[x0,z0,x1,z1]` → 답의 JSON; 이 게임에 온 것 읽기: `players` `[]` → `[id,x,y,z,yaw,doing,…]`, `player` `[id]` → 이름, `entities` `[]` → `[id,x,y,z,yaw,…]`, `entity` `[id]` → 모델, `mobs` `[r]` → `[n,x,y,z,hp,…]`, `mob` `[n]` → 종류, `public` `["p"\|"e", id, key]` → 값; 조준: `cast` `[x,y,z,dx,dy,dz,len]` → `[kind,id,x,y,z,nx,ny,nz,거리]`(kind 0 블록, 1 상자, 2 플레이어, 3 엔티티), `overlap` `[x0,y0,z0,x1,y1,z1]` → `[kind,id,…]`, `screen_ray` `[px,py]` → `[x,y,z,dx,dy,dz]`, `to_screen` `[x,y,z]` → `[sx,sy]` |
 | `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
 
 내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` `ghc_action` `ghc_step` `ghc_public` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦).
+
+## 상태 효과, 타이머, 쿨다운 (`plugin_api/effects.rs`)
+
+| 함수 | |
+|---|---|
+| `effect_add(name, len, secs: f64, strength: f64, icon, len) -> i32` | 1 / 0 (이름 1~32자, 아이콘 `""` 또는 `res://`, 한 사람 16개) |
+| `effect_remove(name, len)`, `effect_left(name, len) -> f64`, `effects(ptr, cap) -> i32` | `"이름\t초\t세기\n"` |
+| `timer_start(tag, len, secs: f64, every: i32) -> i32`, `timer_cancel(tag, len)` | `timer` 이벤트, `text("tag")`; 플러그인마다 64개 |
+| `cooldown(key, len, secs: f64) -> i32`, `cooldown_left(key, len) -> f64` | 1 준비됨(지금부터 식음) / 0 |
+
+HUD의 새 연산(`tween` `pin_to` `sweep` `push` `float` `board`)은 새 함수 없이 `hud` / `hud_all`의 JSON입니다(`sdk/common` `ops`).
+

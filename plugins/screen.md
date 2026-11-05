@@ -125,6 +125,35 @@ fn draw_map(w: &World, p: &Player) {
 
 플레이어가 지도 가운데에서 멀리 걸어갔을 때만(`Tick`에서) 다시 그리면 됩니다.
 
+## 레이아웃, 머리 위, 트윈, 점수판
+
+서버 쪽 `Hud`와 [게임 쪽](client) `Hud`가 똑같이 씁니다.
+
+| | |
+|---|---|
+| `El::list(Dir::Down \| Dir::Right, 간격)`, `El::grid(열, 간격)` | 자식이 차례로 / 격자로 (자식의 `pos`는 무시) |
+| `.scroll(true)` `.padding(px)` | 그 `size` 안에서 스크롤 / 안쪽 여백 (목록·격자) |
+| `.corner(r)` `.stroke(색, 두께)` `.alpha(a)` `.scale(s)` `.style(s)` | 패널의 모서리·테두리, 투명도, 크기 |
+| `El::rich(bbcode)` | `[b] [i] [u] [s] [color=ff4040] [size=20] [center] [right] [img]res://…[/img]`만; 나머지(url, meta …)는 글자 그대로 |
+| `El::viewport(모델, yaw, 초당 회전)` | 상자 안에서 도는 3D 모델 (동시에 4개) |
+| `El::boss_bar(제목, 값, 최대, 색)` | 화면 위 가운데 막대 |
+| `Hud::pin_to(id, Some(&PinTo::…), 위 m, 최대 거리)` | `Me` `Player(이름)` `PlayerId(게임 쪽 id)` `Entity(id)` `Mob(번호)` `At(x, y, z)` 머리 위를 따라다님; 그려지지 않으면 숨음 |
+| `Hud::tween(id, Prop::…, 초, Ease::…)` | `Pos` `Size` `Alpha` `Scale` `Color` `Value`; `Linear` `In` `Out` `InOut` `Back` `Elastic` `Bounce` |
+| `Hud::sweep(id, 초)` | 쿨다운의 어두운 부채꼴과 남은 초 |
+| `Hud::push(목록 id, &El, 초, 최대)`, `Hud::feed(목록 id, bbcode)` | 킬 피드, 알림 (목록에 20줄까지) |
+| `Hud::float_text(글, &PinTo, 색, 크기, 초)` | 떠오르며 사라지는 글 (피해 숫자; 48개) |
+| `Hud::board(&Board::new(제목, 키).column(키, 머리말).sort(키, 큰 것부터).teams(true))`, `board_off()` | 점수판: 키를 누르는 동안(또는 `.always(Anchor, x, y)`), 줄은 플레이어마다, 칸은 그 사람의 공개 값 (`set_public`), 팀별로 그 색 |
+
+```rust
+let h = p.hud();
+h.add("boss", &El::boss_bar("숲의 수호자", 200.0, 200.0, "d9483b"));
+h.tween("boss", Prop::Value(150.0), 0.35, Ease::Out);
+h.add("tag", &El::bar(150.0, 200.0).size(90.0, 9.0).color("d9483b"));
+h.pin_to("tag", Some(&PinTo::Entity(boss_id)), 3.2, 40.0);
+h.float_text("-25", &PinTo::Entity(boss_id), "ffb040", 26, 1.0);
+h.board(&Board::new("모험단", "P").column("kills", "처치").sort("kills", true));
+```
+
 ## 패킷 (`Packet`)
 
 버튼·입력 칸의 `on`, `key`로 묶은 키, 그리고 [게임 쪽 코드](client)의 `send`는 그 플러그인에게만 [`Packet`](events#packet) 이벤트로 옵니다: `channel()`, `data()`(4 KB까지),

@@ -379,6 +379,10 @@ fn loaded(_: Load) {
 | `Camera::mouse_look(bool)` | 마우스가 카메라를 돌릴지 (끄면 플러그인만 돌림) |
 | `Camera::yaw()` → `f64` | 카메라가 보는 방향 (땅 위의 라디안, 0이 +z): W 같은 키의 "앞" |
 | `Camera::release(초)` | 게임의 카메라로 되돌림 |
+| `Camera::pitch()` `forward()` → `(x, y, z)` `position()` | 위아래 각(라디안), 보는 방향(단위 벡터, 칸), 자리: 히트스캔의 시작과 방향 |
+| `Camera::screen_ray(px, py)` → `Option<(from, dir)>` `to_screen(x, y, z)` → `Option<(sx, sy)>` | 화면의 점 → 광선, 세계의 점 → 화면 (뒤면 `None`) |
+| `Camera::kick(위 도, 옆 도, 돌아오는 초)` | 반동: 게임 카메라를 돌렸다 서서히 되돌림 (30도까지 쌓임, `forward`에도 들어감) |
+| `Crosshair::show(글자, 색, 크기)` `hide()` | 화면 가운데 십자선 (HUD 요소 `aim.crosshair`) |
 
 ### Screen, 파티클, 소리
 
@@ -404,6 +408,8 @@ fn loaded(_: Load) {
 | `Local::remove(id)` | 없앰 |
 | `Local::spawn_text` `set_text` `set_material` `set_transform` | 3D 글자, 재질, 회전·크기 ([그래픽](#그래픽)) |
 | `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → `i64` / `Local::set_panel(id, &El)` | 월드에 선 UI 패널 (마우스로 누르고 씀), 다시 그리기 ([월드 속 UI 패널](#직접-그리는-ui)) |
+| `Local::attach(id, &AttachTo::Camera \| AttachTo::Bone(Target, "RightHand"), offset, rot)` `detach(id)` | 카메라(뷰모델: x 오른쪽, y 위, −z 앞)나 무언가의 뼈에 들려 매 프레임 따라감 |
+| `Local::beam(from, to, 색, 굵기, 초)` | 탄도선·레이저: 사라지며 (64개까지) |
 | `Entities::play_anim(id, clip)` | 서버 쪽 엔티티의 클립을 이 게임에서만 (모두가 보는 것은 서버 쪽 `play_anim`) |
 | `Me::play_anim(id)` | [감정 표현](models)을 자기 몸에 이 게임에서만 (서 있을 때; 모두가 보는 것은 서버 쪽 `Player::play_anim`) |
 
@@ -414,10 +420,12 @@ fn loaded(_: Load) {
 | | |
 |---|---|
 | `World::raycast(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸) |
+| `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
+| `World::overlap(lo, hi)` → `Vec<(HitKind, id)>` | 그 상자(한 변 16 m까지) 안의 것 (32개까지) |
 | `World::ground(x, z)` → `f64` | 게임이 가진 그곳의 땅 높이 (모르면 NaN) |
 | `World::path(from, to)` → `Vec<(x, z)>` | 마을 길 (주민의 길찾기): 꺾이는 점들, 없으면 `[]` |
 
-이 셋은 엔진이 메인 스레드에서 하는 일이라 연료에 잡히지 않아요. 그래서 핸들러 한 번에 32번까지만 답하고, 그 뒤는 모르는 것처럼
+이것들은 엔진이 메인 스레드에서 하는 일이라 연료에 잡히지 않아요. 그래서 핸들러 한 번에 32번까지만 답하고, 그 뒤는 모르는 것처럼
 답해요(`None`, `NaN`, `[]`). 한 번의 op 전체 크기도 8 MB까지예요(mesh 하나는 4 MB).
 | `World::id()` → `String` | 지금 있는 월드 (`"world"` 모두의 것, 아니면 서버 쪽 `Server::create_world`로 만든 id) |
 | `World::ready()` → `bool` | 월드가 오고 주변 땅이 다 그려졌는지 (서버가 다른 월드로 옮긴 뒤, 보여 줄 때) |
@@ -530,3 +538,24 @@ fn act(a: Action) {
 - `plugins/hide_blocks` 블록 숨바꼭질: 술래의 눈가리개와 남은 시간, 숨는 사람에게는 `Players::list`와 술래의 공개 값 `role`로 술래까지의 거리.
 - `plugins/arcade` 오락실: K(부스트)와 O(빛) 액션(휴대폰에선 화면 버튼, 설정에서 키 바꾸기), 누를 때마다 서버에 `request`하고 답을 HUD에,
   마우스 이동량·이동 축·장치·고정 스텝을 HUD에, 어두운 공포 조명(O로 켜고 끔), 자기 외곽선, 머리 위 반짝이, 부스트 불꽃, 발자국 궤적.
+
+## 화면의 새 것 (G5)
+
+`Hud::tween` `pin_to` `sweep` `push` `float_text` `board`와 `El::list` `grid` `rich` `viewport` `boss_bar`는 서버 쪽과 같습니다([화면 ›
+레이아웃](screen#레이아웃-머리-위-트윈-점수판)). 게임 쪽에서 쓰면 왕복 없이 바로: 예를 들어 근처 몬스터마다 체력 바를 붙이기.
+
+```rust
+for m in Mobs::near(25.0) {
+    Hud::add(&format!("mob{}", m.n), &El::bar(m.hp, 1.0).size(56.0, 7.0).color("d9483b"));
+    Hud::pin_to(&format!("mob{}", m.n), Some(&PinTo::Mob(m.n)), 1.7, 25.0);
+}
+```
+
+`Local::fade(id, alpha, 초, then_remove)`: 글·패널·모델이 그 투명도로 서서히(`then_remove`면 끝나면 사라짐). 피해 숫자:
+
+```rust
+let id = Local::spawn_text("20!", x, y + 1.5, z, "ffd84a", 64);
+Local::glide_to(id, x, y + 3.2, z, 0.9);
+Local::fade(id, 0.0, 0.9, true);
+```
+

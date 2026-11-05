@@ -26,6 +26,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `woodcutter` 나무꾼 | `/나무꾼`: 곁에 나타난 나무꾼(아바타, 머리 위 이름)이 가장 가까운 나무로 걸어가 한 번씩 도끼질해(나무가 흔들림) 자기 쪽으로 베어 쓰러뜨리고, 떨어진 나무 하나를 먹고 하나는 모이를 쪼는 닭으로 꾸미며(나머지는 누구나 주움), 가까운 건물 방에 들렀다 나옴 | `spawn_avatar` `Avatar::set_look` `hold` `set_name` `play_anim` `debris_at` `debris_damage` `items_near` `ItemEntity::consume_by` `set_model` `play_anim` `room`, `Tick` |
 | `hitboxes` 히트박스 | `/벽세우기`: 동쪽 3칸에 히트박스(1 × 9칸, 3블록 높이)를 가진 상자 구조물, 서쪽 3칸에 같은 히트박스의 단단한 바위 엔티티: 서버의 걸음 판정과 게임의 몸이 둘 다 막음. `/벽치우기`로 치움 | `put_structure`의 `"hit"`, `set_hitbox` `set_solid` |
 | `void_arena` 허공 경기장 | 미니게임: 빈 월드(server.properties `level-type=void`) 한가운데 떠 있는 9×9 블록 발판, 마을·주민·농사·상점·밤 없이 발판 위에서 시작, 경기장 블록을 쌓고 곡괭이로 부숨, 떨어지면 가방 그대로 발판에서 다시 | `WorldCreate`의 `fill` `World::set_spawn` `set_vanilla` `set_live_saving`, `Join`의 `set_check("air")`, `PlayerMove`의 `death`, `PlayerDeath`의 `keep_inventory` |
+| `minigame_hub` 미니게임 허브 | 허브(빈 월드 `level-type=void`의 광장)에서 `/참가`로 대기, 틀 `arena_tpl`에서 복사한 경기장(`arena1`, `arena2`)으로 옮겨 그곳의 가방(칼·샐러드, 돈 없음)과 규칙(체력 60, 멈춘 시계, PvP, 위치 자주·채팅 월드 전체)으로 겨룸; 떨어지면 탈락, 15초나 한 사람 남으면 끝: 경기장은 틀의 모습으로, 모두 허브의 가방으로 | `World::set_rule` `set_inventory_group` `set_clock_rate` `set_sync`, `Server::create_world_from` `reset_world`, `Player::reset`, `Server::data_*` |
 | `flat_world` 탁 트인 평지 | 성벽·성문·바위 둑·암초 없는 마을, 마을 밖은 나무 없는 평평한 풀밭 (새 월드에만) | `WorldCreate`의 `remove_plot`, `ChunkGenerate`의 `fill` `clear_props` |
 | `deep_mines` 거친 땅과 깊은 광산 | 성벽 밖 땅이 더 높고 험해짐(산, 눈, 큰 바위), 광산 층이 넓어지고 금이 일찍, 층마다 도착한 곳 근처에 금광석 | `terrain` `mine_layout`, `MineFloor::set_rock` |
 | `server_password` 서버 비밀번호 | 처음 들어올 때 비밀번호를 정하고, 그 뒤로는 들어올 때마다 물어봄 (세 번 틀리면 돌려보냄) | `PlayerLogin`의 입력 창, `Gui::secret`, `Server` 값 |
@@ -35,6 +36,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `rpg` RPG: 모험가 서버 | 전사 / 마법사 직업과 스킬 트리, 기술 버튼(Q), 마나·투지 바, 서버 하나의 시계, 농사와 잠 막기(설정), `/직업` | `ServerTick`, `PlayerSleep`·`PlayerTill` … 막기, `MobDeath` 경험치, `progress.skills`, `settings` |
 | `town_helper` 마을 도우미 | 귀환 주문서(쓰면 집 앞으로), 체력 150, 고운 말 채팅, 환영 인사, 광산 층 이름 '지하 n층', `/비` `/맑음` | `Use`, `Chat::replace`, `Join`, `where_text`, `set_weather` |
 | `second_wind` 기절과 긴 밤 | 쓰러져도 물건을 지키고 10초 뒤 일어남, `/기절`, `/긴밤` | `PlayerDeath`, `death`, `respawn`, `set_night_time` |
+| `blaster` 물총 놀이 | 1인칭 FPS: `/물총`(PvP, 모두 체력·탄 가득) `/물총 연습`(PvP 없이) `/물총 끄기` `/물총 엄폐`·`치우기`(앞에 돌벽). 왼쪽 클릭 물총(12발, R 장전, 25 피해), 오른쪽 클릭 돌 대포(서버가 날리는 발사체, 60과 둘레 반), 십자선, 반동, 탄도선, 맞힘 표시, 쓰러뜨림 알림, 남은 탄. 모든 사격을 서버가 쏜 사람이 본 그대로(되감아) 다시 판정 | 두 쪽: `World::cast_for` `World::projectile` `ProjectileHit` `FastPacket`; 게임 쪽 `Camera::forward` `kick` `Crosshair` `World::cast` `Local::attach` `beam` |
 | `tag` 술래잡기 | `/술래 [초]`: 시작한 사람이 술래(팀), 나머지는 도망자. 술래가 E로 건드리거나 치면(그 판 동안 PvP, 피해 없음) 술래가 바뀜; 시간이 다 되면 도망자에게 30골드 | `PlayerInteractPlayer`, `PlayerDamage`, `World::team`, `set_pvp`, `Server::player`, Tick에서 남에게 `add_gold` |
 | `custom_model` 커스텀 모델 | `/변신`으로 파란 고양이가 되고 `/인사`로 손을 흔듦 | [`models_add`, `emotes_add`](models), `set_model`, `play_anim` |
 | `wild_fish` 거친 물고기 | 잉어는 느긋하게, 참치는 빠르게, 비단잉어는 물결처럼 오르내리다 갑자기 내달림 | `progress.fish.<id>.reel`, `reel` 내보내기, "gh" `register` (SDK 없이) |
@@ -50,6 +52,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `economy` 코인 경제 | 서버의 코인: 잔고·넣기·빼기를 다른 플러그인에 내보냄, `/코인` | [플러그인끼리](interop): `#[export]`, `caller()`, `provides`, API 크레이트(`economy/api`: `api!`) |
 | `bounty` 수확 보상 | 수확마다 코인 1개, `/씨앗사기`(코인 5개로 순무 씨앗). 코인 경제가 필요 | `depend`, 다른 플러그인의 API(`economy_api::deposit` `withdraw`) |
 | `hide_blocks` 블록 숨바꼭질 | `/숨바꼭질 [숨는 초]`: 친 사람이 술래(빨간 이름표, 멈추고 눈가림), 나머지는 블록으로 변장해 숨음(가만히 있으면 칸에 맞춰 섬). 숨는 동안 술래의 게임에는 숨는 사람의 위치도 블록도 아예 가지 않고, 그다음 가짜 블록 8개 사이에서 E로 때려 찾음(가짜를 때리면 2초 멈춤). 찾힌 사람은 관전자, 모두 찾거나 3분이 지나면 끝 | `Player::disguise` `hide_from` `freeze` `set_spectator` `set_nametag` `set_public`, `"block:<kind>"` 엔티티, `EntityInteract`; 게임 쪽 `Players::list` `public_text`, `public` 이벤트, `Screen::fade` |
+| `rpg_ui` RPG 화면 | R 화염구 · F 치유 · H 신속 버튼과 재사용 대기 부채꼴, 버프 아이콘과 남은 시간, 몬스터와 플레이어 머리 위 체력 바, 떠오르는 피해 숫자, 스크롤되는 퀘스트 목록, P를 누르는 동안 파티 점수판, 처치 소식, `/보스`: 보스 바와 그 머리 위 막대, 천천히 회복. `!`로 팀 채팅 | [화면](screen#레이아웃-머리-위-트윈-점수판): `El::list` `rich` `boss_bar`, `Hud::sweep` `tween` `pin_to` `feed` `float_text` `board`; [상태 효과](sdk#상태-효과-타이머-쿨다운): `add_effect`, `cooldown`, `Scheduler`, `Timer`; 게임 쪽 `Mobs::near` `Players::near` `Local::fade` |
 | `flight` 비행 | Y로 날기 시작하고 다시 Y로 내려옴. W/S 앞뒤, A/D 돌기, Space 위로, Shift 아래로. 비행 규칙(최대 빠르기, 높이)은 `src/shared.rs` 하나에 있어 게임은 그대로 움직이고 서버는 그대로 검사 | [이동 방식 만들기](moving): `Player::set_check`, `PlayerMove`(`dt` `on_ground`), `Tick::dt`; 게임 쪽 `Input::capture` `Me::set_velocity` `set_gravity` `set_move_mode`, `Camera::follow` |
 
 빌드 (GreenHaven-Server에서):

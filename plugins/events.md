@@ -105,6 +105,7 @@ fn cmd(c: Command) { /* … */ }
 | [`PlayerInteractPlayer`](#playerinteractplayer) | `player.interact` | ✔ | 다른 플레이어에게 E |
 | [`ModelEntityDamage`](#modelentitydamage--modelentitydeath) | `entity.damage` | ✔ | 체력 있는 이 플러그인의 엔티티를 플레이어가 침 |
 | [`ModelEntityDeath`](#modelentitydamage--modelentitydeath) | `entity.death` | | 그 엔티티의 체력이 0 |
+| [`ProjectileHit`](#projectilehit) | `projectile.hit` | | 이 플러그인의 발사체가 무언가에 닿음 |
 | [`MobDeath`](#mobdeath) | `mob.death` | | 플레이어가 몬스터를 쓰러뜨림 |
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
@@ -117,6 +118,9 @@ fn cmd(c: Command) { /* … */ }
 | [`EntityInteract`](#entityinteract) | `entity.interact` | | 플레이어가 이 플러그인의 엔티티를 E로 씀 |
 | [`WindowOpen`](#windowopen) | `packet`의 `"window"` | | 이 플러그인이 가져간(`Hud::replace`) 게임의 창을 엶 |
 | [`Dismount`](#dismount) | `dismount` | | 서버가 플레이어를 탈것에서 내림 (문, 다른 월드로 감, 나감) |
+| [`Timer`](#timer) | `timer` | | 이 플러그인의 타이머(`Scheduler::run_later` / `run_every`)가 됨 |
+| [`EffectStart`](#effectstart--effectend) | `effect.start` | ✔ | 상태 효과가 시작되려 함 (`Player::add_effect`) |
+| [`EffectEnd`](#effectstart--effectend) | `effect.end` | | 상태 효과가 끝남 (시간이 다 됨, `remove_effect`) |
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
 ### 별칭
@@ -331,6 +335,11 @@ fn circle(e: MobStep) {
 `by()` 친 사람; 취소: 안 다침. 0이 되면 `ModelEntityDeath`(`drop_item`은 친 사람 자리에) 뒤 사라집니다. 그 플러그인에만 옵니다.
 (`EntityDamage` / `EntityDeath`는 예전부터 `Damage` / `MobDeath`의 별칭입니다.)
 
+### ProjectileHit
+
+`World::projectile`로 날린 이 플러그인의 발사체가 처음 닿은 것: `hit()`(`kind` `who` `entity` `at` `normal`, `player()` 맞은 사람),
+`projectile()`(이 이벤트 뒤 사라짐), `player()` 쏜 사람. 그 플러그인에만 옵니다. 예: `plugins/blaster`의 돌 대포.
+
 ## 플레이어
 
 ### PlayerLogin
@@ -544,6 +553,28 @@ fn regen(t: Tick) {
     }
 }
 ```
+
+### Timer
+
+이 플러그인의 타이머가 될 때, 그 플러그인에만(Bukkit의 `runTaskLater` / `runTaskTimer`): `Scheduler::run_later(태그, 초)`(한 번),
+`run_every(태그, 초)`(그 초마다, 첫 번째도 그 초 뒤), `cancel(태그)`. `tag()`로 어느 것인지. 플레이어가 없으니 필요하면 이름을
+태그에 넣고 `Server::player`로. 월드에 저장되고(서버가 다시 켜져도), 플러그인마다 64개, 가장 짧은 주기 50 ms; 늦은 스텝에선
+놓친 만큼이 아니라 한 번만.
+
+```rust
+#[command("보스", "")]
+fn boss(c: Command) { /* ... */ Scheduler::run_every("boss_regen", 2.0); }
+
+#[on(Timer)]
+fn timer(e: Timer) {
+    if e.tag() == "boss_regen" { /* 보스의 체력 +5 */ }
+}
+```
+
+### EffectStart / EffectEnd
+
+`Player::add_effect`가 놓은 상태 효과가 월드의 다음 스텝에 시작될 때(`effect()` `strength()` `secs()`; 막으면 붙지 않음),
+끝날 때(`effect()`, `reason()` "expired" / "removed"). `player()`가 그 사람. [SDK › 상태 효과](sdk#상태-효과-타이머-쿨다운).
 
 ### ServerTick
 

@@ -77,6 +77,7 @@ redirect_from:
 | `where_text(line)` | 화면의 장소 문구 (`""`: 게임의 것) |
 | `open_shop(shop)` | 가게 열기 (`VillagerData.SHOPS`의 id) |
 | `play_music(track)` | 지금 곡 틀기 (`Music.TRACKS`의 id나 `res://….ogg`; `""`: 원래 목록으로) |
+| `reset()` | 지금 가방 그룹의 몫(가방·돈·기력·체력·스킬)을 이 월드 규칙의 새 손으로 (그 월드의 `starter`: 경기마다 새 장비); 있는 곳은 그대로 |
 | `move_world(world, by_station)` | 서버의 다른 월드로 옮김 (`world`: [`Server::create_world`](#server)로 만든 id, `""` 모두의 월드). `by_station`이면 그 월드의 열기구 정거장으로, 아니면 농장 집 앞으로. 떠난 월드에서 `Leave`, 간 월드에서 `Join`; 가방·돈·스킬은 그대로 따라감 |
 | `has_permission(perm)` → `bool` | 권한이 있는지 (준 것·막은 것, 없으면 plugin.json `permissions`의 `default`; 선언하지 않은 권한은 운영자만) ([권한](server#권한과-운영자)) |
 | `set_permission(perm, on)` `unset_permission(perm)` | 권한 주기·막기 / 기본값으로 (서버의 `permissions.json`에 저장; `"*"` 모든 권한) |
@@ -101,7 +102,7 @@ redirect_from:
 
 ## 피해, 체력, PvP, 팀
 
-`plugin_api/combat.rs`, `teams.rs`; 예: `plugins/tag`(술래잡기).
+`plugin_api/combat.rs`, `projectile.rs`, `teams.rs`; 예: `plugins/tag`(술래잡기), `plugins/blaster`(물총 놀이: 조준과 판정).
 
 | | |
 |---|---|
@@ -110,6 +111,11 @@ redirect_from:
 | `World::remove_team(name)` `teams()` `team_members(name)` | |
 | `Player::join_team(name)` → `bool` `leave_team()` `team()` | 한 팀에만; 같은 팀끼리는 `friendly_fire`일 때만 맞음 |
 | `ModelEntity::set_health(hp, max)` `health()` | 엔티티의 체력: 휘두름이 맞히면 [`ModelEntityDamage`](events#modelentitydamage--modelentitydeath), 0이면 사라짐 |
+| `World::cast(from, dir, len)` → `Option<Hit>` | 광선 판정: 블록(`HitKind::Block`), 충돌층의 상자(`Box`), 플레이어의 몸(`Player`, `who`; 폭 0.8 m, 발에서 1.6 m, 이벤트의 플레이어는 빼고), 체력 있거나 단단한 엔티티(`Entity`, `entity`) 가운데 처음 것, `at` `normal` `distance` (256 m까지) |
+| `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`으로 |
+| `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
+| `World::projectile(모델, from, vel, gravity, radius, life)` → `Option<ModelEntity>` | 발사체: 서버가 스텝마다 움직이고 게임은 미끄러지듯 그림; 처음 닿는 블록·상자·플레이어(쏜 사람 빼고, PvP는 위와 같음)·엔티티에서 끝나고 [`ProjectileHit`](events#projectilehit); 한 월드에 64개 |
+| `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임, 월드와 함께 저장(다시 켜도 그 자리에) |
 | `Server::player(name)` → `Option<Player>` | 서버 어디든 접속한 사람 (위치는 1초마다의 것) |
 | `Server::players()` → `Vec<(이름, 월드)>` `worlds()` → `Vec<(월드, 사람 수)>` `broadcast(line)` | 접속한 사람들, 누가 있는 월드, 서버 모두의 채팅 |
 | `World::players()` → `Vec<Player>` | 이 월드에 있는 사람들 |
@@ -206,6 +212,10 @@ fn efficiency(c: Command) {
 | `set_dawn_time(minute)` `clear_dawn_time()` | 몬스터가 강해지는 시각 (2:00 = 120), 아침까지 / 기본값으로 |
 | `set_day_end_time(minute)` `clear_day_end_time()` | 시계로 하루가 끝나는 시각 (자정부터 분, 26 * 60 = 다음 날 2:00, 48 * 60까지) / 규칙의 `day_end`로 |
 | `end_day()` | 지금 하루를 끝냄, 모두 잔 것처럼 (먼저 `DayEnd` `"end_day"`) |
+| `set_clock_rate(rate)` `clear_clock_rate()` | 이 월드의 시계가 규칙의 `rate`배 (0 멈춤, 100까지) / 규칙대로 |
+| `set_rule(key, json)` → `bool` `clear_rules()` | rules.json의 값 하나를 이 월드에서만 (점으로 이은 키, `"null"` 서버의 것으로): 판정과 들어오는 게임의 콘텐츠 ([월드마다의 규칙](world#월드마다의-규칙가방시계-월드의-수명-미니게임-허브)) |
+| `set_inventory_group(name)` | 이 월드의 가방 그룹 (`""` 모두의 월드의 것): 다른 그룹에서 오면 자기 몫을 바꿔 받음 |
+| `set_sync(tiers, chat)` | 위치를 거리별로 얼마나 자주 (`&[(m, ms)]`, 6개까지), 채팅이 닿는 거리 (`Some(0.0)` 월드 전체, `None` 48 m) |
 
 ### 블록
 
@@ -259,6 +269,10 @@ fn efficiency(c: Command) {
 | `set(k, v)` | `PlayerLogin`과 그 입력 창의 `Button`, `ServerTick`에서만 |
 | `create_world(id)` → `bool` | 플러그인의 월드 하나 (바닐라 땅과 마을, 저만의 씨앗, 여느 월드처럼 저장; `id`는 영문·숫자·`_ - .` 32자까지, `false`: 쓸 수 없는 이름). 그 월드에서 `WorldCreate`·`ChunkGenerate`가 불림 ([플러그인의 월드](world#플러그인의-월드)). 서버가 함께 돌리는 월드는 16 + 접속 한도의 두 배(256까지): 넘으면 만들어지지 않음(서버 로그) |
 | `create_world_with(id, generator, town)` → `bool` | 생성기를 골라: `"vanilla"` `"flat"` `"void"`, `town` false면 바닐라 땅에 마을 없이 ([월드 만들기](world#월드-만들기)) |
+| `create_world_from(id, template)` → `bool` | 이 플러그인이 만든 월드 `template`의 지금 모습을 복사한 월드 ([월드마다의 규칙](world#월드마다의-규칙가방시계-월드의-수명-미니게임-허브)) |
+| `reset_world(id, to)` / `remove_world(id, to)` → `bool` | 이 플러그인이 만든 월드를 만든 그대로 다시 / 지움; 안의 사람은 먼저 `to`로 (`""`: 모두의 월드, reset이면 다시 들어옴) |
+| `worlds()` → `Vec<(String, usize)>` | 만들었거나 읽은 월드들과 사람 수 (아무도 없어 내린 월드도) |
+| `world_loaded(id)` → `bool` | 지금 돌고 있는지 (아무도 없으면 `world-unload-seconds` 뒤 내려감) |
 | `data_put(key, &[u8])` → `bool` | 서버 하나의 바이트: 어느 월드의 이벤트에서든 같은 것 (월드를 오가도 따라가야 하는 것: 서버 안 친구 목록, 순위). **넣는 즉시 디스크에** 저장 ([데이터 저장](#데이터-저장)) |
 | `data_get(key)` → `Option<Vec<u8>>` | |
 | `data_del(key)` | |
@@ -526,3 +540,34 @@ for k in w.data_keys("log/") {
 ## `sys` — 원본 함수
 
 SDK가 감싸지 않은 것은 `greenhaven_plugin::sys`에 "gh" 함수 그대로 있습니다 ([목록](abi)).
+
+## 상태 효과, 타이머, 쿨다운
+
+서버의 `plugin_api/effects.rs`(Bukkit의 PotionEffect, BukkitScheduler, 아이템 쿨다운). 월드에 저장되고 서버가 월드의 스텝마다 합니다.
+
+| 함수 | |
+|---|---|
+| `Player::add_effect(이름, 초, 세기, 아이콘) -> bool` | 효과 하나(같은 이름이면 새로; 한 사람 16개). 엔진이 하는 것: `speed`(세기마다 걸음 20 %, 서버의 판정도), `slow`(15 %씩), `jump`(세기마다 반만큼 더 높이), `invisible`(아무에게도 보내지 않음), `regen`(1초마다 세기만큼 회복), `poison`(1초마다 세기만큼, 마지막 1은 남김), `glow`(이름표가 벽 너머로). 다른 이름은 보이고 알리기만. `아이콘` `res://…` 또는 `""`(게임의 것) |
+| `remove_effect(이름)`, `effect_left(이름) -> 초`, `has_effect(이름)`, `effects() -> [(이름, 초, 세기)]` | |
+| `Player::cooldown(키, 초) -> bool`, `cooldown_left(키) -> 초` | 준비됐으면 true(지금부터 식음). 플러그인·사람·키마다, 서버가 판정 |
+| `Scheduler::run_later(태그, 초)`, `run_every(태그, 초)`, `cancel(태그)` | [`Timer`](events#timer) 이벤트 |
+
+그 사람의 게임에는 화면 위 가운데에 효과마다 아이콘과 남은 시간이 보입니다(끝나기 3초 전부터 깜박임). 이벤트
+[`EffectStart` / `EffectEnd`](events#effectstart--effectend).
+
+```rust
+#[on(Packet)]
+fn skill(e: Packet) {
+    let p = e.player();
+    if e.channel() == "haste" && p.cooldown("haste", 12.0) {
+        p.hud().sweep("skill_haste", 12.0); // 버튼 위 쿨다운 부채꼴
+        p.add_effect("speed", 6.0, 2.0, "");
+    }
+}
+```
+
+## 팀 채팅
+
+플레이어가 채팅을 `!`로 시작하면 같은 팀에게만(월드 안 어디서나, 차단한 사람 빼고). 플러그인은 `World::team_chat(팀, 줄)`.
+이름표는 팀 색입니다.
+
