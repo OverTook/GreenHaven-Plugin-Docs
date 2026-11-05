@@ -55,6 +55,9 @@ redirect_from:
 | `ui` | 화면의 버튼과 바 (아래) |
 | `settings` | 서버 주인이 바꾸는 값 (아래) |
 | `events` | (SDK 없이 쓸 때) 구독할 이벤트 → 우선순위 `{"enable": 0, "action.after": 0, "tick": 0}`. 모듈의 `on_event`가 받음 (규칙 등록은 `"enable"`) |
+| `depend` | 꼭 있어야 하는 플러그인(또는 서비스) 이름들: 그것들 뒤에 로드, 없으면 켜지지 않음 ([플러그인끼리](interop#depend-soft_depend)) |
+| `soft_depend` | 있으면 먼저 로드할 것들 (없어도 켜짐) |
+| `provides` | 이 플러그인이 맡는 서비스 이름들 (`"economy"`): 다른 플러그인이 이 이름으로 찾아 부름 |
 | `commands` | (SDK 없이 쓸 때) 채팅 명령어 `[{"name": "축제", "desc": "…"}]` |
 
 ## 휴대폰

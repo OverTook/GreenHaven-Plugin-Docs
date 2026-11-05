@@ -26,6 +26,8 @@ redirect_from:
 | `setting(key)` → `Option<String>` | 이 플러그인의 [설정](plugin-json#설정-settings) 값, 글자로 (`"12.5"`, `"true"`); 없는 설정은 `None` |
 | `setting_num(key, or)` → `f64` | 숫자 설정, 없으면 `or` |
 | `setting_bool(key, or)` → `bool` | 켜기/끄기 설정, 없으면 `or` |
+| `find(plugin, name)` → `Option<Func>` | 다른 플러그인(또는 서비스)의 `#[export]` 함수; `Func::call(args)` → `Result<R, CallError>` ([플러그인끼리](interop)) |
+| `caller()` → `String` | (`#[export]` 함수 안에서) 부른 플러그인의 이름, 이벤트로 불렸으면 `""` |
 
 ## Player
 
