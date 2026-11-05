@@ -45,6 +45,7 @@ region=한국
 | `quit-warning` | 자기 전에 나갈 때의 경고; 플러그인의 `World::set_quit_warning`이 우선 |
 | `tick-rate` | 월드가 1초에 몇 스텝 도는지 (기본 20, 1~20; 마인크래프트의 월드 틱). 플러그인의 [`Tick`](events#tick)은 기본 1초에 한 번, 요청해도(`Registry::tick_rate`) 이보다 자주는 아님. 주민은 이것과 상관없이 1초에 다섯 번 걸음 |
 | `plugin-cpu` | 플러그인들의 CPU 예산, 초당 백만 명령 (0: 제한 없음, 기본). 아래 [CPU 예산](#cpu-예산) |
+| `level-type` | 모두의 월드를 처음 만들 때의 생성기: `vanilla`(땅과 마을, 기본) / `flat`(평평한 풀밭) / `void`(아무것도 없음). [월드 만들기](world#월드-만들기) |
 
 ### 서버의 이동 검사
 

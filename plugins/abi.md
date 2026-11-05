@@ -101,7 +101,9 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `save_now()` | 월드를 지금 저장 |
 | `set_live_saving(on: i32)` | 실시간 저장 |
 | `set_quit_warning(p, len)` | 나가기 경고 |
-| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름) |
+| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void", "town": false}` |
+| `set_spawn(x: f64, y: f64, z: f64, yaw: f64)` | 월드의 스폰 |
+| `set_vanilla(p, len, on: i32)` | 게임의 기능 하나 켜고 끄기 (`villagers` `night` `farming` `wild` `tutorial` `shops` `sleep`) |
 | `world_id(p, cap) -> i32` | 이벤트의 월드 (`"world"` 모두의 것), 길이 |
 
 ## 접속하지 않은 플레이어
@@ -185,6 +187,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `send(cp, cl, p, len)` `send_all(cp, cl, p, len)` | 채널 `cp`에 바이트 (그 플레이어 / 모두), 256 KB까지 |
 | `send_fast(cp, cl, p, len)` `send_fast_all(cp, cl, p, len)` | 게임 쪽 코드에 빠른 패킷 (그 플레이어 / 모두): 데이터그램, 1000바이트까지 |
 | `send_png(cp, cl, w, h: i32, p, len, all: i32) -> i32` | RGBA8 픽셀(`w` × `h`, 512까지)을 PNG로 채널에 (`all` 0이 아니면 모두에게). PNG의 바이트 수, `len`이 `w × h × 4`가 아니면 0 |
+| `path_blocks(x0, y0, z0, x1, y1, z1: f64, max, p, cap: i32) -> i32` | 블록 위 길(`World::path_blocks`): `[[x, 발 높이, z], …]` JSON, 없으면 `[]`. 전체 바이트 수 |
 | `columns(x0, z0, w, d: i64, p, cap) -> i64` | 위에서 본 땅: 기둥마다 2바이트(가장 높은 단단한 블록 번호(위에 물이면 물), 높이 − (−8)), `w`개씩 줄로, 256 × 256까지. 전체 바이트 수 |
 | `inv_open(p, len)` | 인벤토리 창 `{"id", "title", "rows", "cols", "slots", "bag"}` / 닫기 `{"id", "close": true}` |
 

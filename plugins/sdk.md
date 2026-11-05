@@ -149,6 +149,8 @@ fn efficiency(c: Command) {
 | `data_keys(prefix)` → `Vec<String>` | 이 플러그인의 키 중 `prefix`로 시작하는 것 |
 | `save_now()` | 월드를 아침처럼 지금 저장 (게임, 블록, 데이터; 날은 그대로 이어짐) |
 | `set_live_saving(on)` | 1분마다·플레이어가 나갈 때 저장 (잠이 없는 서버). server.properties `save-mode`보다 우선 |
+| `set_spawn(x, y, z, yaw)` | 월드의 스폰: 칸, 발 높이(높이 y 블록의 윗면은 y + 0.5), 바라보는 쪽(도). 침대·의료실·정거장이 없는 월드에서는 아침, 쓰러진 뒤, 내릴 때도 여기. 월드에 저장 ([월드 만들기](world#월드-만들기)) |
+| `set_vanilla(feature, on)` | 게임의 기능 하나 켜고 끄기, 월드에 저장: `"villagers"` `"night"`(땅 위 밤 몬스터) `"farming"` `"wild"` `"tutorial"` `"shops"` `"sleep"`. 정하지 않으면 바닐라 마을이 있는 월드는 켜짐, 없는 월드는 꺼짐 |
 | `set_quit_warning(text)` | 자기 전에 나갈 때 게임이 띄우는 경고 (`""` 없음, 200자까지). server.properties `quit-warning`보다 우선 |
 
 ### 하루
@@ -186,7 +188,8 @@ fn efficiency(c: Command) {
 | `debris_damage(x, z, n, toward_x, toward_z)` → `Option<i64>` | 도구 한 번처럼 `n`만큼 침: 모든 게임에서 흔들림, `Some(남은 체력)`. 0이 되면 마지막 한 번처럼 나무는 그쪽으로 쓰러지고(`tree_fell`) 나머지는 부서짐(`debris_break`): `Some(0)`. `None`: 아무것도 없음 |
 | `ground_drop(item, n, x, y, z, floor)` → `Option<ItemEntity>` | 땅에 놓인 아이템(누구나 바로 주움; 게임이 모르는 아이템은 놓이지 않음) |
 | `ground_remove(id)` | 그 번호의 것 치우기 (`ItemEntity::remove`) |
-| `path((x0, z0), (x1, z1))` → `Vec<(f64, f64)>` | 마을 안의 걸어갈 길(주민의 길찾기와 같음: 지은 것을 돌아서, 길은 싸게): 첫 걸음 뒤로 꺾이는 점들, 마지막이 목적지. 비어 있으면 길이 없음(마을 밖 포함) |
+| `path((x0, z0), (x1, z1))` → `Vec<(f64, f64)>` | 마을 안의 걸어갈 길(주민의 길찾기와 같음: 지은 것을 돌아서, 길은 싸게): 첫 걸음 뒤로 꺾이는 점들, 마지막이 목적지. 비어 있으면 길이 없음. 한쪽이라도 마을 격자 밖이거나 마을 없는 월드면 `path_blocks`로(각 기둥 맨 위에서), 칸마다 |
+| `path_blocks((x, y, z), (x, y, z), max)` → `Vec<(f64, f64, f64)>` | 어느 월드 어디서나 블록 위로 걷는 길: 첫 걸음부터 목적지까지 칸마다 `(x, 발 높이, z)`, 비어 있으면 길이 없음. 끝은 발 아래(조금 묻혀도) 가장 높은 설 수 있는 칸, 물속이면 물 위. 설 수 있는 칸: 단단한 블록 위에 몸 들어갈 두 칸(1.6 m)이 비었거나 물 맨 위(헤엄). 한 번에 한 칸 위로(플레이어 점프 1.5 m, 물에서 나올 때도), 네 칸까지 아래로, 여덟 방향, 모서리는 몸이 들어갈 때만. 플러그인의 단단하지 않은 블록은 지나감. `max`: 살필 칸 수(16384까지), 시작에서 가로세로 64칸 안. 엔진의 A*: 연료가 아니라 걸린 시간으로 셈 |
 | `room(name)` → `Option<Room>` | 건물 방(`"Farmhouse"` …): `x` `z` 가운데, `y` 바닥(땅 아래), `door` 안쪽 문 앞, `out` 바깥 문 앞, `size`. 엔티티를 `(door.0, y, door.1)`로 옮기면 방 안 |
 
 ### 구조물과 주민
@@ -209,6 +212,7 @@ fn efficiency(c: Command) {
 | `get(k)` → `f64` | 어느 이벤트에서나 읽음 |
 | `set(k, v)` | `PlayerLogin`과 그 입력 창의 `Button`, `ServerTick`에서만 |
 | `create_world(id)` → `bool` | 플러그인의 월드 하나 (바닐라 땅과 마을, 저만의 씨앗, 여느 월드처럼 저장; `id`는 영문·숫자·`_ - .` 32자까지, `false`: 쓸 수 없는 이름). 그 월드에서 `WorldCreate`·`ChunkGenerate`가 불림 ([플러그인의 월드](world#플러그인의-월드)) |
+| `create_world_with(id, generator, town)` → `bool` | 생성기를 골라: `"vanilla"` `"flat"` `"void"`, `town` false면 바닐라 땅에 마을 없이 ([월드 만들기](world#월드-만들기)) |
 | `data_put(key, &[u8])` → `bool` | 서버 하나의 바이트: 어느 월드의 이벤트에서든 같은 것 (월드를 오가도 따라가야 하는 것: 서버 안 친구 목록, 순위). **넣는 즉시 디스크에** 저장 ([데이터 저장](#데이터-저장)) |
 | `data_get(key)` → `Option<Vec<u8>>` | |
 | `data_del(key)` | |

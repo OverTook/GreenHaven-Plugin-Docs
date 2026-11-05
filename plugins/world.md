@@ -183,6 +183,40 @@ fn keep_to_the_server(e: Tick) {
 그 플레이어를 그 월드의 열기구 정거장으로 옮깁니다(`false`면 농장 집 앞으로, `""`는 모두의 월드; 떠난 월드에서 `leave`, 간 월드에서
 `join`; 가방·돈·스킬은 함께). 예제 [`friend_lands`](samples)(친구 땅).
 
+## 월드 만들기
+
+서버는 Minecraft처럼 **엔진**(블록, 엔티티, 플레이어, 월드, 이벤트)과 **바닐라 콘텐츠**(마을, 주민, 농사, 상점, 밤의 몬스터 …)로
+나뉩니다. 월드는 처음 만들어질 때 한 번 **생성기**를 고릅니다:
+
+| 생성기 | 땅 | 마을 |
+|---|---|---|
+| `vanilla` (기본) | 바닐라 땅 | 바닐라 마을 (`town: false`면 없이: 마을 자리는 평평한 풀밭) |
+| `flat` | 어디나 높이 0의 풀 (그 밑 흙 셋, 그 밑 돌) | 없음 |
+| `void` | 아무것도 없음: 플러그인이 `WorldCreate`·`ChunkGenerate`로 지음 (플러그인만의 생성기) | 없음 |
+
+- 모두의 월드: server.properties `level-type=vanilla|flat|void` (처음 만들 때만, [서버](server)).
+- 플러그인의 월드: `Server.create_world_with("arena", "void", false)` (`create_world(id)`는 바닐라 그대로).
+- 마을이 없는 월드에는 구조물·성벽·방·주민·가축이 없고, 게임도 아무것도 짓지 않습니다(나침반, 우편함, 집터 고르기도 없음).
+- **스폰** `World::set_spawn(x, y, z, yaw)`: 들어오는 곳 (칸, 발 높이: 높이 y 블록의 윗면은 y + 0.5). 정하지 않으면 마을의 농가 문 앞,
+  마을이 없으면 (0, 0)의 가장 높은 블록 위. 침대·의료실·열기구 정거장이 없는 월드에서는 아침에도, 쓰러진 뒤에도, 내릴 때도 여기입니다.
+- **바닐라 기능** `World::set_vanilla(feature, on)` (월드에 저장): `villagers`(주민), `night`(땅 위 밤의 몬스터), `farming`(밭 갈기·심기·
+  물 주기·수확·동물), `wild`(아침마다 나는 나무·바위·채집물), `tutorial`(첫날 할 일), `shops`(사고팔기, 출하, 목공소·대장간·마법사),
+  `sleep`(침대). 정하지 않은 것은 바닐라 마을이 있으면 켜짐, 없으면 꺼짐. 꺼진 기능의 행동은 서버가 거절합니다. 하루의 끝과 저장은
+  규칙(`day_end`, `pass_out`), [`DayEnd`](events), `set_live_saving`이 정합니다.
+
+```rust
+#[on(WorldCreate)]
+fn made(e: WorldCreate) {
+    let w = e.world();
+    let b = Block::named("arena_block").unwrap();
+    w.fill((-4, 20, -4), (4, 20, 4), b); // 허공에 떠 있는 발판
+    w.set_spawn(0.0, 20.5, 0.0, 0.0);
+    w.set_vanilla("farming", false);     // (빈 월드는 이미 다 꺼짐: 평지·바닐라 월드에서도 미니게임이 되게)
+}
+```
+
+예제 [`void_arena`](samples)(허공 경기장).
+
 ## 저장
 
 - **바닐라 규칙: 자고 일어난 아침에만 저장됩니다.** 그 전에 주인이 나가거나 서버가 꺼지면 그날 한 일(블록, 플러그인 값과

@@ -24,6 +24,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `new_creatures` 새 생물 | 밤의 얼음 버섯(돌을 떨굼), 둘레를 돌다 덤비는 도깨비불(광산 2층부터도), 헛간의 염소(이틀에 한 번 염소 젖) | `monsters_add` `animals_add`, `MobStep`, `Mob::set` `attack` |
 | `new_neighbor` 새 이웃 하늘 | 새 주민 하늘(소율의 모습, 하루 일정, 대사), 말을 걸면 선택지 창, 이야기, `/하늘`로 부르면 걸어옴 | `WorldCreate`의 `spawn_npc`, `Words`, `Gui`, `Npc::say` `go_to`, 대사 패치 |
 | `woodcutter` 나무꾼 | `/나무꾼`: 곁에 나타난 나무꾼(아바타, 머리 위 이름)이 가장 가까운 나무로 걸어가 한 번씩 도끼질해(나무가 흔들림) 자기 쪽으로 베어 쓰러뜨리고, 떨어진 나무 하나를 먹고 하나는 모이를 쪼는 닭으로 꾸미며(나머지는 누구나 주움), 가까운 건물 방에 들렀다 나옴 | `spawn_avatar` `Avatar::set_look` `hold` `set_name` `play_anim` `debris_at` `debris_damage` `items_near` `ItemEntity::consume_by` `set_model` `play_anim` `room`, `Tick` |
+| `void_arena` 허공 경기장 | 미니게임: 빈 월드(server.properties `level-type=void`) 한가운데 떠 있는 9×9 블록 발판, 마을·주민·농사·상점·밤 없이 발판 위에서 시작, 경기장 블록을 쌓고 곡괭이로 부숨, 떨어지면 가방 그대로 발판에서 다시 | `WorldCreate`의 `fill` `World::set_spawn` `set_vanilla` `set_live_saving`, `Join`의 `set_check("air")`, `PlayerMove`의 `death`, `PlayerDeath`의 `keep_inventory` |
 | `flat_world` 탁 트인 평지 | 성벽·성문·바위 둑·암초 없는 마을, 마을 밖은 나무 없는 평평한 풀밭 (새 월드에만) | `WorldCreate`의 `remove_plot`, `ChunkGenerate`의 `fill` `clear_props` |
 | `deep_mines` 거친 땅과 깊은 광산 | 성벽 밖 땅이 더 높고 험해짐(산, 눈, 큰 바위), 광산 층이 넓어지고 금이 일찍, 층마다 도착한 곳 근처에 금광석 | `terrain` `mine_layout`, `MineFloor::set_rock` |
 | `server_password` 서버 비밀번호 | 처음 들어올 때 비밀번호를 정하고, 그 뒤로는 들어올 때마다 물어봄 (세 번 틀리면 돌려보냄) | `PlayerLogin`의 입력 창, `Gui::secret`, `Server` 값 |
