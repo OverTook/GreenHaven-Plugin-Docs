@@ -604,6 +604,54 @@ fn done(e: HttpDone) {
 }
 ```
 
+## 서버 사이 공유
+
+`Network`(로블록스의 DataStore·MessagingService·MemoryStore 큐, BungeeCord의 플러그인 메시지): 같은 **묶음**의 서버들이 중앙
+서버에서 함께 쓰는 데이터, 메시지, 대기열입니다. 묶음은 24시간 서버는 같은 주인의 서버들(설정할 것 없음), 그 밖의 서버는 운영자가
+준 열쇠를 [`network-key`](server#serverproperties)에 같이 적은 서버들입니다. 묶음 사이에는 아무것도 건너가지 않고, 묶음 안에서도
+플러그인마다 따로(다른 서버의 같은 플러그인만 봄). 아무것도 기다리지 않습니다: 답은 [`NetworkData`](events#networkdata--networkmessage),
+메시지는 `NetworkMessage`로 다음 스텝에. 열쇠가 없거나 게임의 자체 서버면 답은 모두 `why()` "offline".
+
+| 함수 | |
+|---|---|
+| `Network::get(key, tag)` → `Option<i64>` | 값과 버전(0: 없음) |
+| `Network::set(key, value, tag)` | 무조건 (`""`은 지우기). 키 128바이트, 값 16 KB(글) |
+| `Network::update(key, version, value, tag)` | 그 키가 아직 `version`일 때만(0: 없을 때만); 아니면 `ok()` 거짓, `why()` "moved"와 지금 값·버전 |
+| `Network::subscribe(topic)` → `bool` | 이 월드에서 그 주제의 메시지를 받음 (`Enable`에서: 모두의 월드) |
+| `Network::publish(topic, value)` → `bool` | 묶음의 **다른** 서버들에게; 1 KB, 서버마다 1초에 10개; 최선만(1분 안에 묻지 않은 서버는 못 받음) |
+| `Network::queue_push(queue, player, value, ttl)` | 대기열에 (한 사람 한 번, 다시 넣으면 새로; 1~600초; 대기열마다 1000명) |
+| `Network::queue_take(queue, n, tag)` | 오래된 것부터 `n`개(50까지), 한 항목은 한 서버만: `taken()` |
+| `Network::queue_leave(queue, player)` | |
+
+묶음마다 키 수: 24시간 서버는 플랜의 서버 하나에 2000개, 열쇠 묶음은 열쇠에 정한 수(기본 1만). 플러그인마다 1분에 600개 요청,
+서버 전체에 대기 중인 요청 256개(넘으면 바로 `None`), 중앙 서버는 서버마다 1초에 50개("rate"). 거절된 행동 안의 요청은 보내지 않습니다.
+
+```rust
+#[on(Enable)]
+fn enable(_e: Enable) {
+    Network::subscribe("match");
+}
+
+#[on(NetworkData)]
+fn answered(e: NetworkData) { // 경기장 서버: 자리만큼 꺼낸 플레이어를 묶음에 알림
+    let names: Vec<String> = e.taken().into_iter().map(|t| t.0).collect();
+    if e.tag() == "fill" && !names.is_empty() {
+        Network::publish("match", &names.join(","));
+    }
+}
+
+#[on(NetworkMessage)]
+fn heard(e: NetworkMessage) { // 허브: 자기 플레이어면 그 경기장으로
+    for name in e.value().split(',') {
+        if let Some(p) = Server.player(name) {
+            p.transfer(&e.from(), "arena");
+        }
+    }
+}
+```
+
+예제 `plugins/net_hub`(방문 수, 인사, 대기열로 경기장 채우기).
+
 ## `sys` — 원본 함수
 
 SDK가 감싸지 않은 것은 `greenhaven_plugin::sys`에 "gh" 함수 그대로 있습니다 ([목록](abi)).
