@@ -412,6 +412,8 @@ fn loaded(_: Load) {
 | `Local::beam(from, to, 색, 굵기, 초)` | 탄도선·레이저: 사라지며 (64개까지) |
 | `Entities::play_anim(id, clip)` | 서버 쪽 엔티티의 클립을 이 게임에서만 (모두가 보는 것은 서버 쪽 `play_anim`) |
 | `Me::play_anim(id)` | [감정 표현](models)을 자기 몸에 이 게임에서만 (서 있을 때; 모두가 보는 것은 서버 쪽 `Player::play_anim`) |
+| `Me::play_clip(clip, upper, looped, speed)` `Me::stop_clip()` | 걷는 몸 위에 겹치는 클립을 자기 몸에 이 게임에서만 (장전을 답 전에 바로; 모두가 보는 것은 서버 쪽 `Player::play_clip`) |
+| `PlayerView::play_clip(clip, upper, looped, speed)` `stop_clip()` | 그 사람의 아바타에 이 게임에서만 |
 
 ### World — 엔진에 묻기
 
@@ -420,7 +422,7 @@ fn loaded(_: Load) {
 | | |
 |---|---|
 | `World::raycast(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸) |
-| `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
+| `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 그려진 몬스터(`HitKind::Mob`, `id` 그 번호: 서버가 재는 몸), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
 | `World::overlap(lo, hi)` → `Vec<(HitKind, id)>` | 그 상자(한 변 16 m까지) 안의 것 (32개까지) |
 | `World::ground(x, z)` → `f64` | 게임이 가진 그곳의 땅 높이 (모르면 NaN) |
 | `World::path(from, to)` → `Vec<(x, z)>` | 마을 길 (주민의 길찾기): 꺾이는 점들, 없으면 `[]` |

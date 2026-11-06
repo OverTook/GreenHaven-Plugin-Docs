@@ -83,6 +83,7 @@ fn dress(e: Join) {
 | `Player::clear_model()` | 원래 모습으로 |
 | `Player::play_anim(id)` | 감정 표현 재생 |
 | `Player::stop_anim()` | 재생 중인 감정 표현 끝내기 |
+| `Player::play_clip(id, upper, looped)` `stop_clip()` | 감정 표현(이나 아무 클립)을 걷는 몸 위에 겹쳐서: `upper`면 척추부터 위만. 서 있지 않아도 됨 ([SDK](sdk)) |
 
 ## 동작 규칙
 

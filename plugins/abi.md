@@ -93,6 +93,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `char_invisible(on: i32)` `char_hide_from(p, len, on: i32)` | 그 플레이어를 아무에게도 / 그 이름의 한 사람에게 보내지 않기 |
 | `char_disguise(ent: i64, snap: i32)` | 이 플러그인의 엔티티로 변장 (0: 끄기, 엔티티 지움) |
 | `char_nametag(p, len, cp, cl)` `char_nametag_visible(on: i32)` `char_scale(s: f64)` | 이름표 글과 색, 보이기, 크기 (0.25-4) |
+| `char_clip(p, len, upper: i32, looped: i32, speed: f64)` | 걷는 몸 위에 겹치는 클립 (`""` 멈춤; 빠르기 0.1-4) |
 | `char_jump(s: f64)` `char_gravity(s: f64)` `char_freeze(on: i32)` `char_spectator(on: i32)` | 점프·중력 배율 (서버의 공중 검사도), 제자리, 관전자 |
 | `char_public(kp, kl, vp, vl)` `ent_public(id: i64, kp, kl, vp, vl)` | 공개 값 (값은 JSON: 숫자, 글, `null`) |
 | `online(p, cap) -> len` | 접속한 사람들 `"이름\t월드\n"` |

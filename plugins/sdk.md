@@ -66,6 +66,7 @@ redirect_from:
 | `undisguise()` | 원래대로 (엔티티 지움; 나가거나 월드를 옮겨도) |
 | `set_nametag(text, colour)` `set_nametag_visible(on)` | 머리 위 이름 (`""` 이름 그대로; 색 `"ff3030"`, `""` 게임 색), 보이기 |
 | `set_scale(times)` | 모든 게임에서 그 크기로 (0.25-4) |
+| `play_clip(clip, upper, looped)` `play_clip_at(clip, upper, looped, speed)` `stop_clip()` | 걷고 뛰는 몸 위에 겹치는 클립 (장전, 조준, 시전, 달리며 손 흔들기): `upper`면 척추부터 위만 (다리는 걷기 그대로), 아니면 몸 전체; `looped`면 멈출 때까지, 아니면 한 번; 빠르기 0.1-4. 클립: [감정 표현](models) id, `res://` 경로 (팩의 GLB는 `"경로#클립"`), 게임의 것 (`"ATK1"` `"Shoot"` `"Victory"` `"Greet"` `"cast"`). 모든 게임에서 보임. 도구 동작·감정 표현 중에는 그 아래에서 기다림 |
 | `set_jump_power(times)` `set_gravity(times)` | 점프 높이 배수 (0-10), 중력 배수 (0.1-5): 게임이 그렇게 움직이고 **서버의 공중 검사도 그 배율로** 판정 |
 | `freeze(on)` | 제자리 (게임의 걷기·점프 꺼짐, 걸음은 서버가 되돌림): 카운트다운 |
 | `set_spectator(on)` | 관전자: 아무에게도 안 보이고, 모든 것을 뚫고 날며(서버의 공중·벽 검사 꺼짐), 구경꾼처럼만 행동(도구·농사 없음), 몬스터도 안 따라옴 |
@@ -113,7 +114,7 @@ redirect_from:
 | `Player::join_team(name)` → `bool` `leave_team()` `team()` | 한 팀에만; 같은 팀끼리는 `friendly_fire`일 때만 맞음 |
 | `ModelEntity::set_health(hp, max)` `health()` | 엔티티의 체력: 휘두름이 맞히면 [`ModelEntityDamage`](events#modelentitydamage--modelentitydeath), 0이면 사라짐 |
 | `World::cast(from, dir, len)` → `Option<Hit>` | 광선 판정: 블록(`HitKind::Block`), 충돌층의 상자(`Box`), 플레이어의 몸(`Player`, `who`; 폭 0.8 m, 발에서 1.6 m, 이벤트의 플레이어는 빼고), 체력 있거나 단단한 엔티티(`Entity`, `entity`) 가운데 처음 것, `at` `normal` `distance` (256 m까지) |
-| `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`으로 |
+| `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 움직이는 엔티티(체력 있거나 단단한 것)와 몬스터도 왕복 시간의 반 + 100 ms 전 자리로. 몬스터에 맞으면 `Hit::mob()` → `EnemyEntity`, `damage(양)`으로 피해(0이면 쓰러지고 드롭·경험치). 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`으로 |
 | `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
 | `World::projectile(모델, from, vel, gravity, radius, life)` → `Option<ModelEntity>` | 발사체: 서버가 스텝마다 움직이고 게임은 미끄러지듯 그림; 처음 닿는 블록·상자·플레이어(쏜 사람 빼고, PvP는 위와 같음)·엔티티에서 끝나고 [`ProjectileHit`](events#projectilehit); 한 월드에 64개 |
 | `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임, 월드와 함께 저장(다시 켜도 그 자리에) |
@@ -153,7 +154,9 @@ redirect_from:
 한 칸: `id`(품질 `@2`까지) `n`과 메타(Bukkit의 ItemMeta): `name`(48자) `lore`(8줄, 80자) `tint`(`"rrggbb"`) `model`(손에 든
 모델 `res://..glb`) `data`(플러그인의 키-값 16개, PersistentDataContainer) `unbreakable` `glow`. 메타가 같은 것끼리만 쌓이고, 게임은
 이름·설명(툴팁)·색·반짝임·손의 모델을 그립니다. 규칙은 다 id로만 읽고, 쓰면(먹기, 버리기 ...) 메타 있는 묶음에서 먼저 빠집니다.
-바닥·상자·출하함으로 가면 메타는 없어집니다.
+메타는 묶음과 함께 갑니다: 상자에 넣고 꺼내기, 바닥에서 줍기(`World::ground_drop(&stack.key(), ..)`, `drop`), 편지, 플러그인
+창(`Inventory::slot(i, &stack.key(), ..)`), `give(&stack.key(), n)`. `key()`는 `id#{메타 JSON}`(서버가 순서를 맞춤). 출하·판매는
+그냥 id의 값으로 받습니다. 게임은 바닥의 것도 메타의 모델·색으로 그립니다.
 
 ```rust
 let blade = ItemStack::new("kit_blade", 1).name("붉은 대검").tint("e04a3a").lore("가까이 붙어 크게 베어요.")
