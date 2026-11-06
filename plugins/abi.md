@@ -146,6 +146,11 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `has_permission(p, len) -> i32` `set_permission(p, len, v: i32)` | 그 플레이어의 권한 (v: 1 줌, 0 막음, -1 기본값으로) |
 | `is_op() -> i32` `set_op(on: i32)` | 운영자인지, 운영자로 / 빼기 |
 | `kick(p, len)` `ban(p, len)` | 이유를 띄우고 내보내기 / 차단(서버의 차단 목록)하고 내보내기 |
+| `whitelist_set(on)` `whitelist_on() -> i32` `whitelist_add(p, len)` `whitelist_remove(p, len)` `whitelisted(p, len) -> i32` `whitelist(p, cap) -> i32` | 허용 목록 (목록은 줄바꿈으로) |
+| `ban_name(np, nl, p, len)` `unban(np, nl)` `is_banned(np, nl) -> i32` `bans(p, cap) -> i32` | 이름으로 차단·풀기 (이벤트가 끝난 뒤), 차단됐는지, `이름\t이유\t때\n`마다 |
+| `server_info(p, cap) -> i32` `set_motd(p, len)` `set_max_players(n: i64)` | `motd\tmax\tversion`; 소개 (`""` 파일의 것), 한도 (0 없음, 음수 파일의 것) |
+| `char_state(p, cap) -> i32` `char_can_see(p, len) -> i32` | `scale\tjump\tgravity\tinvisible\tnametag_visible\tfrozen\tspectator\thand_visible\tnametag\tcolour`; 그 사람을 보는지 |
+| `player_info(p, cap) -> i32` | `lang\tdevice\tping\tdoing\ton_ground\tvx\tvy\tvz\twalk\tmode\tdeclined` (declined는 줄바꿈으로) |
 | `transfer(tp, tl, dp, dl)` `transfer_all(tp, tl)` | 그 플레이어를 / 모두를 다른 서버 `tp`로 (데이터 `dp`, 4096바이트까지; 넘으면 보내지 않음) |
 | `world_id(p, cap) -> i32` | 이벤트의 월드 (`"world"` 모두의 것), 길이 |
 
@@ -160,6 +165,9 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `offline_num(np, nl, kp, kl) -> f64` | `gold` `day` `energy` `seen` `level.<스킬>` `xp.<스킬>` `friendship.<주민>` `item.<id>`, 이 플러그인의 `w.<키>` `p.<키>` |
 | `offline_data(np, nl, kp, kl, p, cap) -> i64` | 이 플러그인이 그 사람 월드에 맡긴 바이트 (−1 없음) |
 | `offline_player_data(np, nl, kp, kl, p, cap) -> i64` | 그 사람 월드에서 그 사람에게 맡긴 바이트 |
+| `offline_text(np, nl, kp, kl, p, cap) -> i64` | `id`(이름의 해시, 저장된 게임 없이도), `world`(마지막으로 나간 월드) |
+
+`offline_num`의 키에는 `first`(처음 들어온 때 ms), `x` `y` `z`(마지막으로 나간 곳)도.
 
 ## 하루와 날씨
 
@@ -258,6 +266,13 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `call_args(p, cap) -> i32` | (불린 쪽) 받은 인자 바이트 |
 | `call_return(p, len)` | (불린 쪽) 돌려줄 결과 바이트, 64 KB까지 |
 | `call_caller(p, cap) -> i32` | (불린 쪽) 부른 플러그인의 이름 (`""` 이벤트로 불림) |
+| `fire_event(np, nl, dp, dl) -> i32` | 이 플러그인의 이벤트 `np`(64바이트까지)를 데이터 `dp`와 함께 다른 플러그인들에게: `1` 누가 취소함, `0` 아님, `-1` 이름이 없음·`Enable` 중, `-4` 사슬 4개 넘음. 듣는 쪽은 커스텀 섹션의 `on\tcustom:<이름>\t<우선순위>\t<내보내기>\n` 줄 (이벤트 `id()`는 그 이름, `text("data")`, `text("from")`) |
+| `budget_left() -> f64` | 이 플러그인의 CPU 몫이 남은 정도 0-1 |
+| `log(level, p, len)` | 로그 한 줄 (`0` 디버그 `1` 정보 `2` 경고 `3` 오류): 서버 출력과 서버 관리 › 콘솔, 1초에 20줄 |
+| `run_command(p, len)` | 이벤트의 플레이어가 그 줄("/이름 인자")을 친 것처럼 (그 사람의 권한, 그 월드의 다음 스텝) |
+| `server_command(p, len)` | 콘솔이 친 것처럼 (모든 권한, `text("console")`이 "1") |
+| `perm_list(p, cap) -> i32` | 플레이어의 권한 `"이름\t<있음>\t<정해 줌>\n"`…, 각각 1 또는 0 |
+| `tick_ms() -> f64` | 월드 한 스텝의 요즘 시간 (ms) |
 
 ## 이벤트 말고 내보내는 것
 
@@ -288,6 +303,20 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `effect_remove(name, len)`, `effect_left(name, len) -> f64`, `effects(ptr, cap) -> i32` | `"이름\t초\t세기\n"` |
 | `timer_start(tag, len, secs: f64, every: i32) -> i32`, `timer_cancel(tag, len)` | `timer` 이벤트, `text("tag")`; 플러그인마다 64개 |
 | `cooldown(key, len, secs: f64) -> i32`, `cooldown_left(key, len) -> f64` | 1 준비됨(지금부터 식음) / 0 |
+
+## 한 사람의 화면, 장비, 월드 읽기
+
+| 함수 | |
+|---|---|
+| `title_with(t, tl, s, sl, in: f64, stay: f64, out: f64)`, `action_bar(p, len)` | 그 사람의 화면 (`ui.title`, `ui.bar`) |
+| `sound_to(name, len, x, y, z)`, `particle_to(...)` | 그 사람만 (`ui.fx`) |
+| `set_energy(n: f64)` | |
+| `equip_list(ptr, cap) -> i32`, `equip_set(slot, len, id, len)` | `"칸\t아이템\n"` (`""` 빔) |
+| `world_weather(ptr, cap) -> i32`, `world_spawn(i) -> f64` | 0 x 1 y 2 z 3 yaw, NaN 없음 |
+| `mob_list(ptr, cap) -> i32` | `"번호\tx\tz\n"` |
+| `set_minute(m: i64)`, `loot_set(json, len)` | `loot` 이벤트에서 `[[id, n], …]` |
+
+팀의 `team_set` JSON은 `prefix` `suffix` `nametag` `collide`도 받습니다.
 
 HUD의 새 연산(`tween` `pin_to` `sweep` `push` `float` `board`)은 새 함수 없이 `hud` / `hud_all`의 JSON입니다(`sdk/common` `ops`).
 

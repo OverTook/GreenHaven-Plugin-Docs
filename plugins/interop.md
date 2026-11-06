@@ -128,6 +128,27 @@ API 크레이트 없이 직접 부를 수도 있습니다: `find("economy", "dep
 | `Failed` | 불린 쪽이 오류로 끝남, 또는 인자를 읽지 못함(타입이 안 맞음) |
 | `Loop` | 이미 이 호출 사슬에 있는 플러그인을 다시 부름(A → B → A), 자기 자신, 또는 사슬이 4개를 넘음 |
 
+## 플러그인의 이벤트 (`Server::fire`, `#[on_custom]`)
+
+함수를 부르는 대신 이벤트를 내고 듣는 쪽이 알아서 받게 할 수도 있습니다 (Bukkit의 사용자 `Event`와 `callEvent`).
+내는 쪽은 듣는 쪽을 몰라도 됩니다.
+
+```rust
+// 미니게임 허브: 판이 끝나면
+let cancelled = Server.fire("hub.game_end", "{\"winner\":\"민수\"}");
+
+// 업적 플러그인 (depend가 없어도 됨)
+#[on_custom("hub.game_end", priority = 5)]
+fn ended(e: Custom) {
+    let data = e.data(); // 낸 쪽이 준 글. e.from(): 낸 플러그인, e.player(): 낸 이벤트의 플레이어
+    if data.is_empty() { e.cancel(""); } // fire()가 true를 돌려받음
+}
+```
+
+- 듣는 쪽마다 호출처럼 자기 샌드박스에서, 낸 쪽의 이벤트 안에서 우선순위 순으로 돕니다. 한 일은 그 이벤트의 것, CPU는 각자의 몫.
+- 낸 플러그인 자신, 호출 사슬에 이미 있는 플러그인은 불리지 않습니다. 깊이는 호출과 같이 4개까지(넘으면 아무도 못 듣고 `false`).
+  누가 취소하면 거기서 멈춥니다. `Enable` 중에는 낼 수 없습니다.
+
 ## 원본 ABI
 
 SDK 없이 쓰려면 [`"gh"` 함수](abi#플러그인끼리)의 `call_*`와, 커스텀 섹션 `gh`의 `export\t<이름>\t<내보내기>\n` 줄을 씁니다.

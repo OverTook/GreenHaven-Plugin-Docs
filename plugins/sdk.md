@@ -86,7 +86,11 @@ redirect_from:
 | `has_permission(perm)` → `bool` | 권한이 있는지 (준 것·막은 것, 없으면 plugin.json `permissions`의 `default`; 선언하지 않은 권한은 운영자만) ([권한](server#권한과-운영자)) |
 | `set_permission(perm, on)` `unset_permission(perm)` | 권한 주기·막기 / 기본값으로 (서버의 `permissions.json`에 저장; `"*"` 모든 권한) |
 | `is_op()` `set_op(on)` | 서버의 운영자 (`ops.json`) |
-| `kick(reason)` `ban(reason)` | 내보내기 / 차단하고 내보내기 (`/unban 이름`으로 풀기) |
+| `kick(reason)` `ban(reason)` | 내보내기 / 차단하고 내보내기 (`/unban 이름`, `Server::unban`으로 풀기) |
+| `doing()` `on_ground()` `velocity()` | 게임이 알리는 하는 일(`idle` `walk` `run` `asleep` `tool` `swim` `jump` `fall` `bite` `reel`; 바뀌면 [`PlayerPose`](events#playerpose)), 발이 땅에, 속도(칸/초, 마지막으로 검사한 걸음 둘 사이) — 어느 이벤트에서나 |
+| `walk_speed()` `move_mode()` `packs_declined()` `id()` | `set_walk_speed`의 배, 게임 쪽이 알린 이동 방식, 받지 않은 선택 팩, 어느 서버에서나 같은 id |
+| `scale()` `jump_power()` `gravity()` `is_invisible()` `is_nametag_visible()` `is_frozen()` `is_spectator()` `is_hand_visible()` `nametag()` | 플러그인이 마지막으로 정한 값 다시 읽기 (이벤트에서 바꾼 것은 다음 이벤트부터) |
+| `can_see(name)` → `bool` | 그 사람을 보는지 (접속해 있고 투명·관전·변장이 아니며 이 사람에게서 숨지 않음) |
 | `transfer(to, data)` | 다른 서버로 (`host:port`나 `GS-` 아이디, 데이터 4 KB까지; `Server::transfer_all(to)`는 모두). [다른 서버로](server#다른-서버로) |
 | `show(&Gui)` | 창 띄우기 ([`Gui`](#gui)). `PlayerLogin`에서는 들어오기 전의 입력 창 |
 | `hud()` → `Hud` | 그 사람의 화면: HUD 요소, 게임 HUD 숨기기, 키, 채널 ([화면](screen)) |
@@ -334,6 +338,9 @@ fn count(_e: ServerTick) {
 |---|---|
 | `Server.offline_player(name)` → `OfflinePlayer` | 이름으로 |
 | `Server.offline_players()` → `Vec<OfflinePlayer>` | 들어온 적 있는 모두, 처음 들어온 순서 |
+| `Server.set_whitelist(on)` `whitelist_on()` `whitelist_add(name)` `whitelist_remove(name)` `is_whitelisted(name)` `whitelist()` | 허용 목록 (server.properties `whitelist`, `whitelist.txt`; 운영자는 늘 들어옴) |
+| `Server.ban(name, why)` `unban(name)` `is_banned(name)` `bans()` | 이름으로 차단 (접속하지 않은 사람도; `bans()`는 (이름, 이유, 때 ms)) |
+| `Server.motd()` `set_motd(text)` `max_players()` `set_max_players(n)` `version()` | 서버 목록의 소개와 동시 접속 한도 (서버가 켜져 있는 동안; `""` / `-1` 파일의 것), 들여보내는 게임 버전 |
 
 | 메서드 | |
 |---|---|
@@ -341,6 +348,9 @@ fn count(_e: ServerTick) {
 | `has_played()` → `bool` | 저장된 게임이 있는지 |
 | `gold()` `day()` | 골드, 그 사람 월드의 날짜 |
 | `last_seen()` → `f64` | 마지막으로 나간 때 (1970년부터의 ms) |
+| `first_seen()` → `f64` | 처음 들어온 때 (ms; 0: 기록 전부터의 게임, 다음에 나갈 때 정해짐) |
+| `position()` → `Option<(x, y, z)>` `world()` | 마지막으로 나간 곳 (칸)과 그 월드 |
+| `id()` | 어느 서버에서나 같은 id (이름의 해시; online-mode에서 이름은 중앙 계정 id라 별명이 바뀌어도 같음) |
 | `level(skill)` `friendship(villager)` `item_count(item)` | 스킬 레벨, 주민 호감도, 가방의 개수 |
 | `num(k)` | `"gold"` `"day"` `"energy"` `"seen"` `"level.<스킬>"` `"xp.<스킬>"` `"friendship.<주민>"` `"item.<id>"` |
 | `get(k)` | 이 플러그인이 그 사람에게 남긴 숫자, 그 사람 월드에서 (`Player::get`) |
@@ -686,3 +696,18 @@ fn skill(e: Packet) {
 플레이어가 채팅을 `!`로 시작하면 같은 팀에게만(월드 안 어디서나, 차단한 사람 빼고). 플러그인은 `World::team_chat(팀, 줄)`.
 이름표는 팀 색입니다.
 
+## 한 사람에게만, 장비, 기력, 월드 읽기, 팀 옵션
+
+| | |
+|---|---|
+| `Player::title_with(title, sub, fade_in, stay, fade_out)` | 큰 글과 그 아래 줄 (초; NaN은 게임 기본 0, 2.5, 0.8) |
+| `Player::action_bar(line)` | 단축바 위 한 줄, 2초 (`""`: 지움) |
+| `Player::play_sound(name, x, y, z)` / `spawn_particle(...)` | 그 사람만 (이름은 `World::sound`·`particle`과 같음) |
+| `Player::set_energy(n)` | 기력 (0~최대) |
+| `PlayerInventory::equipment()` | `[(칸, Option<아이템>)]`, 규칙의 `equip_slots` 차례 |
+| `PlayerInventory::set_equipment(칸, Some(id) \| None)` | 없던 것을 입힘 (가방에서 꺼내지 않음, 입던 것은 사라짐, `PlayerEquip` 없음) |
+| `World::weather()` | 오늘의 날씨 |
+| `World::spawn_location()` | `set_spawn`의 `(x, y, z, yaw)`, None: 바닐라 마을 |
+| `World::mobs()` | 이벤트의 층의 몬스터 `[(EnemyEntity, x, z)]` |
+| `World::set_minute(m)` | 월드의 시계 |
+| `World::team_option(team, key, value)` | `"prefix"` `"suffix"` (16자), `"nametag"` `"all"` \| `"team"` \| `"others"` \| `"none"`, `"collide"` `"on"` \| `"off"` (끄면 단단한 엔티티가 지나감) |

@@ -91,6 +91,9 @@ fn cmd(c: Command) { /* … */ }
 | [`Join`](#join--leave) | `join` | | 월드에 들어옴 |
 | [`Leave`](#join--leave) | `leave` | | 월드에서 나감 |
 | [`PlayerLogin`](#playerlogin) | `login` | ✔ | 서버에 들어오기 직전 |
+| [`ServerFull`](#serverfull) | `full` | ✔ | 가득 차서 돌려보내기 직전 (취소: 들여보냄) |
+| [`PlayerPose`](#playerpose) | `pose` | | 게임이 알리는 하는 일이 바뀜 (수영, 달리기 ...) |
+| [`PacksStatus`](#packsstatus) | `packs` | | 게임이 접속의 파일을 다 받음 |
 | [`PlayerItemHeld`](#playeritemheld) | `held` | | 단축바의 다른 칸을 고르거나 고른 칸의 것이 바뀜 |
 | [`Chat`](#chat) | `chat` | ✔ | 채팅 한 줄 |
 | [`Words`](#words) | `words` | ✔ | 주민에게 말을 걸음 |
@@ -113,6 +116,8 @@ fn cmd(c: Command) { /* … */ }
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
 | [`Disable`](#disable) | `disable` | | 서버가 멈출 때, 저장 전에 한 번 |
 | [`WorldRemove`](#worldremove) | `world.remove` | | 이 플러그인의 월드가 지워지거나(`remove_world`) 다시 만들어지기(`reset_world`) 직전 |
+| [`WorldSave`](#worldsave) | `world.save` | | 월드를 저장하기 직전, 그 월드에서 한 번 |
+| [`Custom`](interop#플러그인의-이벤트-serverfire-on_custom) | `custom:<이름>` | ✓ | 다른 플러그인이 낸 이벤트 (`#[on_custom("이름")]`) |
 | [`HttpDone`](#httpdone) | `http.done` | | 이 플러그인의 바깥 요청의 답 ([바깥 요청](sdk#바깥-요청)) |
 | [`NetworkData`](#networkdata--networkmessage) | `network.data` | | 이 플러그인의 `Network::*` 요청의 답 ([서버 사이 공유](sdk#서버-사이-공유)) |
 | [`NetworkMessage`](#networkdata--networkmessage) | `network.message` | | 구독한 주제로 묶음의 다른 서버가 보낸 메시지 |
@@ -173,6 +178,11 @@ fn enable(_e: Enable) {
 
 이 플러그인이 만든 월드가 사라지기 직전, 안의 사람이 모두 옮겨진 뒤. `is_reset()`: `reset_world`(곧 다시 만들어짐). 월드의
 데이터는 함께 지워지므로 남길 것은 `Server::data_put`에.
+
+### WorldSave
+
+월드를 저장하기 직전(아침, `World::save_now`, 실시간 저장의 1분마다, 아무도 없어 내릴 때), 그 월드에서 한 번 (Bukkit의
+WorldSaveEvent). 메모리에만 든 값을 `World::data_put` / `set`으로 옮겨 두면 함께 저장됩니다.
 
 ### HttpDone
 
@@ -392,9 +402,25 @@ fn circle(e: MobStep) {
   아무것도 안 하면 들어옵니다.
 - 여기와 그 창의 `Button`에서 [`Server`](sdk#server) 값을 읽고 씁니다. 예: `plugins/server_password`.
 
+### ServerFull
+
+서버가 동시 접속 한도(`max-players`, `Server::set_max_players`)에 차서 누군가를 돌려보내기 직전(Bukkit의
+PlayerServerFullCheckEvent). `who()` `online()` `max()`. 취소하면 그래도 들여보냅니다(VIP, 운영자). `PlayerLogin`처럼 월드 값은 없습니다.
+
+### PlayerPose
+
+게임이 위치와 함께 알리는 하는 일이 바뀔 때(Bukkit의 PlayerToggleSneak / EntityToggleSwim ...): `from()` `to()`, 이름은
+[`Player::doing`](sdk#player)의 것(`idle` `walk` `run` `asleep` `tool` `swim` `jump` `fall` `bite` `reel`). 알림만.
+
+### PacksStatus
+
+게임이 접속의 파일을 다 받았을 때(Bukkit의 PlayerResourcePackStatusEvent): `declined()` 받지 않은 선택 리소스 팩(파일 이름; 비면 다 받음).
+이때부터 `Player::packs_declined()`. 팩은 접속 뒤에 고르므로 `Join` 때는 아직 모릅니다. 알림만.
+
 ### Join / Leave
 
-`Join`: 월드에 들어옴 — 접속, LAN 일꾼이 들어옴, [`Player::move_world`](sdk#player)로 옴. `Leave`: 나감 — 접속 끊김, `move_world`로 떠남.
+`Join`: 월드에 들어옴 — 접속, LAN 일꾼이 들어옴, [`Player::move_world`](sdk#player)로 옴. `Leave`: 나감 — 접속 끊김, `move_world`로 떠남;
+`Leave::reason()`: `"quit"`(게임을 끔) `"kick"`(내보내짐·차단) `"timeout"`(연결이 끊김) `"transfer"`(다른 서버로 감) `"world"`(`move_world`: 서버에는 그대로).
 `who()` 누구. 다른 서버가 [`Player::transfer`](server#다른-서버로)로 보낸 접속이면 `is_transfer()`가 참이고
 `transfer_from()`(보낸 서버), `transfer_data()`(함께 온 것), `transfer_trusted()`(같은 `transfer-key`, 또는 보낸 서버의 `transfer-keys` 키로 서명됨)를 읽습니다.
 `e.player().give(..)` `add_gold` `inventory().add(..)`는 그 사람의 가방에 들어가고 게임에 바로 보입니다(`Leave`에서는 그날이 저장되는 서버에서만 남음; [Player](sdk#player)).
@@ -755,6 +781,69 @@ fn loaded(e: ChunkLoad) {
 | `num("up_x")` `"up_z"` `"down_x"` `"down_z"` | 올라가는·내려가는 사다리 |
 
 예: `plugins/deep_mines`.
+
+## 알림: 가방, 회복, 기력, 넉백, 걸음, 땅, 전리품
+
+### InventoryChange
+
+가방의 칸이 바뀐 뒤(Paper의 PlayerInventorySlotChangeEvent), 무엇 때문이든: 행동, 다른 이벤트에서 플러그인이 한 일, 쓰러짐.
+바뀐 칸마다 하나, 알림만.
+
+| | |
+|---|---|
+| `slot()` | 칸 |
+| `item_id()` / `count()` | 지금 것 (`""`: 빔) |
+| `previous_item_id()` / `previous_count()` | 전 것 |
+| `item()` | 지금 스택, 메타까지 (`Option<ItemStack>`) |
+
+### PlayerHeal / PlayerEnergy
+
+행동 하나가 체력을 돌려줬을 때 / 기력을 바꿨을 때(Bukkit의 EntityRegainHealthEvent / FoodLevelChangeEvent; 쓰러짐은 아님).
+취소하면 그 전대로.
+
+| | |
+|---|---|
+| `amount()` / `set_amount(n)` | 돌아온 체력 / 기력의 변화 (쓰면 음수) |
+| `cause()` | `"food"` 먹음, `"sleep"` 침대, `"regen"` 상태 효과, `"plugin"` 다른 이벤트의 `heal`·`set_energy`, `"respawn"`, 그 밖에는 행동의 종류 (`"till"` `"hit"` `"command"` …) |
+
+### PlayerKnockback
+
+넉백 직전(EntityKnockbackEvent). 취소하면 안 밀림. 값만 바꿉니다(그 안의 다른 일은 하지 않음).
+
+| | |
+|---|---|
+| `cause()` | `"monster"` 접촉 (게임의 넉백 7 m/s와 위로 2: `strength`만), `"push"` `Player::push` |
+| `velocity()` / `set_velocity(x, y, z)` | m/s (push) |
+| `strength()` / `set_strength(배)` | 0~10, 0이면 안 밀림 |
+
+### MoveRefused
+
+서버의 검사가 걸음을 거절했을 때, 돌려보내기 직전(Paper의 PlayerFailMoveEvent).
+
+| | |
+|---|---|
+| `check()` | `"speed"` `"walls"` `"air"` `"teleport"`(시작할 곳 없음) `"frozen"` |
+| `why()`, `from()`, `to()` | 서버가 쓴 이유, (x, y, z) |
+| `allow()` | 받아들임 (취소) |
+
+### GroundDrop
+
+땅에 아이템이 생기기 직전(ItemSpawnEvent): 수확, 나무, 몬스터, 버린 것, `drop_item`. 취소하면 안 생김. `World::ground_drop`은 오지 않습니다.
+
+| | |
+|---|---|
+| `item_id()`, `count()` / `set_count(n)` | |
+| `at()`, `by()`, `cause()` | 어디 둘레, 떨어뜨린 사람, 행동의 종류 |
+
+### Loot
+
+전리품이 정해진 뒤 주기 전(LootGenerateEvent).
+
+| | |
+|---|---|
+| `source()` | `"chest"` 던전 상자 (`id()` 방의 층), `"mob"` 쓰러진 몬스터 (`id()` 종류) |
+| `items()` / `set_items(&[(id, n)])` | 64개까지, 모르는 아이템은 빠짐 |
+| `at()` | |
 
 ## SDK 없이 (원본 ABI)
 

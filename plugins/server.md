@@ -32,8 +32,9 @@ region=한국
 | 키 | |
 |---|---|
 | `name`, `motd` | 게임의 서버 목록에 보이는 이름과 소개 |
-| `max-players` | 동시 접속 (0: 제한 없음) |
+| `max-players` | 동시 접속 (0: 제한 없음). 플러그인의 `Server::set_max_players`가 켜져 있는 동안 우선, 가득 차면 [`ServerFull`](events#serverfull) |
 | `password` | 서버 전체의 비밀번호 |
+| `whitelist` | `true`면 `whitelist.txt`(한 줄에 이름 하나)의 사람과 운영자만 들어옴 (`Server::set_whitelist`, `whitelist_add`) |
 | `address` | 명령줄에 주소가 없을 때 들을 곳 |
 | `online-mode` | 접속자를 공식 중앙 서버로 확인 (기본 켬). 끄면 이름을 말하는 대로 믿음: 시험, 닫힌 LAN |
 | `listed` | (online-mode일 때) 중앙 서버의 서버 목록에 1분마다 알려 멀티플레이 › 서버 찾기에 보임 |
@@ -94,6 +95,18 @@ GreenHaven+ 플랜으로 만든 24시간 서버의 `owner`는 그 플랜을 산 
 
 접속할 때 서버는 받을 파일을 알립니다: `<data>/packs/*.zip`(리소스 팩: 골라 받을 수 있음)과 플러그인의 `assets/`·`client.wasm`(꼭
 받아야 함). 게임은 받을지 묻고, 끊기면 받던 곳부터 이어 받습니다.
+
+### 콘솔: 로그와 명령
+
+플러그인의 로그(`Server.info("..")`, `warn`, `error`, `log(Level::Debug, ..)`)는 서버의 출력과 **서버 관리 › 콘솔**에
+`[플러그인] 글`로 나옵니다(플러그인마다 1초에 20줄; 넘친 줄은 세어 한 번 알림). 콘솔 칸에 친 줄은 `kick 아이디`, `ban 아이디 사유`,
+`unban 아이디` 말고는 **콘솔 명령**입니다: 플러그인의 명령어(모든 권한으로, `Command::is_console()`이 참) 아니면 서버의 명령
+(`op`, `deop`, `kick`, `ban`, `unban`, `perm`). 결과가 콘솔에 나옵니다.
+
+플러그인에서는 `Player::run_command("/mg join")`(그 사람이 친 것처럼, 그 사람의 권한; 말한 것은 그 사람 채팅에),
+`Server.run_command("..")`(콘솔이 친 것처럼). 서버 부하는 `Server.tick_ms()`(월드 한 스텝의 요즘 시간, ms),
+`Server.budget_left()`(이 플러그인의 CPU 몫이 남은 정도 0-1). 월드를 저장하기 직전에는 `WorldSave` 이벤트가 옵니다
+(메모리의 값을 `World::data_put`으로 옮겨 두기).
 
 ## 샌드박스
 
