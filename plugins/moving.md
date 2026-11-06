@@ -61,6 +61,41 @@ pub fn allowed(from: (f64, f64), to: (f64, f64, f64), dt: f64) -> Result<(), &'s
 (최대 빠르기, 최고 높이 …). 모두에게보다 한 사람에게만 끄고, 그 이동이 끝나면(착지) 다시 켜세요. `plugins/flight`는 땅에
 닿았을 때, 늦어도 내려오기 시작하고 3초 뒤에 다시 켭니다.
 
+## 밀기
+
+`player.push(vx, vy, vz)`(m/s, 칸 기준, 축마다 30까지): 넉백, 점프대, 돌진. 게임의 `PlayerController`가 속도로 받습니다(옆으로는
+초당 3배로 줄어 `v / 3` m를 가고, 위로는 그 속도의 점프). 검사를 끌 필요가 없습니다: 서버가 게임에 보내기 전에 **그만큼의 허용**을
+적어 두고(몬스터에 밀린 것과 같은 것) 걸음 검사가 그것을 뺍니다.
+
+| 허용 | 크기 |
+|---|---|
+| 땅을 따라 | `v / 3 + 1` m, 걸어서 갈 수 있는 것보다 더 간 만큼씩 써서 없어짐 (겹쳐도 24 m까지) |
+| 더 높이 | `v² / 2g` (g = 20 × 그 사람의 중력 배율) |
+| 더 오래 공중에 | `2v / g`초 |
+| 동안 | 공중 시간 + 1초 + 1.5초 |
+
+얼어 있거나 관전자면 게임이 무시합니다. 게임 쪽 코드로 운전 중(`drive`)이면 그 속도에 더해집니다.
+
+## 구역과 월드 보더
+
+`World::zone(id, min, max)`(칸, 발 높이; 다시 부르면 옮김)에 들어가고 나갈 때 [`ZoneEnter` / `ZoneLeave`](events#zoneenter--zoneleave)
+(그 플러그인에만). `World::keep_in(id, min, max)`는 월드 보더: 안에서 밖으로 가는 걸음을 서버가 되돌립니다(바깥에서 순간이동으로
+온 사람은 들어올 때까지 자유). `World::keep_out(id, min, max)`는 들어가는 걸음을 되돌립니다. `remove_zone(id)`, `zones_at(점)`.
+월드와 함께 저장되고 한 월드에 256개, 다른 플러그인의 id는 건드리지 못합니다.
+
+```rust
+#[command("경기장", "")]
+fn arena(c: Command) {
+    let ((x, z), y) = (c.player().position(), c.player().y());
+    c.world().keep_in("arena", (x - 12.0, y - 8.0, z - 12.0), (x + 12.0, y + 40.0, z + 12.0));
+    c.world().zone("pad", (x + 3.5, y - 1.0, z - 1.0), (x + 5.5, y + 1.0, z + 1.0));
+}
+#[on(ZoneEnter)]
+fn came(e: ZoneEnter) {
+    if e.zone() == "pad" { e.player().push(0.0, 14.0, 0.0) } // 5 m쯤 위로
+}
+```
+
 ## PlayerMove로 판정하기
 
 [`PlayerMove`](events#playermove)는 플레이어가 가로나 위아래로 움직일 때마다 옵니다(서버가 걷기를 검사하는 0.19초마다 한 번까지:

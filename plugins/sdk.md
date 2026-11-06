@@ -55,6 +55,7 @@ redirect_from:
 | `inventory()` → [`PlayerInventory`](#playerinventory) | 그 사람의 가방 (Bukkit의 getInventory) |
 | `gear(id)` → `Option<`[`Gear`](#gear)`>` | 그 사람의 도구·장비 하나의 등급과 마법 (가방에 없으면 `None`) |
 | `mount(&entity, speed, seat)` | 이 플러그인의 엔티티에 태움: 모든 게임이 그 엔티티를 탄 사람 아래에 그리고 `seat` m 위에 앉힘, 걸음은 `speed`배로 판정. 그 사람이 한 일의 이벤트에서만 (`EntityInteract`, 명령어, 버튼, `Packet`); 저장되지 않음 ([탈것](moving#탈것)) |
+| `push(vx, vy, vz)` | 밀기(넉백, 점프대, 돌진; m/s, 칸 기준, 축마다 30까지): 그 사람의 게임이 속도로 받고 서버의 걸음 검사가 그만큼만 봐줌 ([밀기](moving#밀기)) |
 | `dismount()` | 내림: 엔티티는 그 자리에, 걸음은 전과 같이 |
 | `set_check(check, on)` | 서버의 이동 검사 하나를 이 사람에게만 끄고 켬: `"speed"` `"walls"` `"air"` `"teleport"` `"reach"`. 끄면 플러그인이 `PlayerMove`에서 대신 검사해야 함. 저장되지 않음 (`Join`에서 다시). 모두에게는 `Registry::set("checks.air", "false")` ([이동 방식 만들기](moving#서버의-이동-검사)) |
 | `death(hold)` | 쓰러뜨림 (`PlayerDeath`도 불림). `false`: 게임 규칙대로 진료소에서 바로 일어남. `true`: `respawn`까지 쓰러진 채 대기, 아침이 지나도 그대로. 다른 사람의 잠은 이 사람을 기다리지 않지만, 쓰러진 사람만으로 하루가 끝나지는 않음 |
@@ -118,6 +119,7 @@ redirect_from:
 | `World::cast(from, dir, len)` → `Option<Hit>` | 광선 판정: 블록(`HitKind::Block`), 충돌층의 상자(`Box`), 플레이어의 몸(`Player`, `who`; 폭 0.8 m, 발에서 1.6 m, 이벤트의 플레이어는 빼고), 체력 있거나 단단한 엔티티(`Entity`, `entity`) 가운데 처음 것, `at` `normal` `distance` (256 m까지) |
 | `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 움직이는 엔티티(체력 있거나 단단한 것)와 몬스터도 왕복 시간의 반 + 100 ms 전 자리로. 몬스터에 맞으면 `Hit::mob()` → `EnemyEntity`, `damage(양)`으로 피해(0이면 쓰러지고 드롭·경험치). 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`으로 |
 | `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
+| `World::overlap(center, r, mask)` `overlap_box(min, max, mask)` → `Vec<Found>` | 범위 안의 것(폭발, 범위 스킬): `PLAYERS`(몸 있는 모두: 이벤트의 그 사람과 숨은 사람도; PvP·팀은 플러그인이), `ENTITIES`(날아가는 것 빼고), `MOBS`(그 사람의 층의 몬스터)를 `\|`로. 가까운 것부터 256개까지, 반지름·반폭 64 m까지; `Found`의 `kind` `who` `entity` `at`(발) `distance`, `player()` `model_entity()` `mob()` |
 | `World::projectile(모델, from, vel, gravity, radius, life)` → `Option<ModelEntity>` | 발사체: 서버가 스텝마다 움직이고 게임은 미끄러지듯 그림; 처음 닿는 블록·상자·플레이어(쏜 사람 빼고, PvP는 위와 같음)·엔티티에서 끝나고 [`ProjectileHit`](events#projectilehit); 한 월드에 64개 |
 | `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임(블록·상자·다른 단단한 엔티티에 옆으로도 부딪힘: 비스듬히 가면 벽을 따라 미끄러지고 정면이면 멈춤, 천장에서 멈춤, 내려앉으면 멈춤; 몸은 0.8 × 1.6 m에 `scale`배), 월드와 함께 저장(다시 켜도 그 자리에) |
 | `Server::player(name)` → `Option<Player>` | 서버 어디든 접속한 사람 (위치는 1초마다의 것) |
@@ -311,6 +313,11 @@ fn efficiency(c: Command) {
 | `data_get(key)` → `Option<Vec<u8>>` | |
 | `data_del(key)` | |
 | `data_keys(prefix)` → `Vec<String>` | 이 플러그인의 서버 키 중 `prefix`로 시작하는 것 |
+| `rank_set(board, key, score)` → `bool` | 순위표에 (로블록스의 OrderedDataStore): 높을수록 위, 넣는 즉시 디스크에. 플러그인마다 판 16개, 판마다 키 2000개(가득 차면 가장 높은 것만: 가장 낮은 것보다 낮은 새 키는 `false`), 이름 64바이트까지 |
+| `rank_top(board, n)` → `Vec<(String, i64)>` | 높은 순 (같으면 키 순) |
+| `rank_of(board, key)` → `Option<(u64, i64)>` | 등수(1이 가장 높음)와 점수 |
+| `rank_remove(board, key)` | |
+| `http_get(url, tag)` / `http_post(url, body, tag)` → `Option<i64>` | [바깥 요청](#바깥-요청) |
 
 ```rust
 #[on(ServerTick)]
@@ -395,6 +402,7 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | `remove()` | 월드에서 없앰 (진짜 플레이어는 아무 일 없음) |
 | `is_alive()` → `bool` | 아직 있음 (플레이어: 쓰러져 있지 않음) |
 | `distance_to(&dyn Entity)` → `f64` | 땅 위의 거리 |
+| `set_interact_with(label, hold_secs, reach)` | `set_interact`인데 E를 `hold_secs`초 눌러야(0이면 누르기, 30초까지) `reach` m 안에서만(0이면 손 닿는 1.6 m, 16 m까지) 쓰임(로블록스의 ProximityPrompt): 게임이 「E 길게: label」과 차오르는 링을 그리고, **서버가 누르기 시작부터 시간을 잼**(그보다 이른 사용, 시작 없는 사용은 거절; 거리는 시작과 끝 둘 다) |
 | `set_interact(label)` | 플레이어가 E로 쓸 수 있음: 가까이 가면 「E: label」, 누르면 [`EntityInteract`](events#entityinteract) (이 플러그인에만). `""` 끄기. 플러그인의 엔티티(`ModelEntity` `Avatar`)만 |
 | `say(text)` | 머리 위 말풍선 (가까운 모두에게). 플러그인의 엔티티만 |
 | `set_solid(on)` | 아무도 지나가지 못함: 서버의 걸음·길·몬스터와 게임의 몸이 그 히트박스에 부딪힘. 플러그인의 엔티티만 |
@@ -569,6 +577,30 @@ let w = e.world();
 w.data_put("log/1", "첫 수확".as_bytes());
 for k in w.data_keys("log/") {
     let line = String::from_utf8(w.data_get(&k).unwrap_or_default()).unwrap_or_default();
+}
+```
+
+## 바깥 요청
+
+`Server::http_get(url, tag)` / `Server::http_post(url, body, tag)`(로블록스의 HttpService): 답은 [`HttpDone`](events#httpdone).
+`server.properties`의 [`http-allow`](server#serverproperties)에 적힌 호스트에만 보냅니다(기본은 없음: 모두 `None`).
+
+- http와 https만, 리디렉션은 따라가지 않고, 프록시는 쓰지 않습니다.
+- 이름으로 적은 호스트는 **공용 주소로만** 연결합니다(사설·루프백·링크 로컬로 풀리면 연결하지 않음). 사설 주소는 그 주소 자체를
+  적었을 때만(`127.0.0.1:8080`, `localhost`), GreenHaven+ 24시간 서버에서는 그것도 안 됩니다.
+- 보내는 본문 64 KB, 받는 본문 앞 64 KB, 10초. 플러그인마다 동시에 4개(넘으면 바로 `status` 0 "busy"), 1분에 60개.
+- 본문이 `{`나 `[`로 시작하면 JSON, 아니면 글로 보냅니다. 헤더는 따로 붙일 수 없습니다.
+- 거절된 행동 안의 요청은 보내지 않습니다. 게임의 자체 서버(혼자·LAN)에서는 언제나 실패합니다.
+
+```rust
+#[command("알림", "디스코드로 알리기")]
+fn ping(c: Command) {
+    Server.http_post("https://discord.com/api/webhooks/…", r#"{"content":"경기 시작!"}"#, "start");
+}
+
+#[on(HttpDone)]
+fn done(e: HttpDone) {
+    if !e.ok() { e.world().broadcast(&format!("알림 실패: {} {}", e.status(), e.error())); }
 }
 ```
 

@@ -488,6 +488,9 @@ fn act(a: Action) {
 |---|---|
 | `Me::position()` → `(x, y, z)` / `Me::yaw()` / `Me::name()` | 게임이 그리는 이 플레이어 (판정은 서버의 것) |
 | `Me::velocity()` / `Me::on_ground()` | 게임이 움직이는 속도 (칸/초), 발이 땅에 닿았는지 |
+| `Me::health()` / `Me::max_health()` | 서버가 마지막으로 알린 체력과 최대 체력 |
+| `Me::slot()` / `Me::held()` | 고른 단축바 칸 (0부터), 그 칸의 아이템 id (`""` 없음) |
+| `Me::data(key)` → `f64` | 이 플러그인의 서버 쪽이 이 플레이어에게 `Player::set(key, …)`한 값 (마지막으로 온 것; 없으면 NaN) |
 | `Input::held(key)` → `bool` | 그 키를 지금 누르고 있는지 |
 
 ### 세상 읽기
@@ -519,6 +522,8 @@ fn act(a: Action) {
 | `Highlight::add(key, target, fill, outline, width, through_walls)` / `remove(key)` | 외곽선과 채움 (로블록스의 Highlight, 모든 플러그인 합쳐 16개): 색 `"rrggbb"` 또는 `"rrggbbaa"` (채움은 알파만큼: `"ff000040"`), `width` m, `through_walls` 벽 너머로도 |
 | `Particles::emit(&Emitter { at, on, offset, texture, color, color_end, size, life, rate, count, speed, dir, spread, gravity })` → `i64` / `stop(id)` | 파티클 (로블록스의 ParticleEmitter): `count`개 한 번에 (`life` 뒤 사라짐) 또는 `rate` 초당 (`stop`까지; 이때 `count: 0`), `at` 그 자리 (칸) 또는 `on` 대상에 붙어 `offset`만큼, `texture` `res://` 그림 (`""` 부드러운 점), `color`에서 `color_end`로, `size` m, `speed` m/초로 `dir` 쪽 `spread`도 안에서, `gravity` 아래로 m/초². 모든 플러그인 합쳐 32개, 입자 4096개 |
 | `Local::trail(id, color, width, 초)` / `Trail::on(key, target, color, width, 초)` | 지나간 자리에 남는 띠 (로블록스의 Trail): 점마다 `초` 동안 (0: 없앰), 모든 플러그인 합쳐 32개 |
+
+`Fx::vibrate(ms)`: 휴대폰을 짧게 떨게 함 (로블록스의 HapticService; 500 ms까지, 모든 플러그인 합쳐 1초에 4번; PC에서는 아무것도 안 함).
 
 `Emitter`는 `..Default::default()`로 필요한 것만 쓰세요. 값이 이상하면(범위 밖, 글자 대신 숫자 …) 게임은 범위 안으로 줄이거나
 무시하고, 멈추지 않습니다.

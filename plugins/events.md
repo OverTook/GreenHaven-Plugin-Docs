@@ -106,9 +106,14 @@ fn cmd(c: Command) { /* … */ }
 | [`ModelEntityDamage`](#modelentitydamage--modelentitydeath) | `entity.damage` | ✔ | 체력 있는 이 플러그인의 엔티티를 플레이어가 침 |
 | [`ModelEntityDeath`](#modelentitydamage--modelentitydeath) | `entity.death` | | 그 엔티티의 체력이 0 |
 | [`ProjectileHit`](#projectilehit) | `projectile.hit` | | 이 플러그인의 발사체가 무언가에 닿음 |
+| [`ZoneEnter`](#zoneenter--zoneleave) | `zone.enter` | | 플레이어가 이 플러그인의 구역에 들어감 |
+| [`ZoneLeave`](#zoneenter--zoneleave) | `zone.leave` | | 플레이어가 이 플러그인의 구역에서 나감 |
 | [`MobDeath`](#mobdeath) | `mob.death` | | 몬스터가 쓰러짐 (휘두름, 플러그인의 피해) |
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
+| [`Disable`](#disable) | `disable` | | 서버가 멈출 때, 저장 전에 한 번 |
+| [`WorldRemove`](#worldremove) | `world.remove` | | 이 플러그인의 월드가 지워지거나(`remove_world`) 다시 만들어지기(`reset_world`) 직전 |
+| [`HttpDone`](#httpdone) | `http.done` | | 이 플러그인의 바깥 요청의 답 ([바깥 요청](sdk#바깥-요청)) |
 | [`BlockPlace`](#blockplace--blockbreak) | `block.place` | ✔ | 플레이어가 가방의 블록을 놓음 |
 | [`BlockBreak`](#blockplace--blockbreak) | `block.break` | ✔ | 플레이어가 블록을 부숨 (플러그인 종류, 규칙이 허락한 바닐라 블록) |
 | [`PlayerInteract`](#playerinteract) | `touch` | ✔ | 블록(이나 공기)에 사용 버튼 |
@@ -155,6 +160,22 @@ fn enable(_e: Enable) {
     Registry::block("ruby_block", &BlockKind::new("루비 블록", "stone", "e0405a"));
 }
 ```
+
+### Disable
+
+서버가 멈출 때 한 번(Bukkit의 `onDisable`), 아무도 저장되기 전. 월드도 플레이어도 없고 [`ServerTick`](#servertick)처럼
+`Server::set`, `Server::data_put`, 순위표에 쓴 것이 남습니다. 다른 호출처럼 ~50 ms에서 끊기고, 이때 요청한 것(월드 만들기,
+바깥 요청 …)은 하지 않습니다.
+
+### WorldRemove
+
+이 플러그인이 만든 월드가 사라지기 직전, 안의 사람이 모두 옮겨진 뒤. `is_reset()`: `reset_world`(곧 다시 만들어짐). 월드의
+데이터는 함께 지워지므로 남길 것은 `Server::data_put`에.
+
+### HttpDone
+
+`Server::http_get` / `http_post`의 답이 요청한 월드의 다음 스텝에 옵니다(그 플러그인에만): `id()`, `status()`(0: 못 함,
+`error()` 이유: "busy", 시간 초과, 공용이 아닌 주소 …), `ok()`(2xx), `body()`(앞 64 KB), `tag()`.
 
 ## 행동
 
@@ -344,6 +365,12 @@ fn circle(e: MobStep) {
 `World::projectile`로 날린 이 플러그인의 발사체가 처음 닿은 것: `hit()`(`kind` `who` `entity` `at` `normal`, `player()` 맞은 사람, `mob()` 몬스터;
 마을 아래에서는 쏜 사람의 광산 층·던전 방의 벽·바위·몬스터, `num("floor")` 그 층),
 `projectile()`(이 이벤트 뒤 사라짐), `player()` 쏜 사람. 그 플러그인에만 옵니다. 예: `plugins/blaster`의 돌 대포.
+
+### ZoneEnter / ZoneLeave
+
+플레이어의 걸음이 이 플러그인의 구역(`World::zone` `keep_in` `keep_out`)에 들어가거나 나올 때: `zone()` 그 id, `at()` 걸음이 닿은
+자리(칸, 발 높이), `player()`. 서버가 위치 보고를 검사할 때마다(190 ms에 한 번) 판정합니다(엔진 코드라 연료 밖). 그 플러그인에만
+옵니다. 알리기만 하고 취소는 없습니다(막으려면 `keep_out`). 월드를 떠날 때는 `ZoneLeave` 없음(`Leave`를 쓰세요). [구역](moving#구역과-월드-보더)
 
 ## 플레이어
 

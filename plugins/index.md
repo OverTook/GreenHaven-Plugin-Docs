@@ -28,6 +28,7 @@ has_children: true
   <a class="card" href="moving"><strong>이동 방식 만들기</strong><span>비행, 탈것, 도구 동작, 서버의 이동 검사</span></a>
   <a class="card" href="models"><strong>커스텀 모델</strong><span>플레이어 모델과 감정 표현, 뼈대 규격과 검사 규칙</span></a>
   <a class="card" href="world"><strong>월드와 하루</strong><span>블록과 새 블록 종류, 청크, 구조물, 주민, 시계, 저장</span></a>
+  <a class="card" href="chat"><strong>채팅과 음성, 명령어</strong><span>채널, 귓속말, 음성 묶음, 별칭·Tab 완성, 서식과 누르는 명령어</span></a>
   <a class="card" href="samples"><strong>샘플 플러그인</strong><span>스물다섯 개의 예제와 쓰는 기능</span></a>
 </div>
 

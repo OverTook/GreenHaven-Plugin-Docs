@@ -317,6 +317,20 @@ fn made(e: WorldCreate) {
 // 경기 끝: Server.reset_world("arena1", "world");  모두 허브로(허브의 가방 그대로), 경기장은 틀의 모습으로
 ```
 
+## 영역 복사·붙여넣기 (스키매틱)
+
+`World::copy(min, max, structures)` → `Option<Vec<u8>>`: 상자(두 모서리 포함, 26만 2144블록까지)의 블록, 블록 데이터, `structures`면
+그 안에 선 구조물. `World::paste(at, &bytes, turns, structures)` → `bool`: 낮은 모서리를 `at`에, y축으로 `turns`번 4분의 1 회전(돌아가는
+블록 종류와 구조물도), 공기도 붙여서. 바이트는 원하는 곳에 두세요(`Server::data_put`, 월드 데이터). 복사는 이벤트가 시작될 때의
+블록을 읽으므로, 같은 이벤트에서 쌓은 것은 타이머로 다음 스텝에 복사합니다. 예제 `plugins/arena_stats`.
+
+```rust
+let arena = w.copy((0, 0, 0), (20, 6, 20), false).unwrap();   // 처음 모양
+Server.data_put("arena", &arena);
+// 판이 끝나면
+w.paste((0, 0, 0), &Server.data_get("arena").unwrap(), 0, false);
+```
+
 ## 저장
 
 - **바닐라 규칙: 자고 일어난 아침에만 저장됩니다.** 그 전에 주인이 나가거나 서버가 꺼지면 그날 한 일(블록, 플러그인 값과
