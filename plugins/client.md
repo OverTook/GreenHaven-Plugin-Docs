@@ -114,7 +114,7 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 }
 ```
 
-`client!`에는 일곱 중 쓰는 것만 적습니다.
+`client!`에는 여덟 중 쓰는 것만 적습니다.
 
 | 핸들러 | 언제 | |
 |---|---|---|
@@ -125,6 +125,7 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 | `click` → `Click` | 이 플러그인의 버튼·입력 칸을 누름 (HUD에서든 [월드 속 패널](#직접-그리는-ui)에서든; 같은 누름이 서버 쪽 `Packet`으로도 감) | `on()` 그 요소의 `on`, `data()` 입력 칸에 쓴 글 |
 | `action` → `Action` | [액션](#액션과-터치-버튼)(`Input::bind`)의 키·마우스·패드·터치 버튼을 누르거나 뗌 | `name()` 액션 이름, `pressed()` |
 | `step` → `Step` | 고정 스텝, 1초에 60번 (게임의 물리 틱): 서버와 같은 코드(`src/shared.rs`)로 미리 계산할 것. 그리기는 `frame`에서 | `n()` 몇 번째, `dt()` 한 스텝의 초 |
+| `chat` → `ChatLine` | 이 게임의 채팅 상자가 보여 주는 줄 하나 (다른 사람의 들린 줄, 이 플레이어가 보낸 줄, 서버의 알림; 채팅 필터의 별표 그대로) | `text()`, `sender()` 채팅에 보이는 이름 (내 것은 `text("me")`, 알림은 `""`), `channel()` (`""` 근처, 팀 이름, 플러그인의 채널, `"sys"` 알림), `rich()` |
 
 전역 변수(`static mut`)는 서버를 떠날 때까지 남습니다. 시간은 프레임 수가 아니라 `Frame::time()` / `dt()`로 재세요.
 
@@ -525,6 +526,22 @@ fn act(a: Action) {
 
 `Fx::vibrate(ms)`: 휴대폰을 짧게 떨게 함 (로블록스의 HapticService; 500 ms까지, 모든 플러그인 합쳐 1초에 4번; PC에서는 아무것도 안 함).
 
+### Chat — 채팅
+
+`Chat::say(text)`: 플레이어가 채팅 상자에 친 것처럼 이 플레이어의 이름으로 한 줄 (근처에, `!`로 시작하면 팀에게; 서버의 채팅 제한은
+플레이어의 것 그대로). 명령어(`/`로 시작)는 보내지 않고, 플러그인마다 2초에 한 줄, 80자까지. 다른 사람의 이름으로는 보낼 수 없습니다.
+`Chat::system(text)`: 이 게임에만 보이는 알림 한 줄 (앞에 `[플러그인 이름]`; 1초에 4줄까지). 줄을 읽는 것은 `chat` 핸들러로.
+
+```rust
+greenhaven_client::client! { chat => asked }
+fn asked(l: ChatLine) {
+    if l.text().trim() == "점수?" && l.channel() != "sys" {
+        Chat::system(&format!("내 점수 {}", Me::data("score")));
+        if l.sender() != text("me") { Chat::say("저는 3점이에요"); }
+    }
+}
+```
+
 `Emitter`는 `..Default::default()`로 필요한 것만 쓰세요. 값이 이상하면(범위 밖, 글자 대신 숫자 …) 게임은 범위 안으로 줄이거나
 무시하고, 멈추지 않습니다.
 
@@ -543,6 +560,8 @@ fn act(a: Action) {
   땅이 그려지길 기다려 그 위 상공에서 내려다보다가(`Camera::set`) 「착륙하기」로 `Balloon::land`. `plugins/camera_modes`: F5로 시점 바꾸기.
 - `plugins/riding` 탈것과 지팡이, `plugins/flight` 비행: [이동 방식 만들기](moving).
 - `plugins/hide_blocks` 블록 숨바꼭질: 술래의 눈가리개와 남은 시간, 숨는 사람에게는 `Players::list`와 술래의 공개 값 `role`로 술래까지의 거리.
+- `plugins/arena_stats` 경기장 기록: 서버의 순위표와 경기장(서버 쪽), 내 점수와 체력을 HUD에, 점수마다 휴대폰 진동, 채팅에 "점수?"가 보이면
+  내 점수를 알림으로, 이웃이 물었으면 대신 답함(`chat`, `Chat::system`, `Chat::say`).
 - `plugins/arcade` 오락실: K(부스트)와 O(빛) 액션(휴대폰에선 화면 버튼, 설정에서 키 바꾸기), 누를 때마다 서버에 `request`하고 답을 HUD에,
   마우스 이동량·이동 축·장치·고정 스텝을 HUD에, 어두운 공포 조명(O로 켜고 끔), 자기 외곽선, 머리 위 반짝이, 부스트 불꽃, 발자국 궤적.
 
