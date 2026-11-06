@@ -401,8 +401,14 @@ fn loaded(_: Load) {
 | `Camera::release(초)` | 게임의 카메라로 되돌림 |
 | `Camera::pitch()` `forward()` → `(x, y, z)` `position()` | 위아래 각(라디안), 보는 방향(단위 벡터, 칸), 자리: 히트스캔의 시작과 방향 |
 | `Camera::screen_ray(px, py)` → `Option<(from, dir)>` `to_screen(x, y, z)` → `Option<(sx, sy)>` | 화면의 점 → 광선, 세계의 점 → 화면 (뒤면 `None`) |
+| `Camera::set_oriented(눈, 볼 곳, 위)` | 이번 프레임 그 자리에서, `위`를 위로 (비행기의 위: 기체와 함께 기우는 추적·조종석 카메라) |
+| `Camera::set_up(x, y, z)` `Camera::roll(라디안, 초)` | 그 뒤 샷들의 위 (0, 0, 0: 세계의 위) / 시야 굴리기 (+ 오른쪽 아래; 게임 카메라도) |
+| `Camera::sensitivity(배)` | 마우스(와 터치 끌기)의 회전 배율 (조준경: 0.5) |
 | `Camera::kick(위 도, 옆 도, 돌아오는 초)` | 반동: 게임 카메라를 돌렸다 서서히 되돌림 (30도까지 쌓임, `forward`에도 들어감) |
 | `Crosshair::show(글자, 색, 크기)` `hide()` | 화면 가운데 십자선 (HUD 요소 `aim.crosshair`) |
+| `Crosshair::hit(색, 초)` | 맞힘 표시: 가운데 ✕가 튀어나왔다 사라짐 |
+
+바로 위나 아래를 보는 카메라(위에서 내려다보는 미니맵, 타이쿤)도 됩니다: 보는 방향이 위 벡터와 나란하면 다른 축을 위로 씁니다.
 
 ### Screen, 파티클, 소리
 
@@ -428,7 +434,12 @@ fn loaded(_: Load) {
 | `Local::remove(id)` | 없앰 |
 | `Local::spawn_text` `set_text` `set_material` `set_transform` | 3D 글자, 재질, 회전·크기 ([그래픽](#그래픽)) |
 | `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → `i64` / `Local::set_panel(id, &El)` | 월드에 선 UI 패널 (마우스로 누르고 씀), 다시 그리기 ([월드 속 UI 패널](#직접-그리는-ui)) |
-| `Local::attach(id, &AttachTo::Camera \| AttachTo::Bone(Target, "RightHand"), offset, rot)` `detach(id)` | 카메라(뷰모델: x 오른쪽, y 위, −z 앞)나 무언가의 뼈에 들려 매 프레임 따라감 |
+| `Local::attach(id, &AttachTo::Camera \| AttachTo::Viewmodel { fov } \| AttachTo::Bone(Target, "RightHand"), offset, rot)` `detach(id)` | 카메라(x 오른쪽, y 위, −z 앞)나 무언가의 뼈에 들려 매 프레임 따라감. `Viewmodel`: 따로 그리는 층(자기 월드, 그 화각)에 그려 **벽을 뚫지 않고**, 시선을 돌리면 흔들리고 걸으면 출렁임 |
+| `Viewmodel::arms(bool)` `Viewmodel::motion(sway, bob)` | 게임의 1인칭 팔 그리기 (끄면 플러그인의 손이 그 자리에) / 흔들림·출렁임 배율 (1 게임의 것, 0 고정) |
+| `Local::play_anim_with(id, clip, speed, blend)` + 이벤트 `anim_end` (`LocalAnimEnd::id()` `clip()`) | 속도(음수: 거꾸로)와 섞는 초를 주고 클립, 끝나면 이벤트 (장전 뒤 대기 동작, 탄피) |
+| `Local::set_rotation(id, yaw, pitch, roll)` `Local::tween(id, LocalProp::Position \| Rotation \| Scale, 값, 초, Ease)` | 완전한 회전 (yaw는 `Me::yaw`처럼), 자리·회전·크기를 부드럽게 (TweenService) |
+| `Entities::predict(id, 자리, (yaw, pitch, roll))` `Entities::release(id)` | 서버 엔티티를 이 게임에서만 미리 본 자리에 (자기 차: 그 위에 탄 플레이어도 같은 프레임에) / 서버의 자리로 되돌림 |
+| `Me::set_pose(pitch, roll)` | 자기 몸 기울이기 (라디안, 1.2까지): 여기서 그리고 위치와 함께 보내 다른 게임의 아바타도 (`PlayerView::pitch` `roll`로 읽힘) |
 | `Local::beam(from, to, 색, 굵기, 초)` | 탄도선·레이저: 사라지며 (64개까지) |
 | `Entities::play_anim(id, clip)` | 서버 쪽 엔티티의 클립을 이 게임에서만 (모두가 보는 것은 서버 쪽 `play_anim`) |
 | `Me::play_anim(id)` | [감정 표현](models)을 자기 몸에 이 게임에서만 (서 있을 때; 모두가 보는 것은 서버 쪽 `Player::play_anim`) |

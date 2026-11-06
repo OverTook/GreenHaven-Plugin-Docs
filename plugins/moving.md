@@ -225,6 +225,50 @@ fn taken_off(e: Dismount) {
 }
 ```
 
+## 서버가 움직이는 탈것: 차와 비행기 (`sdk/physics`)
+
+빠른 차·비행기는 "빨리 걷는 사람"(`mount`)으로는 판정이 안 됩니다. 대신 **서버가 탈것을 움직이고, 게임은 같은 코드로 미리 그립니다**.
+규칙은 순수 Rust crate `greenhaven-physics`(서버 SDK의 `sdk/physics`: 호스트 함수 없음, 1/60초 고정 걸음, `f64`만: 같은 입력이면 두 쪽의
+결과가 비트까지 같음)에 있습니다.
+
+```toml
+[dependencies]
+greenhaven-physics = { path = "../../sdk/physics" }
+```
+
+- `Car`: 바퀴 넷이 땅을 밟음(`Surface { height, grip }`: 길 1, 풀 0.6, 모래 0.4), 가속·브레이크·후진, 타이어 마찰 한계(넘으면 미끄러짐),
+  사이드 브레이크로 드리프트, 높은 땅은 벽, 경사와 쏠림으로 차체가 기움, 기어와 rpm.
+- `Plane`: 6자유도, 추력, 받음각의 양력과 실속, 항력, 피치·롤·요(속도가 붙어야 듣는 조종면), 바퀴로 이륙·착륙(세게 닿으면 추락).
+- 서버 쪽 `Driven<S>`: 조작을 번호째 받아(`take`) 서버 시계대로만 걸음(`run(dt, 땅)`: 조작을 더 보내도 빨라지지 않음), 이벤트 사이에는
+  `to_bytes` / `load`로 `World::data_put`에, 매 틱 엔티티를 그 자리·자세로(`move_to` + `set_rotation(entity_turn(..))`), 운전자에게
+  `state_packet()`을 `send_fast`로.
+- 게임 쪽 `Predicted<S>`: `step` 이벤트마다 한 걸음(`step(Controls, 땅)`), 두 걸음마다 `packet(4)`를 `send_fast`, 서버 상태가 오면
+  `heard`(같으면 그대로, 다르면 서버의 것으로 바꾸고 다시 걸음), 그리기는 `Entities::predict`.
+- 타는 사람은 `mount_seat(&탈것, 1, 1.0, 좌석)`: 0이 아닌 자리라 누구의 걸음도 탈것을 움직이지 않고, 그 사람의 자리는 탈것 곁인지만 봅니다.
+- 땅은 두 쪽이 똑같이 아는 함수로: 평평한 월드(`Server.create_world_with(id, "flat", false)`, 풀 꼭대기 0.5)에 플러그인이 깐 길.
+
+```rust
+// shared.rs: 두 쪽이 같은 땅
+pub fn ground(x: f64, z: f64) -> Surface { Surface::new(0.5, if on_road(x, z) { 1.0 } else { 0.65 }) }
+
+// server.rs: 매 틱
+let mut d = Driven::new(Car::new(CarSpec::default(), [0.0; 3], 0.0));
+if w.data_get(&key).is_some_and(|b| d.load(&b)) && d.run(t.dt(), &ground) > 0 {
+    w.data_put(&key, &d.to_bytes());
+    let (pos, turn) = d.sim.pose();
+    car.move_to(pos[0], pos[1], pos[2]);
+    let (y, p, r) = entity_turn(turn);
+    car.set_rotation(y, p, r);
+    player.hud().send_fast("st", &d.state_packet());
+}
+
+// client.rs: 고정 스텝마다
+car.step(Controls { throttle: axis("W", "S"), steer: axis("D", "A"), ..Default::default() }, &ground);
+send_fast("in", &car.packet(4));
+```
+
+예제 `racing`(트랙, 체크포인트, 랩, 미니맵, rpm 엔진 소리), `plane_demo`의 `/조종`(활주로, 추적·조종석 카메라, 계기판).
+
 ## 도구 동작 (플러그인 아이템)
 
 [등록](rules)하는 아이템에 이 필드를 주면, 쓸 때 게임이 그 동작을 하고(다른 사람에게도 보임) 그 순간 [`Use`](events#use)
@@ -263,6 +307,8 @@ fn cast(e: Use) {
 let id = Local::spawn("res://plugins/riding/orb.png", v[0], y, v[1]);
 Local::glide_to(id, v[2], y, v[3], 0.35);
 ```
+
+몸의 크기도 판정됩니다: `Player::set_body(반폭, 키)`(게임의 캡슐과 서버의 걸음 판정이 함께).
 
 ## 예제
 

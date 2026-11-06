@@ -69,6 +69,7 @@ redirect_from:
 | `set_nametag(text, colour)` `set_nametag_visible(on)` | 머리 위 이름 (`""` 이름 그대로; 색 `"ff3030"`, `""` 게임 색), 보이기 |
 | `set_scale(times)` | 모든 게임에서 그 크기로 (0.25-4) |
 | `play_clip(clip, upper, looped)` `play_clip_at(clip, upper, looped, speed)` `stop_clip()` | 걷고 뛰는 몸 위에 겹치는 클립 (장전, 조준, 시전, 달리며 손 흔들기): `upper`면 척추부터 위만 (다리는 걷기 그대로), 아니면 몸 전체; `looped`면 멈출 때까지, 아니면 한 번; 빠르기 0.1-4. 클립: [감정 표현](models) id, `res://` 경로 (팩의 GLB는 `"경로#클립"`), 게임의 것 (`"ATK1"` `"Shoot"` `"Victory"` `"Greet"` `"cast"`). 모든 게임에서 보임. 도구 동작·감정 표현 중에는 그 아래에서 기다림 |
+| `set_body(half_width, tall)` | 몸의 크기 (m; 0, 0이면 게임의 것): 게임의 캡슐이 그 크기로 움직이고 **서버의 걸음 판정도 그 몸으로** (키는 블록 단위, 1 m 넘게 넓으면 세 칸 폭). 숨바꼭질의 소품, 작은 동물. 맞는 상자는 그대로(`set_scale`) |
 | `set_jump_power(times)` `set_gravity(times)` | 점프 높이 배수 (0-10), 중력 배수 (0.1-5): 게임이 그렇게 움직이고 **서버의 공중 검사도 그 배율로** 판정 |
 | `freeze(on)` | 제자리 (게임의 걷기·점프 꺼짐, 걸음은 서버가 되돌림): 카운트다운 |
 | `set_hand_visible(on)` | `false`: 손에 든 것을 안 그림 (자기 게임에서도, 남이 보는 아바타에서도: 서버가 모델을 전하지 않음). 게임 쪽 뷰모델과 함께; `hud().hide("hotbar")`면 숫자 키·휠도 칸을 안 바꿈 |
