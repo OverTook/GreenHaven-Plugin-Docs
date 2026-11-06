@@ -69,6 +69,7 @@ redirect_from:
 | `play_clip(clip, upper, looped)` `play_clip_at(clip, upper, looped, speed)` `stop_clip()` | 걷고 뛰는 몸 위에 겹치는 클립 (장전, 조준, 시전, 달리며 손 흔들기): `upper`면 척추부터 위만 (다리는 걷기 그대로), 아니면 몸 전체; `looped`면 멈출 때까지, 아니면 한 번; 빠르기 0.1-4. 클립: [감정 표현](models) id, `res://` 경로 (팩의 GLB는 `"경로#클립"`), 게임의 것 (`"ATK1"` `"Shoot"` `"Victory"` `"Greet"` `"cast"`). 모든 게임에서 보임. 도구 동작·감정 표현 중에는 그 아래에서 기다림 |
 | `set_jump_power(times)` `set_gravity(times)` | 점프 높이 배수 (0-10), 중력 배수 (0.1-5): 게임이 그렇게 움직이고 **서버의 공중 검사도 그 배율로** 판정 |
 | `freeze(on)` | 제자리 (게임의 걷기·점프 꺼짐, 걸음은 서버가 되돌림): 카운트다운 |
+| `set_hand_visible(on)` | `false`: 손에 든 것을 안 그림 (자기 게임에서도, 남이 보는 아바타에서도: 서버가 모델을 전하지 않음). 게임 쪽 뷰모델과 함께; `hud().hide("hotbar")`면 숫자 키·휠도 칸을 안 바꿈 |
 | `set_spectator(on)` | 관전자: 아무에게도 안 보이고, 모든 것을 뚫고 날며(서버의 공중·벽 검사 꺼짐), 구경꾼처럼만 행동(도구·농사 없음), 몬스터도 안 따라옴 |
 | `set_public(key, value)` | 월드의 모든 게임이 읽는 값 (게임 쪽 [`Players::get(id).public(key)`](client#세상-읽기)): 숫자, 글(64자), `Public::None`(지움); 32키, 키 24자. 공개이니 비밀은 넣지 말 것. 연결된 동안만 |
 | `play_anim(id)` `stop_anim()` | [감정 표현](models) 재생 / 끝내기. 가만히 서 있을 때만, 움직이거나 행동하면 끝남 |
@@ -85,6 +86,7 @@ redirect_from:
 | `set_permission(perm, on)` `unset_permission(perm)` | 권한 주기·막기 / 기본값으로 (서버의 `permissions.json`에 저장; `"*"` 모든 권한) |
 | `is_op()` `set_op(on)` | 서버의 운영자 (`ops.json`) |
 | `kick(reason)` `ban(reason)` | 내보내기 / 차단하고 내보내기 (`/unban 이름`으로 풀기) |
+| `transfer(to, data)` | 다른 서버로 (`host:port`나 `GS-` 아이디, 데이터 4 KB까지; `Server::transfer_all(to)`는 모두). [다른 서버로](server#다른-서버로) |
 | `show(&Gui)` | 창 띄우기 ([`Gui`](#gui)). `PlayerLogin`에서는 들어오기 전의 입력 창 |
 | `hud()` → `Hud` | 그 사람의 화면: HUD 요소, 게임 HUD 숨기기, 키, 채널 ([화면](screen)) |
 | `open_inventory(&Inventory)` / `close_inventory(id)` | 이 플러그인의 인벤토리 창 열기(다시 부르면 지금 칸으로) / 닫기 ([인벤토리 창](screen#인벤토리-창)) |
@@ -117,7 +119,7 @@ redirect_from:
 | `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 움직이는 엔티티(체력 있거나 단단한 것)와 몬스터도 왕복 시간의 반 + 100 ms 전 자리로. 몬스터에 맞으면 `Hit::mob()` → `EnemyEntity`, `damage(양)`으로 피해(0이면 쓰러지고 드롭·경험치). 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`으로 |
 | `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
 | `World::projectile(모델, from, vel, gravity, radius, life)` → `Option<ModelEntity>` | 발사체: 서버가 스텝마다 움직이고 게임은 미끄러지듯 그림; 처음 닿는 블록·상자·플레이어(쏜 사람 빼고, PvP는 위와 같음)·엔티티에서 끝나고 [`ProjectileHit`](events#projectilehit); 한 월드에 64개 |
-| `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임, 월드와 함께 저장(다시 켜도 그 자리에) |
+| `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임(블록·상자·다른 단단한 엔티티에 옆으로도 부딪힘: 비스듬히 가면 벽을 따라 미끄러지고 정면이면 멈춤, 천장에서 멈춤, 내려앉으면 멈춤; 몸은 0.8 × 1.6 m에 `scale`배), 월드와 함께 저장(다시 켜도 그 자리에) |
 | `Server::player(name)` → `Option<Player>` | 서버 어디든 접속한 사람 (위치는 1초마다의 것) |
 | `Server::players()` → `Vec<(이름, 월드)>` `worlds()` → `Vec<(월드, 사람 수)>` `broadcast(line)` | 접속한 사람들, 누가 있는 월드, 서버 모두의 채팅 |
 | `World::players()` → `Vec<Player>` | 이 월드에 있는 사람들 |
@@ -467,6 +469,7 @@ fn fireball(e: Button) {
 | `get(k)` | `mob` 이벤트에서: `"x"` `"z"` `"hp"` `"tier"` `"speed"` `"damage"` `"size"` `"t"` |
 | `set(k, v)` | `"x"` `"z"`(옮기기) `"hp"`(0이면 사라짐) `"speed"` `"damage"`, `"vx"` `"vz"`(이번 걸음의 속도: 원래 움직임 대신) |
 | `attack(damage, reach)` | 그 거리 안의 가장 가까운 플레이어를 침 (닿을 때의 공격은 따로 그대로) |
+| `damage(amount)` | 피해: 0이면 쓰러지고 그 종류의 드롭(아무나 줍기)과 경험치(이벤트의 플레이어), [`MobDeath`](events#mobdeath)(`killer` 이벤트의 플레이어, `cause` 이 플러그인 이름) |
 | `remove()` | 없애기 (떨굼 없음) |
 
 어느 이벤트에서나 쓸 수 있습니다(`tick`·`button`에서 소환한 것을 움직이는 등).

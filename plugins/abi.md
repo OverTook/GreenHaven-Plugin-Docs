@@ -146,6 +146,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `has_permission(p, len) -> i32` `set_permission(p, len, v: i32)` | 그 플레이어의 권한 (v: 1 줌, 0 막음, -1 기본값으로) |
 | `is_op() -> i32` `set_op(on: i32)` | 운영자인지, 운영자로 / 빼기 |
 | `kick(p, len)` `ban(p, len)` | 이유를 띄우고 내보내기 / 차단(서버의 차단 목록)하고 내보내기 |
+| `transfer(tp, tl, dp, dl)` `transfer_all(tp, tl)` | 그 플레이어를 / 모두를 다른 서버 `tp`로 (데이터 `dp`, 4096바이트까지; 넘으면 보내지 않음) |
 | `world_id(p, cap) -> i32` | 이벤트의 월드 (`"world"` 모두의 것), 길이 |
 
 ## 접속하지 않은 플레이어
@@ -211,7 +212,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `structure_count() -> i64` `structure_id(i) -> i64` | 구조물 목록 |
 | `structure_get(id, k, kl) -> f64` | `x` `z` `y` `yaw` `w` `d` `scale` |
 | `structure_text(id, k, kl, p, cap) -> i32` | `k` `m` `plot` `n` `key` `kind` `label` `text` `s` `owner` |
-| `structure_put(p, len) -> i64` | 세우기 (id, 0 실패; `"hit"`: 히트박스) |
+| `structure_put(p, len) -> i64` | 세우기 (id, 0 실패; `"hit"`: 히트박스, 누군가의 몸에 걸리면 놓이지 않음) |
 | `solid_at(x, y, z: f64) -> i32` | 그 칸이 단단한가 (블록이나 충돌층의 상자: 1/0) |
 | `raycast(x, y, z, dx, dy, dz, most: f64) -> f64` | 광선이 처음 닿는 단단한 칸까지 m (−1 없음, 256 m까지) |
 | `structure_remove(id)` `structure_remove_plot(p, len)` `structure_move(id, x, z, yaw: f64)` | |

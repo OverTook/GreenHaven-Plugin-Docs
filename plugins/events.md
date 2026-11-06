@@ -106,7 +106,7 @@ fn cmd(c: Command) { /* … */ }
 | [`ModelEntityDamage`](#modelentitydamage--modelentitydeath) | `entity.damage` | ✔ | 체력 있는 이 플러그인의 엔티티를 플레이어가 침 |
 | [`ModelEntityDeath`](#modelentitydamage--modelentitydeath) | `entity.death` | | 그 엔티티의 체력이 0 |
 | [`ProjectileHit`](#projectilehit) | `projectile.hit` | | 이 플러그인의 발사체가 무언가에 닿음 |
-| [`MobDeath`](#mobdeath) | `mob.death` | | 플레이어가 몬스터를 쓰러뜨림 |
+| [`MobDeath`](#mobdeath) | `mob.death` | | 몬스터가 쓰러짐 (휘두름, 플러그인의 피해) |
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
 | [`BlockPlace`](#blockplace--blockbreak) | `block.place` | ✔ | 플레이어가 가방의 블록을 놓음 |
@@ -309,7 +309,10 @@ fn circle(e: MobStep) {
 
 ### MobDeath
 
-플레이어가 몬스터를 쓰러뜨렸을 때. `kind_id()` 종류, `position()` → `(x, z)`. `drop_item`은 그 몬스터 자리에 떨굽니다.
+몬스터가 쓰러졌을 때: 플레이어의 휘두름, 또는 플러그인의 `EnemyEntity::damage`(광선, 발사체 …). `kind_id()` 종류, `position()` → `(x, z)`,
+`floor()`(0 지상, 광산 층, 던전 방), `killer()` 쓰러뜨린 사람(휘두른 사람, 또는 `damage`를 부른 이벤트의 플레이어; "" 없음),
+`cause()` "player"(휘두름) 또는 피해를 준 플러그인의 이름. `drop_item`은 그 몬스터 자리에 떨굽니다. 드롭과 경험치는 그대로.
+이 이벤트에서 다른 몬스터를 쓰러뜨리면 그 MobDeath도 오지만 4겹까지입니다.
 
 ### PlayerDeath
 
@@ -338,7 +341,8 @@ fn circle(e: MobStep) {
 
 ### ProjectileHit
 
-`World::projectile`로 날린 이 플러그인의 발사체가 처음 닿은 것: `hit()`(`kind` `who` `entity` `at` `normal`, `player()` 맞은 사람),
+`World::projectile`로 날린 이 플러그인의 발사체가 처음 닿은 것: `hit()`(`kind` `who` `entity` `at` `normal`, `player()` 맞은 사람, `mob()` 몬스터;
+마을 아래에서는 쏜 사람의 광산 층·던전 방의 벽·바위·몬스터, `num("floor")` 그 층),
 `projectile()`(이 이벤트 뒤 사라짐), `player()` 쏜 사람. 그 플러그인에만 옵니다. 예: `plugins/blaster`의 돌 대포.
 
 ## 플레이어
@@ -355,7 +359,9 @@ fn circle(e: MobStep) {
 ### Join / Leave
 
 `Join`: 월드에 들어옴 — 접속, LAN 일꾼이 들어옴, [`Player::move_world`](sdk#player)로 옴. `Leave`: 나감 — 접속 끊김, `move_world`로 떠남.
-`who()` 누구. `e.player().give(..)` `add_gold` `inventory().add(..)`는 그 사람의 가방에 들어가고 게임에 바로 보입니다(`Leave`에서는 그날이 저장되는 서버에서만 남음; [Player](sdk#player)).
+`who()` 누구. 다른 서버가 [`Player::transfer`](server#다른-서버로)로 보낸 접속이면 `is_transfer()`가 참이고
+`transfer_from()`(보낸 서버), `transfer_data()`(함께 온 것), `transfer_trusted()`(같은 `transfer-key`로 서명됨)를 읽습니다.
+`e.player().give(..)` `add_gold` `inventory().add(..)`는 그 사람의 가방에 들어가고 게임에 바로 보입니다(`Leave`에서는 그날이 저장되는 서버에서만 남음; [Player](sdk#player)).
 
 ### PlayerMove
 
