@@ -161,7 +161,8 @@ x·z는 월드의 칸) 가로 w × 세로 d칸, 바닥 블록(땅 위에 섰을 
 - 구조물: `put_structure`의 JSON에 `"hit"`. 바닥은 그 칸의 가장 높은 단단한 블록 바로 위(+ `y`). 적지 않은 `prop`·`building`은
   놓을 때 서버가 정합니다: 플러그인 자산의 GLB면 그 크기, 아니면 발자국에 2블록 높이.
 - 엔티티: `set_solid(true)`(기본은 지나감), 모양은 `set_hitbox(&[[x, z, w, d, y, h]])`(없으면 GLB 크기, 아니면 한 칸 두 블록).
-  움직이면 따라가고, 지우면 빠집니다. 플레이어가 타고 있는 탈것은 그 플레이어의 걸음에서는 빼고 봅니다.
+  움직이면 따라가고, 지우면 빠집니다. 플레이어가 타고 있는 탈것은 그 플레이어의 걸음에서는 빼고 봅니다. yaw가 직각이면 상자째
+  90°씩, 아니면 어느 각도로든 돕니다(돌린 상자가 가운데를 덮는 칸들). pitch·roll은 상자를 기울이지 않습니다.
 - 바닐라 구조물은 종류대로: 건물 벽 12블록, 울타리 4블록(가늘게: 옆에 선 몸은 그 칸에 들어가도 됨), 성벽 선(성문으로만).
 
 ```rust
@@ -307,15 +308,42 @@ Multiverse처럼 월드마다 다르게 (예제 [`minigame_hub`](samples)):
 fn made(e: WorldCreate) {
     let w = e.world();
     if w.id() == "arena_tpl" {
+        w.set_mode("arena"); // 농장 기능 전부 끔, 시계 멈춤, 가방 그룹 "arena" (아래 「경기장 모드」)
         w.set_pvp(true);
-        w.set_inventory_group("arena");
         w.set_rule("starter", r#"{"gold": 0, "items": {"sword": 1, "salad": 3}}"#);
-        w.set_clock_rate(0.0);
     }
 }
 // 경기 시작: Server.create_world_from("arena1", "arena_tpl"); p.move_world("arena1", false);  (Join에서 p.reset())
 // 경기 끝: Server.reset_world("arena1", "world");  모두 허브로(허브의 가방 그대로), 경기장은 틀의 모습으로
 ```
+
+### 경기장 모드: 농장이 아닌 게임을 한 번에
+
+`World::set_mode("arena")` 한 번이 (예제 [`arena_mode`](samples); `WorldCreate`, `Enable`, `PlayerJoin` 어디서든, 월드와 함께 저장):
+
+- 바닐라 기능 20개 전부 끔 (`set_vanilla`: 주민, 밤, 농사, 상점, 잠, 튜토리얼 … **기력**, **쓰러짐의 비용**, **하루 끝**), 마을 있는 월드에서도.
+- 시계 멈춤 (`set_clock_rate(0)`; 하늘이 돌게 하려면 뒤에 `set_clock_rate(1.0)`: 하루 끝이 꺼져 있어 시계로 끝나지 않음).
+- 그때그때 저장 (`set_live_saving(true)`).
+- HUD의 날짜·시간·날씨(`"time"`)와 퀘스트(`"quests"`)를 이 월드의 모두에게 숨김 (`hide_hud`).
+- 가방 그룹 `"arena"`, 시작 키트는 빔 (돈 0, 물건 없음): 키트는 뒤에 `set_rule("starter.items", r#"{"sword": 1}"#)` 또는 `Player::set_inventory`.
+- 행동 한도 초당 30, 한 번에 60 (`set_action_rate`).
+
+`set_mode("farm")`은 모두 서버의 것으로 되돌립니다. 하나씩도:
+
+- `World::set_action_rate(rate, burst)`: 이 월드의 행동 한도 (최대 60, 120; 서버는 10, 30), `clear_action_rate()`. 플러그인의 패킷(게임 쪽
+  `send`, 버튼, 키)은 따로 초당 30이라 행동 한도를 쓰지 않습니다.
+- `World::hide_hud(part, hidden)`: 게임 HUD의 부분([이름들](screen#게임-hud의-부분))을 이 월드의 모두에게 숨김 (들어오는 사람도).
+
+```rust
+#[on(WorldCreate)]
+fn made(e: WorldCreate) {
+    let w = e.world();
+    w.set_mode("arena");
+    w.set_rule("starter.items", r#"{"sword": 1}"#);
+}
+```
+
+저장되지 않은 하루가 버려져도 플러그인 모듈의 메모리(전역 변수)는 남습니다. 월드를 디스크에서 다시 읽을 때만 새로 만들어집니다.
 
 ## 영역 복사·붙여넣기 (스키매틱)
 

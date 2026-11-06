@@ -204,6 +204,14 @@ fn frame(f: Frame) {
   [`Dismount`](events#dismount) 이벤트가 옵니다(`reason()` `"door"` `"world"` `"quit"`, `mount()`). 플러그인이 부른
   `dismount()`에는 오지 않습니다.
 
+- 서버도 그 엔티티를 탄 사람의 걸음이 허락된 자리로 옮겨 둡니다(위치와 yaw): 탄 사람을 못 보는 사람에게도 그 자리에 보입니다.
+- **여러 자리**: `Player::mount_seat(&엔티티, 자리, 빠르기, (오른쪽, 위, 앞))`. 자리 0은 운전석(`mount`와 같음: 그 사람의 걸음이
+  탈것을 움직임), 나머지는 승객: 그 자리(엔티티 가운데에서 m, 엔티티와 함께 돎)에 실려 가고, 걸음은 판정하지 않고 탈것 근처인지만
+  봅니다(자리까지의 거리 + 4 m). 누가 어느 자리인지(운전석은 하나)는 플러그인이 지킵니다. 하늘을 나는 탈것은 운전자에게
+  `set_check("air", false)`. 예제 `plane_demo`.
+- **기울기**: `ModelEntity::set_rotation(yaw, pitch, roll)`(라디안: yaw, 그다음 기수 들기, 그다음 오른쪽 내리기). 모든 게임이 그렇게
+  기울여 그리고, 탄 사람의 게임은 그 기울기를 자기 자세로 보내 다른 게임에서 아바타도 같이 기웁니다.
+
 ```rust
 #[on(EntityInteract)]
 fn ride(e: EntityInteract) {

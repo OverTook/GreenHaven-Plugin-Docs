@@ -111,6 +111,11 @@ fn cmd(c: Command) { /* … */ }
 | [`ProjectileHit`](#projectilehit) | `projectile.hit` | | 이 플러그인의 발사체가 무언가에 닿음 |
 | [`ZoneEnter`](#zoneenter--zoneleave) | `zone.enter` | | 플레이어가 이 플러그인의 구역에 들어감 |
 | [`ZoneLeave`](#zoneenter--zoneleave) | `zone.leave` | | 플레이어가 이 플러그인의 구역에서 나감 |
+| [`ProjectileExpire`](#projectileexpire) | `projectile.expire` | | 이 플러그인의 발사체의 수명이 다함 (수류탄의 신관) |
+| [`EntityLand`](#entityland--entitybump) | `entity.land` | | 이 플러그인의 떨어지는 엔티티가 내려앉음 |
+| [`EntityBump`](#entityland--entitybump) | `entity.bump` | | 이 플러그인의 움직이는 것이 부딪힘 (튕기는 발사체는 무엇에든) |
+| [`ZoneEntityEnter`](#zoneentityenter) | `zone.entity` | | 엔티티가 이 플러그인의 지켜보는 구역에 들어옴 |
+| [`Explosion`](#explosion) | `explosion` | | `World::explode`가 터짐 (아무 플러그인의 것) |
 | [`MobDeath`](#mobdeath) | `mob.death` | | 몬스터가 쓰러짐 (휘두름, 플러그인의 피해) |
 | [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
@@ -385,10 +390,32 @@ fn circle(e: MobStep) {
 마을 아래에서는 쏜 사람의 광산 층·던전 방의 벽·바위·몬스터, `num("floor")` 그 층),
 `projectile()`(이 이벤트 뒤 사라짐), `player()` 쏜 사람. 그 플러그인에만 옵니다. 예: `plugins/blaster`의 돌 대포.
 
+### ProjectileExpire
+
+이 플러그인의 발사체(`World::projectile`, `projectile_with`)의 `life`가 다함: `projectile()`(이 이벤트 뒤 사라짐), `at()` 그때의 자리,
+`player()` 던진 사람. 수류탄의 신관: 여기서 `World::explode`. 그 플러그인에만. 예: `plugins/grenades`.
+
+### EntityLand / EntityBump
+
+이 플러그인의 엔티티가 초속 1.5 m 이상으로 땅에 내려앉음(`EntityLand`: `entity()` `speed()` `at()`), 벽·천장에 부딪힘 또는 튕기는
+발사체(`projectile_with`)가 무엇에든 세게 닿아 튕김(`EntityBump`: `entity()` `speed()` `kind()` `who()` `normal()` `at()`). 그 플러그인에만,
+알리기만 합니다. 튕김은 [`ModelEntity::set_body`](sdk).
+
+### ZoneEntityEnter
+
+엔티티가 이 플러그인의 지켜보는 구역(`World::watch_entities`)으로 움직여 들어옴(그 걸음을 따라: 한 스텝에 지나쳐도): `zone()`,
+`entity()`, `entity_plugin()` 그 엔티티의 플러그인, `at()`. 수집기, 골대. 예: `plugins/tycoon`.
+
+### Explosion
+
+`World::explode`가 터진 뒤(아무 플러그인의 것: `plugin()`): `at()` `radius()` `by()` `hits()`(휘말린 것, 가까운 것부터: `kind` `who`
+`entity` `distance` `damage`). 알리기만 합니다. Explosion 안에서 터뜨린 것은 다시 알리지 않습니다.
+
 ### ZoneEnter / ZoneLeave
 
 플레이어의 걸음이 이 플러그인의 구역(`World::zone` `keep_in` `keep_out`)에 들어가거나 나올 때: `zone()` 그 id, `at()` 걸음이 닿은
-자리(칸, 발 높이), `player()`. 서버가 위치 보고를 검사할 때마다(190 ms에 한 번) 판정합니다(엔진 코드라 연료 밖). 그 플러그인에만
+자리(칸, 발 높이), `player()`. 서버가 위치 보고를 검사할 때마다(190 ms에 한 번) **그 걸음을 따라** 판정합니다(엔진 코드라 연료 밖):
+두 보고 사이에 얇은 구역을 지나쳐도 `ZoneEnter`, `ZoneLeave`가 차례로 오고, `keep_out`을 뚫는 걸음도 되돌립니다. 그 플러그인에만
 옵니다. 알리기만 하고 취소는 없습니다(막으려면 `keep_out`). 월드를 떠날 때는 `ZoneLeave` 없음(`Leave`를 쓰세요). [구역](moving#구역과-월드-보더)
 
 ## 플레이어

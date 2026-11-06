@@ -211,6 +211,25 @@ Sound::play("hum", "res://plugins/my_plugin/hum.ogg", -12.0, 1.0, true, Some((x,
 
 플러그인이 내려놓거나 서버를 떠나면 모두 멈춥니다.
 
+소리 효과와 붙이기 (로블록스의 SoundService 효과, 소리를 파트에 넣기):
+
+| | |
+|---|---|
+| `Sound::effect(key, bus, effect)` / `clear_effect(key)` | 버스에 효과: `Effect::LowPass { hz, q }` `HighPass { hz, q }` `Reverb { room, wet }` `Distort { drive }` `Echo { ms, feedback }`. `Bus::Plugin` 플러그인 소리만 (`Sound::play`의 것은 모두 이 버스로), `Bus::All` 들리는 모든 것 (섬광탄의 멍멍함, 물속), `Bus::Music`, `Bus::Sfx`. 모든 플러그인 합쳐 8개 |
+| `Sound::duck(bus, db, secs)` | 그 버스 소리를 `db`(0 그대로, -60까지)로 `secs`초에 걸쳐 줄였다가, 0으로 되돌림. 플레이어의 음량 설정은 건드리지 않음 |
+| `Sound::attach(id, target)` | 그 소리가 대상을 따라감 (1 m 위; 남의 차의 엔진 소리, 날아가는 상자의 소리). 자리 없이 튼 소리는 그 자리부터 3D로 |
+
+```rust
+// 섬광탄: 2초 동안 귀가 멍멍하게, 그 뒤 1초에 걸쳐 돌아옴 (frame에서 시간을 재서)
+Sound::effect("deaf", Bus::All, Effect::LowPass { hz: 400.0, q: 0.3 });
+Sound::duck(Bus::All, -14.0, 0.1);
+// ... 2초 뒤
+Sound::clear_effect("deaf");
+Sound::duck(Bus::All, 0.0, 1.0);
+```
+
+서버를 떠나면 효과와 줄인 음량이 모두 게임의 것으로 돌아옵니다.
+
 ## 직접 그리는 UI
 
 `El`로 모자라면 캔버스에 직접 그립니다: 게이지, 레이더, 그래프 … 원하는 위젯을 무엇이든. 매 프레임 다시 그려도 됩니다.
@@ -504,7 +523,7 @@ fn act(a: Action) {
 |---|---|
 | `Players::list()` / `get(id)` / `near(r)` → `PlayerView { id, pos, yaw, doing }` | 이 게임이 그리는 다른 플레이어 (그려진 자리, 칸; `doing` 0 서기, 1 걷기, 2 달리기, 3 잠, 4 도구, 5 수영, 6 점프, 7 떨어짐) |
 | `PlayerView::name()` / `public(key)` → `f64` / `public_text(key)` | 이름, 서버 쪽이 공개한 값 (서버 쪽 `Player::set_public`; 없으면 NaN / `""`) |
-| `Entities::list()` / `get(id)` / `near(r)` → `EntityView { id, pos, yaw }`, `model()`, `public(key)` | 서버 쪽 엔티티 (`"block:stone"` 같은 블록 모습도) |
+| `Entities::list()` / `get(id)` / `near(r)` → `EntityView { id, pos, yaw, pitch, roll }`, `model()`, `public(key)` | 서버 쪽 엔티티 (`"block:stone"` 같은 블록 모습도; 기울기는 서버 쪽 `set_rotation`) |
 | `Mobs::near(r)` → `MobView { n, pos, hp }`, `kind()` | 이 층의 몬스터 (`hp` 남은 체력 0-1) |
 | `Me::id()` | 이 월드에서 내 번호 (`PlayerView::id`와 같은 것) |
 | `Net::ms()` / `Net::rtt()` | 서버 시계 (unix ms), 왕복 시간 (ms) |
@@ -524,6 +543,25 @@ fn act(a: Action) {
 | `Particles::emit(&Emitter { at, on, offset, texture, color, color_end, size, life, rate, count, speed, dir, spread, gravity })` → `i64` / `stop(id)` | 파티클 (로블록스의 ParticleEmitter): `count`개 한 번에 (`life` 뒤 사라짐) 또는 `rate` 초당 (`stop`까지; 이때 `count: 0`), `at` 그 자리 (칸) 또는 `on` 대상에 붙어 `offset`만큼, `texture` `res://` 그림 (`""` 부드러운 점), `color`에서 `color_end`로, `size` m, `speed` m/초로 `dir` 쪽 `spread`도 안에서, `gravity` 아래로 m/초². 모든 플러그인 합쳐 32개, 입자 4096개 |
 | `Local::trail(id, color, width, 초)` / `Trail::on(key, target, color, width, 초)` | 지나간 자리에 남는 띠 (로블록스의 Trail): 점마다 `초` 동안 (0: 없앰), 모든 플러그인 합쳐 32개 |
 
+| `Particles::smoke(at, radius, secs, color)` → `i64` | 연막 프리셋: `radius` m 둘레에 부드러운 연기가 `secs`초(60까지) 천천히 오르고 퍼짐, 카메라가 그 안에 들어가면 화면이 그 색으로 뿌옇게 (휴대폰 렌더러에는 볼륨 안개가 없어서). `color` `""` 회색. `stop(id)`로 일찍 끝냄; 파티클 수에 같이 셈 |
+
+### 연출 물리: 파편, 놓아 준 물체, 래그돌
+
+이 게임에서만 도는 물리입니다 (로블록스에서 클라이언트가 계산하는 연출 물리와 같음): 게임마다 조각이 다르게 떨어지고, 서버는
+모릅니다. 폭발이 무엇을 했는지는 서버 쪽이 정합니다.
+
+| | |
+|---|---|
+| `Physics::debris(&Debris { at, count, size, color, model, speed, up, spin, mass, life })` | 파편: `count`개(한 번에 32)의 큐브(`size` m, `color`) 또는 `model`(`res://` 장면)의 사본이 `at`에서 `speed` m/초까지 튀어 나감 (`up` 0-1 그중 위쪽, `spin` 초당 바퀴), `life`초(30까지) 뒤 줄어들며 사라짐. 땅·건물·서로에 튕기고 플레이어와는 안 부딪힘. 모든 플러그인 합쳐 64개: 넘으면 가장 오래된 것부터 |
+| `Local::physics(id, vel, spin, mass, life)` | `Local` 하나를 놓아 줌: 그것을 감싼 상자로 강체가 되어 `vel` m/초로 던져짐. 그 뒤 `glide_to`는 안 먹고 `remove`는 먹음; 그 Local을 가리키는 `Target`과 `Sound::attach`는 그대로 따라감. 파편과 같이 셈 |
+| `Physics::ragdoll(target, push, secs)` / `unragdoll(target)` | 축 늘어짐: `Target::Me`, `Target::Player(id)`, 아바타 엔티티 (`Target::Entity`)의 몸이 `push` m/초로 밀려 쓰러지고 `secs`초(0이면 `unragdoll`까지) 뒤 클립으로 돌아옴. 게임의 휴머노이드 뼈대(플레이어 동물, 주민, 그 뼈대의 플러그인 모델)만. 그려지는 모양만이라 그 사람의 자리는 서버의 것: 죽음 연출이면 서버 쪽에서 `freeze`. 동시에 8명 |
+
+```rust
+Physics::debris(&Debris { at: (x, y + 0.3, z), count: 24, size: 0.2, color: "6b5a48", speed: 7.0, life: 5.0, ..Default::default() });
+Particles::smoke((x, y, z), 3.5, 6.0, "");
+for o in Players::near(6.0) { Physics::ragdoll(Target::Player(o.id), (0.0, 4.0, 5.0), 2.5); }
+```
+
 `Fx::vibrate(ms)`: 휴대폰을 짧게 떨게 함 (로블록스의 HapticService; 500 ms까지, 모든 플러그인 합쳐 1초에 4번; PC에서는 아무것도 안 함).
 
 ### Chat — 채팅
@@ -531,6 +569,9 @@ fn act(a: Action) {
 `Chat::say(text)`: 플레이어가 채팅 상자에 친 것처럼 이 플레이어의 이름으로 한 줄 (근처에, `!`로 시작하면 팀에게; 서버의 채팅 제한은
 플레이어의 것 그대로). 명령어(`/`로 시작)는 보내지 않고, 플러그인마다 2초에 한 줄, 80자까지. 다른 사람의 이름으로는 보낼 수 없습니다.
 `Chat::system(text)`: 이 게임에만 보이는 알림 한 줄 (앞에 `[플러그인 이름]`; 1초에 4줄까지). 줄을 읽는 것은 `chat` 핸들러로.
+`Chat::bubble_style(player, &Bubble { bg, text, edge, size })`: 플레이어 채팅 말풍선의 모양 (로블록스의 BubbleChatConfiguration):
+`player` `Some(id)` 그 사람(`PlayerView::id`, `Me::id`) 또는 `None` 모두, `bg` 카드 색, `text` 글자 색, `edge` 글자 테두리 색
+(`""` 게임의 것), `size` 글자 px (0 게임의 것). 모두 비우면 게임의 모양으로.
 
 ```rust
 greenhaven_client::client! { chat => asked }

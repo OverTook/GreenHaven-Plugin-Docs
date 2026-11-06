@@ -54,6 +54,7 @@ redirect_from:
 | `set_walk_speed(times)` | 걸음 빠르기 배수 (1이 원래). 게임의 걸음과 서버의 이동 판정이 함께 바뀜. 바꿀 때까지 유지 |
 | `inventory()` → [`PlayerInventory`](#playerinventory) | 그 사람의 가방 (Bukkit의 getInventory) |
 | `gear(id)` → `Option<`[`Gear`](#gear)`>` | 그 사람의 도구·장비 하나의 등급과 마법 (가방에 없으면 `None`) |
+| `mount_seat(&entity, seat, speed, (x, y, z))` | 자리 `seat`에 태움: 0 운전석(`mount`처럼), 나머지 승객(엔티티 가운데에서 오른쪽·위·앞 m에 실려 감, 걸음은 판정하지 않고 탈것 근처인지만) ([탈것](moving#탈것)) |
 | `mount(&entity, speed, seat)` | 이 플러그인의 엔티티에 태움: 모든 게임이 그 엔티티를 탄 사람 아래에 그리고 `seat` m 위에 앉힘, 걸음은 `speed`배로 판정. 그 사람이 한 일의 이벤트에서만 (`EntityInteract`, 명령어, 버튼, `Packet`); 저장되지 않음 ([탈것](moving#탈것)) |
 | `push(vx, vy, vz)` | 밀기(넉백, 점프대, 돌진; m/s, 칸 기준, 축마다 30까지): 그 사람의 게임이 속도로 받고 서버의 걸음 검사가 그만큼만 봐줌 ([밀기](moving#밀기)) |
 | `dismount()` | 내림: 엔티티는 그 자리에, 걸음은 전과 같이 |
@@ -125,6 +126,12 @@ redirect_from:
 | `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
 | `World::overlap(center, r, mask)` `overlap_box(min, max, mask)` → `Vec<Found>` | 범위 안의 것(폭발, 범위 스킬): `PLAYERS`(몸 있는 모두: 이벤트의 그 사람과 숨은 사람도; PvP·팀은 플러그인이), `ENTITIES`(날아가는 것 빼고), `MOBS`(그 사람의 층의 몬스터)를 `\|`로. 가까운 것부터 256개까지, 반지름·반폭 64 m까지; `Found`의 `kind` `who` `entity` `at`(발) `distance`, `player()` `model_entity()` `mob()` |
 | `World::projectile(모델, from, vel, gravity, radius, life)` → `Option<ModelEntity>` | 발사체: 서버가 스텝마다 움직이고 게임은 미끄러지듯 그림; 처음 닿는 블록·상자·플레이어(쏜 사람 빼고, PvP는 위와 같음)·엔티티에서 끝나고 [`ProjectileHit`](events#projectilehit); 한 월드에 64개 |
+| `World::projectile_with(&Shot)` → `Option<ModelEntity>` | 튕기는 발사체: 세게(초속 1.5 m 이상) 닿으면 `bounces`번까지 `restitution`으로 튕기고([`EntityBump`](events#entityland--entitybump)), 땅에서는 세지 않고 굴러가다 `friction`으로 멈춤, `drag`로 줄어듦; 수명이 다하면 [`ProjectileExpire`](events#projectileexpire)(신관) |
+| `ModelEntity::set_body(restitution, friction, drag)` | 떨어지는 엔티티가 땅·벽에서 튕기고 땅을 따라 미끄러짐; [`EntityLand`](events#entityland--entitybump), `EntityBump` |
+| `World::explode(&Blast)` → `Vec<BlastHit>` | 폭발 한 번에(서버 엔진): `radius` 안에서 폭발 점이 보이는 것만(벽 뒤는 안전), `damage × (1 − 거리/radius)^falloff`(플레이어 `PlayerDamage` cause "explosion", 엔티티 `ModelEntityDamage`, 몬스터), `knock`으로 밀어냄(`Player::push`), `particle`, 그 뒤 [`Explosion`](events#explosion) |
+| `World::seen_from(점, range)` → `Vec<Seen>` | 그 점을 보는 사람(눈과 점 사이에 블록·상자 없음, 128 m까지)과 바라보는 쪽에서 몇 도(0 정면): 섬광탄은 서버가 이걸로 정하고 게임 쪽은 그리기만 |
+| `World::conveyor(id, min, max, vx, vz)` `watch_entities(id, on)` | 컨베이어 구역(중력 있는 엔티티, 땅의 아이템, 그 위의 사람을 실어 감), 엔티티가 들어오면 [`ZoneEntityEnter`](events#zoneentityenter) |
+| `World::rand()` `rand_in(tag)` `rand_range(tag, lo, hi)` | 월드의 이 플러그인의 난수: 같은 월드는 같은 순서로 같은 수, 다시 켜도 이어짐 |
 | `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임(블록·상자·다른 단단한 엔티티에 옆으로도 부딪힘: 비스듬히 가면 벽을 따라 미끄러지고 정면이면 멈춤, 천장에서 멈춤, 내려앉으면 멈춤; 몸은 0.8 × 1.6 m에 `scale`배; 단단한 엔티티는 플레이어의 몸에서도 멈춤, 이미 몸 안이면 빠져나감), 월드와 함께 저장(다시 켜도 그 자리에) |
 | `Server::player(name)` → `Option<Player>` | 서버 어디든 접속한 사람 (위치는 1초마다의 것) |
 | `Server::players()` → `Vec<(이름, 월드)>` `worlds()` → `Vec<(월드, 사람 수)>` `broadcast(line)` | 접속한 사람들, 누가 있는 월드, 서버 모두의 채팅 |
@@ -252,6 +259,9 @@ fn efficiency(c: Command) {
 | `end_day()` | 지금 하루를 끝냄, 모두 잔 것처럼 (먼저 `DayEnd` `"end_day"`) |
 | `set_clock_rate(rate)` `clear_clock_rate()` | 이 월드의 시계가 규칙의 `rate`배 (0 멈춤, 100까지) / 규칙대로 |
 | `set_rule(key, json)` → `bool` `clear_rules()` | rules.json의 값 하나를 이 월드에서만 (점으로 이은 키, `"null"` 서버의 것으로): 판정과 들어오는 게임의 콘텐츠 ([월드마다의 규칙](world#월드마다의-규칙가방시계-월드의-수명-미니게임-허브)) |
+| `set_mode(mode)` → `bool` | `"arena"`: 농장 기능 전부 끔, 시계 멈춤, 그때그때 저장, HUD의 날짜·시간·퀘스트 숨김, 가방 그룹 `"arena"`(빈 키트), 행동 초당 30 / `"farm"`: 모두 서버의 것으로 ([경기장 모드](world#경기장-모드-농장이-아닌-게임을-한-번에)) |
+| `set_action_rate(rate, burst)` `clear_action_rate()` | 이 월드의 행동 한도 (최대 60, 120; 서버 10, 30; 플러그인 패킷은 따로) |
+| `hide_hud(part, hidden)` | 게임 HUD의 부분을 이 월드의 모두에게 숨김 |
 | `set_inventory_group(name)` | 이 월드의 가방 그룹 (`""` 모두의 월드의 것): 다른 그룹에서 오면 자기 몫을 바꿔 받음 |
 | `set_sync(tiers, chat)` | 위치를 거리별로 얼마나 자주 (`&[(m, ms)]`, 6개까지), 채팅이 닿는 거리 (`Some(0.0)` 월드 전체, `None` 48 m) |
 
@@ -423,7 +433,8 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 
 | 메서드 | |
 |---|---|
-| `get(k)` / `set(k, v)` | `"x"` `"y"` `"z"` `"yaw"`(라디안, 0이 +z) `"scale"` (`get`은 `"alive"`도) |
+| `get(k)` / `set(k, v)` | `"x"` `"y"` `"z"` `"yaw"`(라디안, 0이 +z) `"pitch"`(기수 들기) `"roll"`(오른쪽 내리기) `"scale"` (`get`은 `"alive"`도) |
+| `set_rotation(yaw, pitch, roll)` | 통째로 돌림 (라디안: yaw, 그다음 pitch, 그다음 roll): 비행기의 선회, 비탈의 차. 게임은 그 사이를 부드럽게 |
 | `text(k)` → `String` | `"model"` `"anim"` `"held"` `"name"` |
 | `as_avatar()` → `Option<Avatar>` | 아바타면 그것으로 |
 | `set_public(key, value)` | 모든 게임이 읽는 값 (`Player::set_public`처럼; 게임 쪽 `Entities::get(id).public(key)`) |
@@ -616,11 +627,12 @@ fn done(e: HttpDone) {
 
 ## 서버 사이 공유
 
-`Network`(로블록스의 DataStore·MessagingService·MemoryStore 큐, BungeeCord의 플러그인 메시지): 같은 **묶음**의 서버들이 중앙
-서버에서 함께 쓰는 데이터, 메시지, 대기열입니다. 묶음은 24시간 서버는 같은 주인의 서버들(설정할 것 없음), 그 밖의 서버는 운영자가
-준 열쇠를 [`network-key`](server#serverproperties)에 같이 적은 서버들입니다. 묶음 사이에는 아무것도 건너가지 않고, 묶음 안에서도
-플러그인마다 따로(다른 서버의 같은 플러그인만 봄). 아무것도 기다리지 않습니다: 답은 [`NetworkData`](events#networkdata--networkmessage),
-메시지는 `NetworkMessage`로 다음 스텝에. 열쇠가 없거나 게임의 자체 서버면 답은 모두 `why()` "offline".
+`Network`(로블록스의 DataStore·MessagingService·MemoryStore 큐, BungeeCord의 플러그인 메시지): 같은 **묶음**의 서버들이 함께 쓰는
+데이터, 메시지, 대기열입니다. 모두 묶음의 **Redis**(Valkey)에 있습니다(BungeeCord 네트워크가 흔히 쓰는 방식; 중앙 서버는 거치지 않음).
+묶음은 24시간 서버는 같은 주인의 서버들(설정할 것 없음: 켜질 때 그 주인만 쓸 수 있는 Redis 사용자를 받음), 그 밖의 서버는
+[`network-redis`](server#serverproperties)(운영자 자신의 Redis; 인터넷 너머면 `rediss://`로 TLS)와 `network-group`이 같은 서버들입니다. 묶음 사이에는 아무것도 건너가지 않고,
+묶음 안에서도 플러그인마다 따로(다른 서버의 같은 플러그인만 봄). 아무것도 기다리지 않습니다: 답은 [`NetworkData`](events#networkdata--networkmessage),
+메시지는 `NetworkMessage`로 다음 스텝에. Redis가 없거나 닿지 않거나(서버가 알아서 다시 이음) 게임의 자체 서버면 답은 모두 `why()` "offline".
 
 | 함수 | |
 |---|---|
@@ -628,13 +640,14 @@ fn done(e: HttpDone) {
 | `Network::set(key, value, tag)` | 무조건 (`""`은 지우기). 키 128바이트, 값 16 KB(글) |
 | `Network::update(key, version, value, tag)` | 그 키가 아직 `version`일 때만(0: 없을 때만); 아니면 `ok()` 거짓, `why()` "moved"와 지금 값·버전 |
 | `Network::subscribe(topic)` → `bool` | 이 월드에서 그 주제의 메시지를 받음 (`Enable`에서: 모두의 월드) |
-| `Network::publish(topic, value)` → `bool` | 묶음의 **다른** 서버들에게; 1 KB, 서버마다 1초에 10개; 최선만: 구독한 서버에 바로 밀어 줌, 끊겼던 서버는 1분 안에 다시 이어지면 받음; 묶음을 맡은 중앙 서버 인스턴스가 바뀌면 아직 안 간 메시지와 대기열은 사라짐 |
+| `Network::publish(topic, value)` → `bool` | 묶음의 **다른** 서버들에게; 1 KB, 서버마다 1초에 10개; 최선만: Redis pub/sub이라 그때 이어진 서버만 받음(끊겼던 동안의 것은 오지 않음); 놓치면 안 되는 것은 데이터나 대기열에 |
 | `Network::queue_push(queue, player, value, ttl)` | 대기열에 (한 사람 한 번, 다시 넣으면 새로; 1~600초; 대기열마다 1000명) |
 | `Network::queue_take(queue, n, tag)` | 오래된 것부터 `n`개(50까지), 한 항목은 한 서버만: `taken()` |
 | `Network::queue_leave(queue, player)` | |
 
-묶음마다 키 수: 24시간 서버는 플랜의 서버 하나에 2000개, 열쇠 묶음은 열쇠에 정한 수(기본 1만). 플러그인마다 1분에 600개 요청,
-서버 전체에 대기 중인 요청 256개(넘으면 바로 `None`), 중앙 서버는 서버마다 1초에 50개, 묶음마다 1000개, 인스턴스마다 6만 개("rate"); 묶음의 메시지와 대기열은 합쳐 1 MB("full"). 거절된 행동 안의 요청은 보내지 않습니다.
+묶음마다 키 수: 24시간 서버는 플랜의 서버 하나에 2000개, 그 밖의 묶음은 1만. 플러그인마다 1분에 600개 요청,
+서버 전체에 대기 중인 요청 256개(넘으면 바로 `None`), 서버마다 1초에 50개(메시지 10개; "rate"); 묶음의 대기열 항목은 합쳐 1 MB("full").
+데이터와 대기열은 Redis에 남습니다(공식 24시간 서버의 것은 매초 디스크에, 날마다 사본). 거절된 행동 안의 요청은 보내지 않습니다.
 
 ```rust
 #[on(Enable)]

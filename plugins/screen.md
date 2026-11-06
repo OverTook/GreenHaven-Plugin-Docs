@@ -63,9 +63,12 @@ fn packet(e: Packet) {
 
 ### 게임 HUD의 부분
 
-`hide` / `show`의 이름: `clock`(날짜, 시각, 날씨, 골드) `status`(그 아래의 알약과 버튼) `nearby`(가까운 사람) `chat` `hotbar`
+`hide` / `show`의 이름: `clock`(날짜, 시각, 날씨, 골드) `time`(그중 날짜, 시각, 날씨만) `status`(그 아래의 알약과 버튼) `nearby`(가까운 사람) `chat` `hotbar`
 `bars`(체력과 기력) `quests` `prompt`(E가 하는 일) `toasts` `plugins`(plugin.json의 버튼과 바) `menu`(휴대폰의 메뉴 버튼).
-여러 플러그인이 숨기면 모두 `show`해야 다시 보입니다.
+여러 플러그인이 숨기면 모두 `show`해야 다시 보입니다. 월드의 모두에게는 `World::hide_hud(part, true)`.
+
+같은 요소를 같은 내용으로 다시 `add` / `set`하면 서버가 보내지 않고 게임도 다시 만들지 않으며, 글자나 값만 바뀌면 그 컨트롤만
+고칩니다: 매 틱·매 프레임 `add`해도 됩니다.
 
 ## 요소 (`El`)
 

@@ -80,6 +80,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `xp(p, len, n: i64)` `friendship(p, len, n: i64)` | 경험치, 호감도 |
 | `open_shop(p, len)` | 가게 열기 |
 | `set_walk_speed(times: f64)` | 걸음 빠르기 |
+| `mount_seat(id: i64, seat: i32, speed, x, y, z: f64)` | 자리 `seat`(0 운전석, 나머지 승객)에 태우기, 승객은 엔티티의 (x 오른쪽, y 위, z 앞) m에 ([탈것](moving#탈것)) |
 | `mount(id: i64, speed, seat: f64)` `dismount()` | 이 플러그인의 엔티티에 태우기 (걸음 `speed`배, `seat` m 위에 앉음), 내리기 ([탈것](moving#탈것)) |
 | `set_check(p, len, on: i32)` | 서버의 이동 검사 하나(`speed` `walls` `air` `teleport` `reach`)를 그 플레이어에게만 끄고 켬 ([이동 방식 만들기](moving#서버의-이동-검사)) |
 | `death(hold: i32)` `respawn()` | 쓰러뜨림 (`hold` 0이 아니면 쓰러진 채 대기), 일으킴 |
@@ -107,6 +108,12 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `trail_at(wp, wl, ms_ago: f64, p, cap) -> len` | 그 사람(`""` 이벤트의 사람)이 있던 곳 `"x	y	z	yaw"` |
 | `projectile(mp, ml, x, y, z, vx, vy, vz, g, radius, life: f64) -> i64` | 발사체 엔티티 (−1 못 만듦) — `plugin_api/projectile.rs` |
 | `ent_gravity(id: i64, g: f64)` `ent_velocity(id: i64, vx, vy, vz: f64)` `ent_persist(id: i64, on: i32)` | 엔티티의 중력, 속도, 저장 |
+| `projectile_with(mp, ml, x, y, z, vx, vy, vz, g, radius, life: f64, bounces: i32, restitution, friction, drag: f64) -> i64` | 튕기는 발사체 |
+| `ent_body(id: i64, restitution, friction, drag: f64)` | 엔티티의 튕김·마찰·저항 |
+| `explode(x, y, z, radius, damage, falloff, knock: f64, mask: i32, bp, bl, fp, fl, p, cap) -> len` | 폭발 → `"kind	who	거리	피해"` 한 줄씩 — `plugin_api/combat.rs` |
+| `sight(x, y, z, range: f64, p, cap) -> len` | 그 점을 보는 사람 → `"이름	거리	각도"` 한 줄씩 |
+| `zone_belt(p, len, vx, vz: f64)` `zone_watch(p, len, on: i32)` | 구역을 컨베이어로, 엔티티를 지켜봄 — `plugin_api/zones.rs` |
+| `rand(tp, tl) -> f64` | 월드의 이 플러그인의 난수 흐름의 다음 수 — `plugin_api/effects.rs` |
 | `team_set(p, len, jp, jl) -> i32` `team_remove(p, len)` | 팀 만들기·바꾸기(`{"color","friendly_fire"}`) / 없애기 — `plugin_api/teams.rs` |
 | `team_join(p, len) -> i32` `team_leave()` `team_of(p, cap) -> len` | 그 플레이어의 팀 |
 | `team_members(np, nl, p, cap) -> len` `teams(p, cap) -> len` | 팀의 사람들, 팀들 (줄마다 하나) |
@@ -135,6 +142,9 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_rule(kp, kl, jp, jl) -> i32` `clear_rules()` | 이 월드의 규칙 패치 (키, JSON 값; 1 / 0: JSON이 아니거나 월드마다 둘 수 없는 키) |
 | `set_clock_rate(f: f64)` | 이 월드의 시계 배율 (0 멈춤, 음수 규칙대로) |
 | `set_inventory_group(p, len)` | 이 월드의 가방 그룹 (`""` 서버의) |
+| `set_mode(p, len) -> i32` | `"arena"` / `"farm"` (1 / 0: 그런 모드 없음) |
+| `set_action_rate(rate: f64, burst: f64)` | 이 월드의 행동 한도 (음수: 서버의 것) |
+| `world_hud(p, len, hidden: i32)` | 이 월드 모두의 HUD 부분 숨김 / 보임 |
 | `set_sync(p, len)` | JSON `{"tiers": [[m, ms], ...], "chat": m}` (`{}` 서버의 것으로) |
 | `world_list(p, cap) -> i32` | 만들었거나 읽은 월드마다 `id	players	loaded
 ` |
