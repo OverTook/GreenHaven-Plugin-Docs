@@ -121,7 +121,7 @@ redirect_from:
 | `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
 | `World::overlap(center, r, mask)` `overlap_box(min, max, mask)` → `Vec<Found>` | 범위 안의 것(폭발, 범위 스킬): `PLAYERS`(몸 있는 모두: 이벤트의 그 사람과 숨은 사람도; PvP·팀은 플러그인이), `ENTITIES`(날아가는 것 빼고), `MOBS`(그 사람의 층의 몬스터)를 `\|`로. 가까운 것부터 256개까지, 반지름·반폭 64 m까지; `Found`의 `kind` `who` `entity` `at`(발) `distance`, `player()` `model_entity()` `mob()` |
 | `World::projectile(모델, from, vel, gravity, radius, life)` → `Option<ModelEntity>` | 발사체: 서버가 스텝마다 움직이고 게임은 미끄러지듯 그림; 처음 닿는 블록·상자·플레이어(쏜 사람 빼고, PvP는 위와 같음)·엔티티에서 끝나고 [`ProjectileHit`](events#projectilehit); 한 월드에 64개 |
-| `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임(블록·상자·다른 단단한 엔티티에 옆으로도 부딪힘: 비스듬히 가면 벽을 따라 미끄러지고 정면이면 멈춤, 천장에서 멈춤, 내려앉으면 멈춤; 몸은 0.8 × 1.6 m에 `scale`배), 월드와 함께 저장(다시 켜도 그 자리에) |
+| `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임(블록·상자·다른 단단한 엔티티에 옆으로도 부딪힘: 비스듬히 가면 벽을 따라 미끄러지고 정면이면 멈춤, 천장에서 멈춤, 내려앉으면 멈춤; 몸은 0.8 × 1.6 m에 `scale`배; 단단한 엔티티는 플레이어의 몸에서도 멈춤, 이미 몸 안이면 빠져나감), 월드와 함께 저장(다시 켜도 그 자리에) |
 | `Server::player(name)` → `Option<Player>` | 서버 어디든 접속한 사람 (위치는 1초마다의 것) |
 | `Server::players()` → `Vec<(이름, 월드)>` `worlds()` → `Vec<(월드, 사람 수)>` `broadcast(line)` | 접속한 사람들, 누가 있는 월드, 서버 모두의 채팅 |
 | `World::players()` → `Vec<Player>` | 이 월드에 있는 사람들 |

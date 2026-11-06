@@ -396,7 +396,7 @@ fn circle(e: MobStep) {
 
 `Join`: 월드에 들어옴 — 접속, LAN 일꾼이 들어옴, [`Player::move_world`](sdk#player)로 옴. `Leave`: 나감 — 접속 끊김, `move_world`로 떠남.
 `who()` 누구. 다른 서버가 [`Player::transfer`](server#다른-서버로)로 보낸 접속이면 `is_transfer()`가 참이고
-`transfer_from()`(보낸 서버), `transfer_data()`(함께 온 것), `transfer_trusted()`(같은 `transfer-key`로 서명됨)를 읽습니다.
+`transfer_from()`(보낸 서버), `transfer_data()`(함께 온 것), `transfer_trusted()`(같은 `transfer-key`, 또는 보낸 서버의 `transfer-keys` 키로 서명됨)를 읽습니다.
 `e.player().give(..)` `add_gold` `inventory().add(..)`는 그 사람의 가방에 들어가고 게임에 바로 보입니다(`Leave`에서는 그날이 저장되는 서버에서만 남음; [Player](sdk#player)).
 
 ### PlayerMove
