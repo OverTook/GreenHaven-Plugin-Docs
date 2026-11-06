@@ -618,13 +618,13 @@ fn done(e: HttpDone) {
 | `Network::set(key, value, tag)` | 무조건 (`""`은 지우기). 키 128바이트, 값 16 KB(글) |
 | `Network::update(key, version, value, tag)` | 그 키가 아직 `version`일 때만(0: 없을 때만); 아니면 `ok()` 거짓, `why()` "moved"와 지금 값·버전 |
 | `Network::subscribe(topic)` → `bool` | 이 월드에서 그 주제의 메시지를 받음 (`Enable`에서: 모두의 월드) |
-| `Network::publish(topic, value)` → `bool` | 묶음의 **다른** 서버들에게; 1 KB, 서버마다 1초에 10개; 최선만(1분 안에 묻지 않은 서버는 못 받음) |
+| `Network::publish(topic, value)` → `bool` | 묶음의 **다른** 서버들에게; 1 KB, 서버마다 1초에 10개; 최선만: 구독한 서버에 바로 밀어 줌, 끊겼던 서버는 1분 안에 다시 이어지면 받음; 묶음을 맡은 중앙 서버 인스턴스가 바뀌면 아직 안 간 메시지와 대기열은 사라짐 |
 | `Network::queue_push(queue, player, value, ttl)` | 대기열에 (한 사람 한 번, 다시 넣으면 새로; 1~600초; 대기열마다 1000명) |
 | `Network::queue_take(queue, n, tag)` | 오래된 것부터 `n`개(50까지), 한 항목은 한 서버만: `taken()` |
 | `Network::queue_leave(queue, player)` | |
 
 묶음마다 키 수: 24시간 서버는 플랜의 서버 하나에 2000개, 열쇠 묶음은 열쇠에 정한 수(기본 1만). 플러그인마다 1분에 600개 요청,
-서버 전체에 대기 중인 요청 256개(넘으면 바로 `None`), 중앙 서버는 서버마다 1초에 50개("rate"). 거절된 행동 안의 요청은 보내지 않습니다.
+서버 전체에 대기 중인 요청 256개(넘으면 바로 `None`), 중앙 서버는 서버마다 1초에 50개, 묶음마다 1000개, 인스턴스마다 6만 개("rate"); 묶음의 메시지와 대기열은 합쳐 1 MB("full"). 거절된 행동 안의 요청은 보내지 않습니다.
 
 ```rust
 #[on(Enable)]
