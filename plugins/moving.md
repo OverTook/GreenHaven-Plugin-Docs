@@ -269,6 +269,58 @@ send_fast("in", &car.packet(4));
 
 예제 `racing`(트랙, 체크포인트, 랩, 미니맵, rpm 엔진 소리), `plane_demo`의 `/조종`(활주로, 추적·조종석 카메라, 계기판).
 
+## 탈것 말고 아무 규칙이나: 예측과 되감기 (`sdk/predict`)
+
+`Driven` / `Predicted`는 탈것 전용이 아닙니다. `greenhaven-predict`(`sdk/predict`)에 있고, `greenhaven-physics`는 그 위에 차와 비행기를
+얹은 것입니다. 대시, 차지 공격, 갈고리, 미니게임의 말처럼 **즉시 반응해야 하지만 결과는 서버가 정해야 하는** 규칙이면 무엇이든 씁니다.
+게임은 누르는 즉시 같은 코드로 한 걸음 가고, 서버는 번호 붙은 입력으로 자기 시계대로 걸어 상태를 돌려주며, 다르면 게임이 서버의 상태로
+바꾸고 그 뒤 걸음을 다시 걷습니다. 두 쪽이 같은 코드로 걸으니 패킷이 다 오면 고칠 일이 없고, 서버만 아는 것(게임이 모르는 감속 구역,
+다른 플레이어)이 있으면 그만큼만 고쳐집니다.
+
+```toml
+[dependencies]
+greenhaven-predict = { path = "../../sdk/predict" }
+```
+
+규칙 하나 = `Rollback`(상태, 걸음, 숫자로 쓰기·읽기) + 그 입력 `Input`(패킷 글로 쓰기·읽기). 비트까지 같으려면 1/60초 고정 걸음(`DT`),
+시계·난수·호스트 함수 없이 `f64` 산술만(난수가 필요하면 상태 안에 시드를 두고). 입력은 플레이어가 보내는 것이니 `read`에서 범위를 자르세요.
+
+```rust
+// shared.rs: 두 쪽이 같은 규칙
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Keys { pub dir: i8, pub dash: bool }
+impl Input for Keys {
+    fn write(&self, out: &mut String) { out.push_str(&format!("{},{}", self.dir, self.dash as u8)); }
+    fn read(s: &str) -> Option<Keys> {
+        let (d, b) = s.split_once(',')?;
+        Some(Keys { dir: d.parse::<i8>().ok()?.clamp(-1, 1), dash: b == "1" })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Dasher { pub x: f64, pub stamina: f64 }
+impl Rollback for Dasher {
+    type Input = Keys;
+    type Env<'e> = (); // 걸음이 읽는 바깥 것(땅, 트랙: `dyn Fn(f64, f64) -> Surface + 'e`), 없으면 ()
+    fn step(&mut self, k: &Keys, _: &()) {
+        let dashing = k.dash && self.stamina > 0.0;
+        self.x += if dashing { 12.0 } else { 4.0 } * k.dir as f64 * DT;
+        self.stamina = (self.stamina + if dashing { -2.0 } else { 0.5 } * DT).clamp(0.0, 1.0);
+    }
+    fn values(&self) -> Vec<f64> { vec![self.x, self.stamina] }
+    fn set_values(&mut self, v: &[f64]) -> bool {
+        let [x, s] = v else { return false };
+        (self.x, self.stamina) = (*x, s.clamp(0.0, 1.0));
+        true
+    }
+    fn pose(&self) -> ([f64; 3], [f64; 3]) { ([self.x, 0.0, 0.0], [0.0; 3]) } // 고쳐질 때 그리는 자리를 부드럽게
+}
+```
+
+서버 쪽 `Driven<Dasher>`(`take`, `run(dt, &())`, `to_bytes` / `load`, `state_packet`), 게임 쪽 `Predicted<Dasher>`(`step`, `packet`,
+`heard`, `drawn`)는 위의 탈것과 똑같이 씁니다. 통계: `Predicted`의 `agreed` / `corrections` / `missed`, `Driven`의 `filled`(입력이 늦어
+마지막 것으로 걸은 걸음) / `dropped`(시계보다 많이 보내 버린 입력).
+
 ## 도구 동작 (플러그인 아이템)
 
 [등록](rules)하는 아이템에 이 필드를 주면, 쓸 때 게임이 그 동작을 하고(다른 사람에게도 보임) 그 순간 [`Use`](events#use)
