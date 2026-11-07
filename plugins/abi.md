@@ -91,6 +91,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `music_play(p, len)` `music_all(p, len)` | 그 플레이어 / 월드 모두에게 곡 |
 | `player(i: i32) -> i32` | tick: i번째 플레이어를 고름 (뒤의 `pget` `me` 등이 그 사람; -1: 이벤트의 그 사람으로 돌아감) |
 | `player_named(p, len) -> i32` | 서버 어디든 접속한 그 이름의 사람을 `player(i)`의 번호로 (-1: 없음; `num("player.i.x")` 등도 채움) |
+| `char_view(p, len)` | 보기 그룹 (`Player::set_view_group`; 빈 이름: 없음) |
 | `char_invisible(on: i32)` `char_hide_from(p, len, on: i32)` | 그 플레이어를 아무에게도 / 그 이름의 한 사람에게 보내지 않기 |
 | `char_disguise(ent: i64, snap: i32)` | 이 플러그인의 엔티티로 변장 (0: 끄기, 엔티티 지움) |
 | `char_nametag(p, len, cp, cl)` `char_nametag_visible(on: i32)` `char_scale(s: f64)` | 이름표 글과 색, 보이기, 크기 (0.25-4) |

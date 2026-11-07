@@ -64,12 +64,13 @@ redirect_from:
 | `set_model(id)` `clear_model()` | [커스텀 모델](models)로 그림 / 원래 모습으로. 연결된 동안만, 계정은 그대로 |
 | `set_invisible(on)` | 아무에게도 안 보임: 위치·목소리·손에 든 것·모습·번호가 **어떤 게임에도 가지 않음**(보내지 않기; 자기 게임 빼고). 채팅은 그대로(`Chat`을 취소) |
 | `hide_from(other, on)` | `other`(이름) 한 사람에게만 숨김 (술래가 기다리는 동안). 변장의 엔티티도 그 사람에게는 가지 않음 |
+| `set_view_group(name)` | 보기 그룹 (`""` 없음: 그룹 없는 사람끼리가 한 그룹). 그룹이 다른 사람끼리는 위치·모습·음성·주변 채팅·팀 채팅·손에 든 것·탈것·변장 엔티티가 오가지 않고, 쏘기·발사체·폭발·`overlap`·`seen_from`도 그 이벤트의 플레이어 그룹만 맞힘. 몬스터·주민은 모두를 봄(주민의 말 속 이름은 다른 그룹에도 감). 한 번 부르면 되고 인원 한도 없음 (채널: 예제 `channels`). 세션마다 처음엔 없음 |
 | `disguise(Disguise::Block(kind) \| Disguise::Model(path), snap)` → `Option<ModelEntity>` | 변장: 투명이 되고 이 플러그인의 엔티티(`"block:<kind>"` 블록 모습, 또는 모델)가 걷는 대로 따라감(`snap`: 칸 가운데). 다른 엔티티와 구별할 수 없음(그 사람과 이어진 필드 없음); 자기 게임에서만 반투명. `set_interact`로 맞힐 수 있게 |
 | `undisguise()` | 원래대로 (엔티티 지움; 나가거나 월드를 옮겨도) |
 | `set_nametag(text, colour)` `set_nametag_visible(on)` | 머리 위 이름 (`""` 이름 그대로; 색 `"ff3030"`, `""` 게임 색), 보이기 |
 | `set_scale(times)` | 모든 게임에서 그 크기로 (0.25-4) |
 | `play_clip(clip, upper, looped)` `play_clip_at(clip, upper, looped, speed)` `stop_clip()` | 걷고 뛰는 몸 위에 겹치는 클립 (장전, 조준, 시전, 달리며 손 흔들기): `upper`면 척추부터 위만 (다리는 걷기 그대로), 아니면 몸 전체; `looped`면 멈출 때까지, 아니면 한 번; 빠르기 0.1-4. 클립: [감정 표현](models) id, `res://` 경로 (팩의 GLB는 `"경로#클립"`), 게임의 것 (`"ATK1"` `"Shoot"` `"Victory"` `"Greet"` `"cast"`). 모든 게임에서 보임. 도구 동작·감정 표현 중에는 그 아래에서 기다림 |
-| `set_body(half_width, tall)` | 몸의 크기 (m; 0, 0이면 게임의 것): 게임의 캡슐이 그 크기로 움직이고 **서버의 걸음 판정도 그 몸으로** (키는 블록 단위, 1 m 넘게 넓으면 세 칸 폭). 숨바꼭질의 소품, 작은 동물. 맞는 상자는 그대로(`set_scale`) |
+| `set_body(half_width, tall)` | 몸의 크기 (m; 0, 0이면 게임의 것): 게임의 캡슐이 그 크기로 움직이고 **서버의 걸음 판정도 그 몸으로** (키는 블록 단위, 1 m 넘게 넓으면 세 칸 폭). **맞는 상자도 그 크기** (정한 쪽만; 나머지는 0.4 × 1.6 m × `set_scale`): 서버의 cast·cast_for·overlap·explode·발사체, 게임 쪽 조준(AimHitbox)도. 숨바꼭질의 소품, 작은 동물 |
 | `set_jump_power(times)` `set_gravity(times)` | 점프 높이 배수 (0-10), 중력 배수 (0.1-5): 게임이 그렇게 움직이고 **서버의 공중 검사도 그 배율로** 판정 |
 | `freeze(on)` | 제자리 (게임의 걷기·점프 꺼짐, 걸음은 서버가 되돌림): 카운트다운 |
 | `set_hand_visible(on)` | `false`: 손에 든 것을 안 그림 (자기 게임에서도, 남이 보는 아바타에서도: 서버가 모델을 전하지 않음). 게임 쪽 뷰모델과 함께; `hud().hide("hotbar")`면 숫자 키·휠도 칸을 안 바꿈 |
@@ -630,7 +631,7 @@ fn done(e: HttpDone) {
 
 서버끼리는 아무것도 주고받지 않습니다(남이 만든 플러그인이 다른 서버의 데이터를 건드리는 길이 되므로). 다른 서버로는
 [`Player::transfer`](server#다른-서버로)로 플레이어와 짐 한 번만 보냅니다. 한 서버 안을 나누려면 월드(`Server::create_world`)나 채널
-(예제 [`channels`](samples): `hide_from`으로 사람만 나눔)을 씁니다.
+(예제 [`channels`](samples): `set_view_group`으로 사람만 나누거나, 설정 `mode` "worlds"로 채널마다 월드를 따로)을 씁니다.
 
 ## `sys` — 원본 함수
 
