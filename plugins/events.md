@@ -124,8 +124,6 @@ fn cmd(c: Command) { /* … */ }
 | [`WorldSave`](#worldsave) | `world.save` | | 월드를 저장하기 직전, 그 월드에서 한 번 |
 | [`Custom`](interop#플러그인의-이벤트-serverfire-on_custom) | `custom:<이름>` | ✓ | 다른 플러그인이 낸 이벤트 (`#[on_custom("이름")]`) |
 | [`HttpDone`](#httpdone) | `http.done` | | 이 플러그인의 바깥 요청의 답 ([바깥 요청](sdk#바깥-요청)) |
-| [`NetworkData`](#networkdata--networkmessage) | `network.data` | | 이 플러그인의 `Network::*` 요청의 답 ([서버 사이 공유](sdk#서버-사이-공유)) |
-| [`NetworkMessage`](#networkdata--networkmessage) | `network.message` | | 구독한 주제로 묶음의 다른 서버가 보낸 메시지 |
 | [`BlockPlace`](#blockplace--blockbreak) | `block.place` | ✔ | 플레이어가 가방의 블록을 놓음 |
 | [`BlockBreak`](#blockplace--blockbreak) | `block.break` | ✔ | 플레이어가 블록을 부숨 (플러그인 종류, 규칙이 허락한 바닐라 블록) |
 | [`PlayerInteract`](#playerinteract) | `touch` | ✔ | 블록(이나 공기)에 사용 버튼 |
@@ -193,13 +191,6 @@ WorldSaveEvent). 메모리에만 든 값을 `World::data_put` / `set`으로 옮�
 
 `Server::http_get` / `http_post`의 답이 요청한 월드의 다음 스텝에 옵니다(그 플러그인에만): `id()`, `status()`(0: 못 함,
 `error()` 이유: "busy", 시간 초과, 공용이 아닌 주소 …), `ok()`(2xx), `body()`(앞 64 KB), `tag()`.
-
-### NetworkData / NetworkMessage
-
-`NetworkData`: `Network::get` / `set` / `update` / `queue_push` / `queue_take`의 답이 요청한 월드의 다음 스텝에(그 플러그인에만):
-`id()` `tag()` `op()` `key()`(키나 대기열) `ok()` `why()`("offline" "moved" "full" "size" "rate" "db") `value()` `version()`
-`taken()`(꺼낸 것 `[(플레이어, 넣은 서버, 값)]`). `NetworkMessage`: `topic()` `value()` `from()`(보낸 서버의 이름: 24시간 서버는
-GS- 아이디, 아니면 `network-name`; `Player::transfer`로 그리로 보낼 수 있음), `Network::subscribe`한 월드에.
 
 ## 행동
 

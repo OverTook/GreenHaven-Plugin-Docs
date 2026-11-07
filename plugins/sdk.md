@@ -626,55 +626,11 @@ fn done(e: HttpDone) {
 }
 ```
 
-## 서버 사이 공유
+## 서버 사이 공유: 없음
 
-`Network`(로블록스의 DataStore·MessagingService·MemoryStore 큐, BungeeCord의 플러그인 메시지): 같은 **묶음**의 서버들이 함께 쓰는
-데이터, 메시지, 대기열입니다. 모두 묶음의 **Redis**(Valkey)에 있습니다(BungeeCord 네트워크가 흔히 쓰는 방식; 중앙 서버는 거치지 않음).
-묶음은 24시간 서버는 같은 주인의 서버들(설정할 것 없음: 켜질 때 그 주인만 쓸 수 있는 Redis 사용자를 받음), 그 밖의 서버는
-[`network-redis`](server#serverproperties)(운영자 자신의 Redis; 인터넷 너머면 `rediss://`로 TLS)와 `network-group`이 같은 서버들입니다. 묶음 사이에는 아무것도 건너가지 않고,
-묶음 안에서도 플러그인마다 따로(다른 서버의 같은 플러그인만 봄). 아무것도 기다리지 않습니다: 답은 [`NetworkData`](events#networkdata--networkmessage),
-메시지는 `NetworkMessage`로 다음 스텝에. Redis가 없거나 닿지 않거나(서버가 알아서 다시 이음) 게임의 자체 서버면 답은 모두 `why()` "offline".
-
-| 함수 | |
-|---|---|
-| `Network::get(key, tag)` → `Option<i64>` | 값과 버전(0: 없음) |
-| `Network::set(key, value, tag)` | 무조건 (`""`은 지우기). 키 128바이트, 값 16 KB(글) |
-| `Network::update(key, version, value, tag)` | 그 키가 아직 `version`일 때만(0: 없을 때만); 아니면 `ok()` 거짓, `why()` "moved"와 지금 값·버전 |
-| `Network::subscribe(topic)` → `bool` | 이 월드에서 그 주제의 메시지를 받음 (`Enable`에서: 모두의 월드) |
-| `Network::publish(topic, value)` → `bool` | 묶음의 **다른** 서버들에게; 1 KB, 서버마다 1초에 10개; 최선만: Redis pub/sub이라 그때 이어진 서버만 받음(끊겼던 동안의 것은 오지 않음); 놓치면 안 되는 것은 데이터나 대기열에 |
-| `Network::queue_push(queue, player, value, ttl)` | 대기열에 (한 사람 한 번, 다시 넣으면 새로; 1~600초; 대기열마다 1000명) |
-| `Network::queue_take(queue, n, tag)` | 오래된 것부터 `n`개(50까지), 한 항목은 한 서버만: `taken()` |
-| `Network::queue_leave(queue, player)` | |
-
-묶음마다 키 수: 24시간 서버는 플랜의 서버 하나에 2000개, 그 밖의 묶음은 1만. 플러그인마다 1분에 600개 요청,
-서버 전체에 대기 중인 요청 256개(넘으면 바로 `None`), 서버마다 1초에 50개(메시지 10개; "rate"); 묶음의 대기열 항목은 합쳐 1 MB("full").
-데이터와 대기열은 Redis에 남습니다(공식 24시간 서버의 것은 매초 디스크에, 날마다 사본). 거절된 행동 안의 요청은 보내지 않습니다.
-
-```rust
-#[on(Enable)]
-fn enable(_e: Enable) {
-    Network::subscribe("match");
-}
-
-#[on(NetworkData)]
-fn answered(e: NetworkData) { // 경기장 서버: 자리만큼 꺼낸 플레이어를 묶음에 알림
-    let names: Vec<String> = e.taken().into_iter().map(|t| t.0).collect();
-    if e.tag() == "fill" && !names.is_empty() {
-        Network::publish("match", &names.join(","));
-    }
-}
-
-#[on(NetworkMessage)]
-fn heard(e: NetworkMessage) { // 허브: 자기 플레이어면 그 경기장으로
-    for name in e.value().split(',') {
-        if let Some(p) = Server.player(name) {
-            p.transfer(&e.from(), "arena");
-        }
-    }
-}
-```
-
-예제 `plugins/net_hub`(방문 수, 인사, 대기열로 경기장 채우기).
+서버끼리는 아무것도 주고받지 않습니다(남이 만든 플러그인이 다른 서버의 데이터를 건드리는 길이 되므로). 다른 서버로는
+[`Player::transfer`](server#다른-서버로)로 플레이어와 짐 한 번만 보냅니다. 한 서버 안을 나누려면 월드(`Server::create_world`)나 채널
+(예제 [`channels`](samples): `hide_from`으로 사람만 나눔)을 씁니다.
 
 ## `sys` — 원본 함수
 
