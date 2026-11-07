@@ -174,6 +174,27 @@ if w.is_solid(11.0, 1.0, 4.0) { /* 블록이나 상자 */ }
 let d = w.raycast((0.0, 1.0, 4.0), (1.0, 0.0, 0.0), 30.0); // 처음 닿는 단단한 칸까지 m
 ```
 
+### 메시 충돌: 완성된 맵
+
+칸 상자로는 경사로, 얇은 벽, 난간, 계단을 만들 수 없습니다. 맵을 GLB로 만들었다면 그 삼각형 그대로 충돌시키세요.
+
+```rust
+// 빈 월드(server.properties level-type=void, 또는 create_world_with(id, "void", ..))의 Enable이나 world.create에서
+let map = w.spawn("res://plugins/arena/map.glb", 0.0, 0.0, 0.0).unwrap();   // 그리는 모델
+map.set_collision_mesh("res://plugins/arena/map_col.glb");                 // 충돌용(같은 GLB여도 됨)
+map.set_persistent(true);
+w.set_view(false, 300.0, 400.0);                                           // 평평하게, 멀리까지
+w.set_spawn(0.0, 1.0, 0.0, 0.0);
+```
+
+- 충돌 GLB는 그 플러그인 자산 안의 것만, 한 조각에 10만 삼각형까지(큰 맵은 조각으로 나눠 엔티티 여러 개; 월드에 256개까지).
+  GLB의 노드 위치·회전·크기를 모두 반영하고, 엔티티의 자리·회전·크기대로 놓입니다.
+- 서버의 걷기 검사: 위치 보고마다 직전 위치와 이은 걸음이 벽을 앞면에서 뚫으면 되돌립니다. 바닥, 경사로, 계단, 2층을 발밑 땅으로
+  봅니다. 총알(`World::cast` / `cast_for`), `raycast`, 투사체, 폭발의 엄폐, `seen_from`도 면에 막힙니다(맞은 것은 `"entity"`, 그 id).
+- 게임도 같은 삼각형으로 몸을 만들어 플레이어가 부딪힙니다.
+- 길찾기(`path_blocks`)와 몬스터는 칸 단위라 메시를 모릅니다. FPS 맵에는 `World::set_mode("arena")`로 몬스터를 끄세요.
+- 엔티티는 플레이어 150 m 안에서만 보이니 맵의 원점을 가운데에 두세요.
+
 ## 주민
 
 바닐라 주민 10명이 월드를 만들 때 들어가고, 그 목록이 서버의 주민 AI·대사·선물·의뢰와 게임의 주민 표가 됩니다. 주민은
@@ -333,6 +354,10 @@ fn made(e: WorldCreate) {
 - `World::set_action_rate(rate, burst)`: 이 월드의 행동 한도 (최대 60, 120; 서버는 10, 30), `clear_action_rate()`. 플러그인의 패킷(게임 쪽
   `send`, 버튼, 키)은 따로 초당 30이라 행동 한도를 쓰지 않습니다.
 - `World::hide_hud(part, hidden)`: 게임 HUD의 부분([이름들](screen#게임-hud의-부분))을 이 월드의 모두에게 숨김 (들어오는 사람도).
+- `World::set_view(curve, fog, sight)`: 이 월드를 그리는 법. `curve`가 false면 세계가 휘지 않고 평평(FPS 맵), 안개가 다 가리는 거리
+  `fog` m, 그 너머는 안 그리는 거리 `sight` m(16~2000). `clear_view()`는 서버 기본값. 서버 기본값은 server.properties:
+  `world-curve=true`, `fog-distance=112`, `view-distance=150`. 블록 땅은 플레이어 둘레 ~112 m만 지어지니, 블록 월드에서 안개를 그보다
+  멀리 두면 땅 끝이 보입니다.
 
 ```rust
 #[on(WorldCreate)]
