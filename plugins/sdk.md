@@ -169,7 +169,7 @@ redirect_from:
 ## ItemStack
 
 한 칸: `id`(품질 `@2`까지) `n`과 메타(Bukkit의 ItemMeta): `name`(48자) `lore`(8줄, 80자) `tint`(`"rrggbb"`) `model`(손에 든
-모델 `res://..glb`) `data`(플러그인의 키-값 16개, PersistentDataContainer) `unbreakable` `glow`. 메타가 같은 것끼리만 쌓이고, 게임은
+모델 `res://..glb`) `data`(플러그인의 키-값 16개, PersistentDataContainer) `unbreakable` `glow` `tier`(등급, `.tier(2)`) `ench`(마법과 단계, `.ench("luck", 1)`). 바닐라의 대장간과 마법사도 도구의 등급과 마법을 이 메타에 씁니다(`hoe#{"tier":2,"ench":[["speed",1]]}`): 플러그인의 아이템도 등급·마법이 이름과 함께 보이고, 도구는 같은 id라도 한 개 한 개가 제 등급을 가집니다. 메타가 같은 것끼리만 쌓이고, 게임은
 이름·설명(툴팁)·색·반짝임·손의 모델을 그립니다. 규칙은 다 id로만 읽고, 쓰면(먹기, 버리기 ...) 메타 있는 묶음에서 먼저 빠집니다.
 메타는 묶음과 함께 갑니다: 상자에 넣고 꺼내기, 바닥에서 줍기(`World::ground_drop(&stack.key(), ..)`, `drop`), 편지, 플러그인
 창(`Inventory::slot(i, &stack.key(), ..)`), `give(&stack.key(), n)`. `key()`는 `id#{메타 JSON}`(서버가 순서를 맞춤). 출하·판매는

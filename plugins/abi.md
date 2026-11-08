@@ -56,7 +56,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `inv_list(p, cap) -> i32` | 가방의 모든 것: 한 줄에 하나 `id	n	tier	마법:레벨,…` (이벤트가 시작될 때의 것) |
 | `inv_clear(tools: i32)` | 가방 비우기 (`tools` 0이 아니면 도구까지; 착용한 장비는 그대로) |
 | `inv_size() -> i32` `inv_held() -> i32` | 칸 수, 손에 든 단축바 칸 |
-| `inv_get(slot, p, cap) -> i32` | 한 칸: `id	n` 그리고 메타 한 줄씩 (`name	..` `lore	..` `tint	..` `model	..` `data	키	값` `unbreakable` `glow`); 비면 `""` |
+| `inv_get(slot, p, cap) -> i32` | 한 칸: `id	n` 그리고 메타 한 줄씩 (`name	..` `lore	..` `tint	..` `model	..` `data	키	값` `unbreakable` `glow` `tier	등급` `ench	마법	단계`); 비면 `""` |
 | `inv_set(slot, ip, il, n: i64, mp, ml)` | 그 칸을 n개의 `ip`로, 메타 `mp`(JSON, 빈 것: 없음; n 0: 비우기) |
 | `inv_fill(p, len)` | 가방 전체 `[[id, n, meta] 또는 null, ...]` |
 | `inv_set_held(slot)` `inv_give(ip, il, n: i64, mp, ml)` | 든 칸, 메타 붙여 주기 |
