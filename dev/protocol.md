@@ -48,7 +48,7 @@ redirect_from:
   "players": 3,
   "max": 20,
   "version": "<규칙 버전>",
-  "protocol": 2,
+  "protocol": 5,
   "game": "0.1.0",
   "password": false,
   "plugins": [],
@@ -194,10 +194,12 @@ zip이에요. 실행되는 것은 없어요.
 
 ## 상태
 
-`state`는 한 플레이어의 게임 전체예요: `day` `m` `weather` `weather_next` `gold` `energy` `max_energy` `health`
-`max_health` `bag` `layout` `tiles` `trees` `debris` `forage` `animals` `shipped` `xp` `levels` `perks` `gear` `placed`
-`chests` `equip` `quests` `friendship` `mail` 등, 그리고 `town`(서버가 정한 마을: 셀, 부지, 구조물, 장소). 모르는 키는
-무시하세요. 키는 플러그인과 버전에 따라 늘어나요.
+`state`는 한 플레이어의 게임 전체예요. 엔진의 키는 맨 위에 있어요: `day` `m` `weather` `weather_next` `health`
+`max_health` `bag` `slots` `held` `layout` `entities` `props` `pdata` `plugins` `ground` `town`(서버가 정한 마을: 셀, 부지,
+구조물, 장소) 등. 바닐라 농장 게임의 키는 `"v"` 아래에 모여 있어요(프로토콜 5): `gold` `energy` `max_energy` `tiles`
+`trees` `debris` `forage` `animals` `shipped` `xp` `levels` `perks` `gear` `placed` `chests` `equip` `quests` `friendship`
+`mail` `npcs` 등. 바닐라가 꺼진 월드에는 `v`가 없어요. `ok`/`own`의 `s`도 같은 모양이고, `v` 안에서도 바뀐 키만 와요.
+모르는 키는 무시하세요. 키는 플러그인과 버전에 따라 늘어나요.
 
 ## 서버가 보내는 것
 
