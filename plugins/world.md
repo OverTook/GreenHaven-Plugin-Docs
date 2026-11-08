@@ -323,6 +323,9 @@ Multiverse처럼 월드마다 다르게 (예제 [`minigame_hub`](samples)):
   `Player::reset()`: 지금 그룹의 몫을 새 손으로 (경기마다 새 장비).
 - **동기화** `World::set_sync(&[(30.0, 0), (80.0, 50)], Some(0.0))`: 다른 사람의 위치를 거리별로 얼마나 자주 (m, ms; 6개까지, ms 0~1000),
   채팅이 닿는 거리 (0이면 월드 전체, `None` 48 m).
+  `World::set_sync_with(tiers, chat, full, send)`: 더해서 `full` 각자 가장 가까운 몇 명에게 첫 구간을 줄지(1~64, 없으면 10: 그 너머는
+  초당 15번보다 자주 안 보냄), `send` 이 월드의 게임이 가까운 사람과 상관없이 초당 몇 번 위치를 보낼지(5~30, 없으면 게임의 것: 48 m 안에
+  누가 있으면 30, 아니면 5; 마을의 `"send"`로 실려 감). 경기(FPS): `set_sync_with(&[(400.0, 0)], Some(0.0), Some(16), Some(30.0))`.
 - **수명** (그 월드를 만든 플러그인만, 모두의 월드는 안 됨): `Server::create_world_from(id, template)` 틀의 지금 모습(블록, 구조물,
   주민, 플러그인 데이터, 위의 설정들, 지금의 엔티티)을 복사; `Server::reset_world(id, to)` 만든 그대로 다시 (안의 사람은 `to`로, `""`이면
   모두의 월드로 갔다 다시 들어옴); `Server::remove_world(id, to)` 지움. 아무도 없는 플러그인 월드는 server.properties

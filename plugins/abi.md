@@ -146,7 +146,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_mode(p, len) -> i32` | `"arena"` / `"farm"` (1 / 0: 그런 모드 없음) |
 | `set_action_rate(rate: f64, burst: f64)` | 이 월드의 행동 한도 (음수: 서버의 것) |
 | `world_hud(p, len, hidden: i32)` | 이 월드 모두의 HUD 부분 숨김 / 보임 |
-| `set_sync(p, len)` | JSON `{"tiers": [[m, ms], ...], "chat": m}` (`{}` 서버의 것으로) |
+| `set_sync(p, len)` | JSON `{"tiers": [[m, ms], ...], "chat": m, "full": n, "send": 초당}` (`{}` 서버의 것으로) |
 | `world_list(p, cap) -> i32` | 만들었거나 읽은 월드마다 `id	players	loaded
 ` |
 | `remove_world(ip, il, tp, tl) -> i32` `reset_world(...)` | 이 플러그인이 만든 월드를 지움 / 다시 만듦, 안의 사람은 먼저 `to`로 (1 / 0: 쓸 수 없는 이름) |

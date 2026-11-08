@@ -266,6 +266,7 @@ fn efficiency(c: Command) {
 | `hide_hud(part, hidden)` | 게임 HUD의 부분을 이 월드의 모두에게 숨김 |
 | `set_inventory_group(name)` | 이 월드의 가방 그룹 (`""` 모두의 월드의 것): 다른 그룹에서 오면 자기 몫을 바꿔 받음 |
 | `set_sync(tiers, chat)` | 위치를 거리별로 얼마나 자주 (`&[(m, ms)]`, 6개까지), 채팅이 닿는 거리 (`Some(0.0)` 월드 전체, `None` 48 m) |
+| `set_sync_with(tiers, chat, full, send)` | 더해서 첫 구간을 받을 가까운 인원(1~64, `None` 10), 게임이 보내는 초당 위치 수(5~30, `None` 게임의 것) |
 
 ### 블록
 
