@@ -196,7 +196,7 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
   좁은 틈이나 낮은 창, 벽 뒷면을 지나가는 건 못 잡습니다. 경쟁 맵이면 `w.set_mesh_check(true, 0.25)`(몸 반지름 0.05~0.5 m, 게임 캡슐은
   0.54)로 몸 크기 구까지 대 보게 하세요. 네트워크가 나쁜 플레이어는 모서리에서 가끔 되돌려질 수 있습니다. `clear_mesh_check()`는 서버
   기본값(server.properties `mesh-walk-check=line|body`, `mesh-walk-radius=0.25`).
-- 길찾기(`path_blocks`)와 몬스터는 칸 단위라 메시를 모릅니다. FPS 맵에는 `World::set_mode("arena")`로 몬스터를 끄세요.
+- 길찾기(`path_blocks`)와 몬스터는 칸 단위라 메시를 모릅니다. FPS 맵에는 `World::set_mode("none")`로 몬스터를 끄세요.
 - 엔티티는 플레이어 150 m 안에서만 보이니 맵의 원점을 가운데에 두세요.
 
 ## 주민
@@ -336,7 +336,7 @@ Multiverse처럼 월드마다 다르게 (예제 [`minigame_hub`](samples)):
 fn made(e: WorldCreate) {
     let w = e.world();
     if w.id() == "arena_tpl" {
-        w.set_mode("arena"); // 농장 기능 전부 끔, 시계 멈춤, 가방 그룹 "arena" (아래 「경기장 모드」)
+        w.set_mode("none"); // 농장 기능 전부 끔, 시계 멈춤, 가방 그룹 "arena" (아래 「경기장 모드」)
         w.set_pvp(true);
         w.set_rule("starter", r#"{"gold": 0, "items": {"sword": 1, "salad": 3}}"#);
     }
@@ -347,7 +347,7 @@ fn made(e: WorldCreate) {
 
 ### 경기장 모드: 농장이 아닌 게임을 한 번에
 
-`World::set_mode("arena")` 한 번이 (예제 [`arena_mode`](samples); `WorldCreate`, `Enable`, `PlayerJoin` 어디서든, 월드와 함께 저장):
+`World::set_mode("none")` 한 번이 (예제 [`arena_mode`](samples); `WorldCreate`, `Enable`, `PlayerJoin` 어디서든, 월드와 함께 저장):
 
 - 바닐라 기능 20개 전부 끔 (`set_vanilla`: 주민, 밤, 농사, 상점, 잠, 튜토리얼 … **기력**, **쓰러짐의 비용**, **하루 끝**), 마을 있는 월드에서도.
 - 시계 멈춤 (`set_clock_rate(0)`; 하늘이 돌게 하려면 뒤에 `set_clock_rate(1.0)`: 하루 끝이 꺼져 있어 시계로 끝나지 않음).
@@ -356,7 +356,7 @@ fn made(e: WorldCreate) {
 - 가방 그룹 `"arena"`, 시작 키트는 빔 (돈 0, 물건 없음): 키트는 뒤에 `set_rule("starter.items", r#"{"sword": 1}"#)` 또는 `Player::set_inventory`.
 - 행동 한도 초당 30, 한 번에 60 (`set_action_rate`).
 
-`set_mode("farm")`은 모두 서버의 것으로 되돌립니다. 하나씩도:
+`set_mode("vanilla")`은 모두 서버의 것으로 되돌립니다. 하나씩도:
 
 - `World::set_action_rate(rate, burst)`: 이 월드의 행동 한도 (최대 60, 120; 서버는 10, 30), `clear_action_rate()`. 플러그인의 패킷(게임 쪽
   `send`, 버튼, 키)은 따로 초당 30이라 행동 한도를 쓰지 않습니다.
@@ -370,7 +370,7 @@ fn made(e: WorldCreate) {
 #[on(WorldCreate)]
 fn made(e: WorldCreate) {
     let w = e.world();
-    w.set_mode("arena");
+    w.set_mode("none");
     w.set_rule("starter.items", r#"{"sword": 1}"#);
 }
 ```

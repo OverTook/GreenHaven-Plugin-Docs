@@ -27,7 +27,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `hitboxes` 히트박스 | `/벽세우기`: 동쪽 3칸에 히트박스(1 × 9칸, 3블록 높이)를 가진 상자 구조물, 서쪽 3칸에 같은 히트박스의 단단한 바위 엔티티: 서버의 걸음 판정과 게임의 몸이 둘 다 막음. `/벽치우기`로 치움 | `put_structure`의 `"hit"`, `set_hitbox` `set_solid` |
 | `void_arena` 허공 경기장 | 미니게임: 빈 월드(server.properties `level-type=void`) 한가운데 떠 있는 9×9 블록 발판, 마을·주민·농사·상점·밤 없이 발판 위에서 시작, 경기장 블록을 쌓고 곡괭이로 부숨, 떨어지면 가방 그대로 발판에서 다시 | `WorldCreate`의 `fill` `World::set_spawn` `set_vanilla` `set_live_saving`, `Join`의 `set_check("air")`, `PlayerMove`의 `death`, `PlayerDeath`의 `keep_inventory` |
 | `minigame_hub` 미니게임 허브 | 허브(빈 월드 `level-type=void`의 광장)에서 `/참가`로 대기, 틀 `arena_tpl`에서 복사한 경기장(`arena1`, `arena2`)으로 옮겨 그곳의 가방(칼·샐러드, 돈 없음)과 규칙(체력 60, 멈춘 시계, PvP, 위치 자주·채팅 월드 전체)으로 겨룸; 떨어지면 탈락, 15초나 한 사람 남으면 끝: 경기장은 틀의 모습으로, 모두 허브의 가방으로 | `World::set_mode` `set_rule` `set_sync`, `Server::create_world_from` `reset_world`, `Player::reset`, `Server::data_*` |
-| `arena_mode` 경기장 모드 | 마을 있는 월드를 `set_mode("arena")` 한 번으로 경기장으로: 농장 기능·기력·하루 끝 없음, 멈춘 시계, HUD의 날짜·시간·퀘스트 숨김, 칼 한 자루 키트, 초당 30 행동; `/농장` 원래대로, `/경기장` 다시 | `World::set_mode` `set_rule` |
+| `arena_mode` 경기장 모드 | 마을 있는 월드를 `set_mode("none")` 한 번으로 경기장으로: 농장 기능·기력·하루 끝 없음, 멈춘 시계, HUD의 날짜·시간·퀘스트 숨김, 칼 한 자루 키트, 초당 30 행동; `/농장` 원래대로, `/경기장` 다시 | `World::set_mode` `set_rule` |
 | `flat_world` 탁 트인 평지 | 성벽·성문·바위 둑·암초 없는 마을, 마을 밖은 나무 없는 평평한 풀밭 (새 월드에만) | `WorldCreate`의 `remove_plot`, `ChunkGenerate`의 `fill` `clear_props` |
 | `deep_mines` 거친 땅과 깊은 광산 | 성벽 밖 땅이 더 높고 험해짐(산, 눈, 큰 바위), 광산 층이 넓어지고 금이 일찍, 층마다 도착한 곳 근처에 금광석 | `terrain` `mine_layout`, `MineFloor::set_rock` |
 | `server_password` 서버 비밀번호 | 처음 들어올 때 비밀번호를 정하고, 그 뒤로는 들어올 때마다 물어봄 (세 번 틀리면 돌려보냄) | `PlayerLogin`의 입력 창, `Gui::secret`, `Server` 값 |
