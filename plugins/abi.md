@@ -143,7 +143,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_rule(kp, kl, jp, jl) -> i32` `clear_rules()` | 이 월드의 규칙 패치 (키, JSON 값; 1 / 0: JSON이 아니거나 월드마다 둘 수 없는 키) |
 | `set_clock_rate(f: f64)` | 이 월드의 시계 배율 (0 멈춤, 음수 규칙대로) |
 | `set_inventory_group(p, len)` | 이 월드의 가방 그룹 (`""` 서버의) |
-| `set_mode(p, len) -> i32` | `"arena"` / `"farm"` (1 / 0: 그런 모드 없음) |
+| `set_mode(p, len) -> i32` | `"none"` / `"vanilla"` (server.properties `game-module`과 같은 이름; 1 / 0: 그런 모드 없음) |
 | `set_action_rate(rate: f64, burst: f64)` | 이 월드의 행동 한도 (음수: 서버의 것) |
 | `world_hud(p, len, hidden: i32)` | 이 월드 모두의 HUD 부분 숨김 / 보임 |
 | `set_sync(p, len)` | JSON `{"tiers": [[m, ms], ...], "chat": m, "full": n, "send": 초당}` (`{}` 서버의 것으로) |
