@@ -153,24 +153,26 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 - 게임 쪽은 플러그인 하나가 **1초에 8개까지** 보냅니다(더 보낸 것은 버려짐). 서버의 자동화 한도(플레이어의 행동 1초에 10개)도 그대로입니다.
 - 서버 쪽 `Packet`은 플레이어의 행동처럼 판정되므로 거기서 `give` `add_gold` …가 됩니다. 받은 데이터는 믿지 말고 판단의 근거로만 쓰세요.
 - 서버 쪽에서 등록한 단축키(`Hud::key_action`)도 그대로 서버 쪽 `Packet`으로 갑니다: 키는 서버 쪽에 두고 결과만 게임 쪽이 그려도 됩니다(샘플 `cutscene`).
-- 채널 이름과 데이터 형식은 `shared.rs`에 상수와 함수로 두면 두 쪽이 어긋나지 않습니다.
+- 채널 이름은 `shared.rs`에 상수로 두고, 데이터는 `pack(&값)`으로 묶어 `read::<타입>()`으로 받으면 두 쪽이 어긋나지 않습니다(샘플 모두 이렇게).
 
 ```rust
 // shared.rs
 pub const RING: &str = "ring";   // 게임 → 서버: 울려 주세요
-pub const RANG: &str = "rang";   // 서버 → 게임: "x,y,z" 울린 곳
+pub const RANG: &str = "rang";   // 서버 → 게임: 울린 곳 (x, y, z)
 // server.rs
 #[on(Packet)]
 fn asked(e: Packet) {
     if e.channel() != RING { return }
     let p = e.player();
     p.give("mana_stone", 1);                       // 결과는 서버가
-    p.hud().send_text(RANG, "3.00,1.50,4.00");
+    p.hud().send_text(RANG, &pack(&(3.0, 1.5, 4.0)));
 }
 // client.rs
+#[on(Packet)]
 fn heard(p: Packet) {
-    if p.channel() == RANG {                       // 연출은 게임이
-        Camera::look_at(3.0, 1.5, 4.0, 0.4);
+    if p.channel() != RANG { return }
+    if let Some((x, y, z)) = p.read::<(f64, f64, f64)>() { // 연출은 게임이
+        Camera::look_at(x, y, z, 0.4);
         Screen::flash("fff4c0", 0.35);
     }
 }
@@ -192,11 +194,12 @@ fn heard(p: Packet) {
 
 ```rust
 // client.rs: 매 프레임 조준 방향을
-fn frame(_: Frame) { send_fast("aim", &format!("{:.3}", Camera::yaw())); }
+#[on(Frame)]
+fn frame(_: Frame) { send_fast("aim", &pack(&Camera::yaw())); }
 // server.rs
 #[on(FastPacket)]
 fn aim(e: FastPacket) {
-    if e.channel() == "aim" { e.player().set("aim", e.data().parse().unwrap_or(0.0)); } // (Store)
+    if e.channel() == "aim" { e.player().set("aim", e.read::<f64>().unwrap_or(0.0)); } // (Store)
 }
 ```
 
@@ -255,6 +258,7 @@ Sound::duck(Bus::All, 0.0, 1.0);
 | `.show(id, anchor, (x, y), (w, h))` | 이 플러그인의 캔버스 `id`에 그림 (처음이면 그 앵커·자리·크기로 만듦) |
 
 ```rust
+#[on(Frame)]
 fn frame(f: Frame) {
     let t = (f.time() % 3.0) / 3.0;
     Draw::new()
@@ -301,7 +305,7 @@ fn clicked(c: Click) {
 }
 #[on(Packet)]
 fn heard(p: Packet) {
-    if p.channel() == PRESSED { Local::set_panel(PANEL.get(), &board(&p.data())) }
+    if p.channel() == PRESSED { Local::set_panel(PANEL.get(), &board(&p.read::<f64>().unwrap_or(0.0).to_string())) }
 }
 
 // server.rs
@@ -311,7 +315,7 @@ fn asked(e: Packet) {
         let p = e.player();
         let n = p.get("presses") + 1.0; // (Store)
         p.set("presses", n);
-        p.hud().send_text(PRESSED, &format!("{n}"));
+        p.hud().send_text(PRESSED, &pack(&n));
     }
 }
 ```
@@ -357,6 +361,7 @@ fn asked(e: Packet) {
 const GLOW: &str = "uniform vec4 tint : source_color = vec4(0.4, 0.8, 1.0, 1.0);
 void fragment() { ALBEDO = COLOR.rgb * tint.rgb; EMISSION = tint.rgb * (0.6 + 0.4 * sin(TIME * 3.0)); }";
 
+#[on(Load)]
 fn loaded(_: Load) {
     let (b, h) = (0.6, 1.2);
     let v = [-b, 0.0, -b, b, 0.0, -b, b, 0.0, b, -b, 0.0, b, 0.0, h, 0.0];

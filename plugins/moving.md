@@ -120,7 +120,7 @@ fn asked(e: Packet) {                       // Y: 날기 / 내려오기
     let on = p.get("flying") == 0.0;
     for c in ["air", "speed", "walls"] { p.set_check(c, !on) }
     p.set("flying", on as i64 as f64);
-    p.hud().send_text(FLYING, if on { "1" } else { "0" });
+    p.hud().send_text(FLYING, &pack(&on));
 }
 
 #[on(PlayerMove)]
@@ -161,9 +161,10 @@ fn stepped(e: PlayerMove) {
 
 ```rust
 // client.rs
+#[on(Packet)]
 fn heard(p: Packet) {
     if p.channel() != FLYING { return }
-    if p.data() == "1" {
+    if p.read::<bool>() == Some(true) {
         Input::capture(&["W", "A", "S", "D", "Space", "Shift"]);
         Me::set_gravity(false);
         Me::set_move_mode("fly");
@@ -181,6 +182,7 @@ fn heard(p: Packet) {
 
 fn axis(plus: &str, minus: &str) -> f64 { (Input::held(plus) as i64 - Input::held(minus) as i64) as f64 }
 
+#[on(Frame)]
 fn frame(f: Frame) {
     if !unsafe { ON } { return }
     let yaw = unsafe { YAW } + axis("A", "D") * TURN * f.dt();
@@ -295,18 +297,19 @@ send_fast("in", &car.packet(4));
 greenhaven-predict = { path = "../../sdk/predict" }
 ```
 
-규칙 하나 = `Rollback`(상태, 걸음, 숫자로 쓰기·읽기) + 그 입력 `Input`(패킷 글로 쓰기·읽기). 비트까지 같으려면 1/60초 고정 걸음(`DT`),
-시계·난수·호스트 함수 없이 `f64` 산술만(난수가 필요하면 상태 안에 시드를 두고). 입력은 플레이어가 보내는 것이니 `read`에서 범위를 자르세요.
+규칙 하나 = `Rollback`(상태, 걸음, 숫자로 쓰기·읽기) + 그 입력 `Input`(바이트로 쓰기·읽기: `put` / `get`). 비트까지 같으려면 1/60초 고정 걸음(`DT`),
+시계·난수·호스트 함수 없이 `f64` 산술만(난수가 필요하면 상태 안에 시드를 두고). 입력은 플레이어가 보내는 것이니 `get`에서 범위를 자르세요.
+패킷(`packet`, `state_packet`)은 그 바이트를 `pack`과 같은 base64 글로 보냅니다(2026-11-11 전에는 `"seq|1,0|..."` 글; 차의 입력 하나 5바이트).
 
 ```rust
 // shared.rs: 두 쪽이 같은 규칙
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Keys { pub dir: i8, pub dash: bool }
 impl Input for Keys {
-    fn write(&self, out: &mut String) { out.push_str(&format!("{},{}", self.dir, self.dash as u8)); }
-    fn read(s: &str) -> Option<Keys> {
-        let (d, b) = s.split_once(',')?;
-        Some(Keys { dir: d.parse::<i8>().ok()?.clamp(-1, 1), dash: b == "1" })
+    fn put(&self, b: &mut Vec<u8>) { b.extend([self.dir as u8, self.dash as u8]); }
+    fn get(r: &mut Reader) -> Option<Keys> {
+        let [d, b] = r.take::<2>()?;
+        Some(Keys { dir: (d as i8).clamp(-1, 1), dash: b != 0 })
     }
 }
 
@@ -391,12 +394,13 @@ fn cast(e: Use) {
     let ((x, z), (fx, fz)) = (p.position(), p.facing());
     let (tx, tz) = (x + fx * 7.0, z + fz * 7.0);
     e.world().strike(tx, tz, 1.8, 12);                                    // 결과: 서버 (vanilla::VanillaWorld)
-    p.hud().send_text("bolt", &format!("{x:.2},{z:.2},{tx:.2},{tz:.2}")); // 연출: 게임 쪽에
+    p.hud().send_text("bolt", &pack(&((x, z), (tx, tz))));               // 연출: 게임 쪽에
 }
 
 // client.rs: 구슬이 손에서 날아감 (이 플레이어에게만)
-let id = Local::spawn("res://plugins/riding/orb.png", v[0], y, v[1]);
-Local::glide_to(id, v[2], y, v[3], 0.35);
+let Some(((x, z), (tx, tz))) = p.read::<((f64, f64), (f64, f64))>() else { return };
+let id = Local::spawn("res://plugins/riding/orb.png", x, y, z);
+Local::glide_to(id, tx, y, tz, 0.35);
 ```
 
 몸의 크기도 판정됩니다: `Player::set_body(반폭, 키)`(게임의 캡슐과 서버의 걸음 판정이 함께).
