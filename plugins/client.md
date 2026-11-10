@@ -264,7 +264,7 @@ fn frame(f: Frame) {
 **월드 속 UI 패널**: `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → id. 어떤 HUD 요소든(패널·글·그림·바·
 버튼·입력 칸·캔버스, 자식까지) `(px_w, px_h)` 픽셀로 그려 월드에 선 너비 `width_m` m의 판에 붙입니다(`face_camera`면 늘 카메라를 봄).
 그 버튼은 마우스로 누르고 입력 칸에는 씁니다: HUD에서처럼 동작하고, 그 클릭은 게임의 도구로 가지 않습니다.
-`Local::set_panel(id, &El)`로 다시 그리고, `Local::remove(id)`로 없앱니다.
+`Local::set_panel(id, &El)`로 다시 그리고, `Target::Local(id).remove()`로 없앱니다.
 
 버튼이나 입력 칸을 누르면(HUD에서든 월드 속 패널에서든) 서버 쪽에는 그 `on` 채널의 [`Packet`](events#packet)이, 게임 쪽에는
 `click` 이벤트(`Click::on()` `data()`)가 함께 옵니다. 게임 쪽은 바로 반응하고(흔들림, 소리), 결과는 서버 쪽이 정해 보냅니다.
@@ -315,8 +315,7 @@ fn asked(e: Packet) {
 | `Material::create(id, kind, code)` | `kind` `"spatial"`(월드의 물체) / `"canvas_item"`(화면). 코드는 16 KB까지, 게임이 컴파일하기 전에 검사함 (아래 「셰이더 검사」) |
 | `Material::set(id, name, v)` | uniform 숫자 |
 | `Material::set_vec(id, name, &[..])` | uniform 벡터·색 (숫자 2~4개) |
-| `Local::set_material(local_id, id)` | 자기에게만 보이는 물체에 (`""` 원래대로) |
-| `Entities::set_material(entity_id, id)` | 서버 쪽 엔티티를 이 게임에서만 그 재질로 (`""` 원래대로) |
+| `Target::set_material(id)` | 월드에 그려진 것 무엇이든 이 게임에서만 그 재질로: `Target::Local(local_id)`, `Target::Entity(entity_id)`, 플레이어, 게임 모듈의 것 (`""` 원래대로; [Target](#target--월드에-그려진-것)) |
 | `Screen::shader(id)` | 화면 전체를 `"canvas_item"` 재질로 (셰이더에서 `uniform sampler2D screen : hint_screen_texture;`로 화면을 읽음; `""` 끄기) |
 
 **셰이더 검사**: 플러그인의 셰이더가 게임을 멈추지 못하게, 게임은 컴파일하기 **전에** 코드를 검사하고 걸리면 그 재질을 만들지
@@ -355,7 +354,7 @@ fn loaded(_: Load) {
     Material::create("glow", "spatial", GLOW);
     let (x, y, z) = Me::position();
     let id = Local::spawn("mesh:pyramid", x, y, z + 3.0);
-    Local::set_material(id, "glow");
+    Target::Local(id).set_material("glow");
 }
 ```
 
@@ -431,22 +430,39 @@ fn loaded(_: Load) {
 |---|---|
 | `Local::spawn(model, x, y, z)` → `i64` | 만들고 id |
 | `Local::glide_to(id, x, y, z, 초)` | 그곳으로 `초`에 걸쳐 (0: 바로) |
-| `Local::play_anim(id, clip)` | 클립 |
-| `Local::remove(id)` | 없앰 |
-| `Local::spawn_text` `set_text` `set_material` `set_transform` | 3D 글자, 재질, 회전·크기 ([그래픽](#그래픽)) |
+| `Local::spawn_text` `set_text` `set_transform` | 3D 글자, 회전·크기 ([그래픽](#그래픽)) |
+| `Target::Local(id)` | 그 물체의 클립·재질·사라지기·없애기 (아래 [Target](#target--월드에-그려진-것)) |
 | `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → `i64` / `Local::set_panel(id, &El)` | 월드에 선 UI 패널 (마우스로 누르고 씀), 다시 그리기 ([월드 속 UI 패널](#직접-그리는-ui)) |
 | `Local::attach(id, &AttachTo::Camera \| AttachTo::Viewmodel { fov } \| AttachTo::Bone(Target, "RightHand"), offset, rot)` `detach(id)` | 카메라(x 오른쪽, y 위, −z 앞)나 무언가의 뼈에 들려 매 프레임 따라감. `Viewmodel`: 따로 그리는 층(자기 월드, 그 화각)에 그려 **벽을 뚫지 않고**, 시선을 돌리면 흔들리고 걸으면 출렁임 |
 | `Viewmodel::arms(bool)` `Viewmodel::motion(sway, bob)` | 게임의 1인칭 팔 그리기 (끄면 플러그인의 손이 그 자리에) / 흔들림·출렁임 배율 (1 게임의 것, 0 고정) |
-| `Local::play_anim_with(id, clip, speed, blend)` + 이벤트 `anim_end` (`LocalAnimEnd::id()` `clip()`) | 속도(음수: 거꾸로)와 섞는 초를 주고 클립, 끝나면 이벤트 (장전 뒤 대기 동작) |
+| `Target::Local(id).play_clip_with(clip, Clip { speed, blend, .. })` + 이벤트 `anim_end` (`LocalAnimEnd::id()` `clip()`) | 속도(음수: 거꾸로)와 섞는 초를 주고 클립, 끝나면 이벤트 (장전 뒤 대기 동작; `play_clip`도 같음) |
 | `Local::anim_marks(id, clip, &[(초, "이름")])` + 이벤트 `anim_mark` (`LocalAnimMark::id()` `clip()` `name()`) | 클립 중간의 표시 (Roblox의 마커): 재생이 그 시각을 지날 때마다 알림 (앞·뒤로, 반복마다, 속도가 바뀌어도; 한 프레임에 이름마다 한 번, 시간 순서로; 끝난 클립의 남은 표시는 `anim_end` 앞에). 클립마다 32개, 한 물체에 클립 16개, 빈 목록은 지움. 탄피 배출, 발소리, 장전 소리 (예제 `blaster`) |
 | `Local::set_rotation(id, yaw, pitch, roll)` `Local::tween(id, LocalProp::Position \| Rotation \| Scale, 값, 초, Ease)` | 완전한 회전 (yaw는 `Me::yaw`처럼), 자리·회전·크기를 부드럽게 (TweenService) |
 | `Entities::predict(id, 자리, (yaw, pitch, roll))` `Entities::release(id)` | 서버 엔티티를 이 게임에서만 미리 본 자리에 (자기 차: 그 위에 탄 플레이어도 같은 프레임에) / 서버의 자리로 되돌림 |
 | `Me::set_pose(pitch, roll)` | 자기 몸 기울이기 (라디안, 1.2까지): 여기서 그리고 위치와 함께 보내 다른 게임의 아바타도 (`PlayerView::pitch` `roll`로 읽힘) |
 | `Local::beam(from, to, 색, 굵기, 초)` | 탄도선·레이저: 사라지며 (64개까지) |
-| `Entities::play_anim(id, clip)` | 서버 쪽 엔티티의 클립을 이 게임에서만 (모두가 보는 것은 서버 쪽 `play_anim`) |
-| `Me::play_anim(id)` | [감정 표현](models)을 자기 몸에 이 게임에서만 (서 있을 때; 모두가 보는 것은 서버 쪽 `Player::play_anim`) |
-| `Me::play_clip(clip, upper, looped, speed)` `Me::stop_clip()` | 걷는 몸 위에 겹치는 클립을 자기 몸에 이 게임에서만 (장전을 답 전에 바로; 모두가 보는 것은 서버 쪽 `Player::play_clip`) |
-| `PlayerView::play_clip(clip, upper, looped, speed)` `stop_clip()` | 그 사람의 아바타에 이 게임에서만 |
+
+### Target — 월드에 그려진 것
+
+월드에 그려지는 것은 모두 한 핸들 `Target`입니다: `Target::Me`(자기), `Target::Player(id)`(`PlayerView::target()`),
+`Target::Local(id)`(자기 `Local` 물체), `Target::Entity(id)`(서버 쪽 엔티티: `EntityView::target()`), `Target::Module(종류, 번호)`(게임
+모듈이 그린 것: 농장의 몬스터는 `MobView::target()`, `vanilla::mob_target(n)`). 게임의 연출(외곽선, 파티클, 궤적, `Sound::attach`, 래그돌,
+`AttachTo::Bone`)이 이것에 걸리고, 이 게임에서만 다르게 그리는 것도 그 메서드입니다. 모두가 보는 것은 서버 쪽의 것입니다(서버 쪽
+`Player::play_clip`, `Entity::play_anim`): 장전을 답 전에 바로 그리고, 서버의 것이 오면 이어받습니다.
+
+| | |
+|---|---|
+| `set_material(id)` | 이 플러그인의 재질(`Material::create`)로 그림, `""` 제 재질로 (얼음, 빛남, 나만의 죽음) |
+| `play_clip(clip)` | 그 모델의 클립 한 번. 클립 이름은 서버 쪽 `Player::play_clip`과 같음: [감정 표현](models) id, `res://` 경로, `"경로#클립"`, 게임의 것 |
+| `play_clip_with(clip, Clip { speed, blend, upper, looped })` | 그렇게: `speed`배 빠르기(음수: 거꾸로; 아바타는 0.1-4), `blend`초 동안 섞어 들어감(-1: 모델의 것), `upper`면 아바타의 척추부터 위만(걷는 몸 위에 겹침), `looped`면 `stop_clip`까지. `Clip::default()`: 1.0, -1.0, false, false. `Local`의 것은 끝나면 `anim_end` |
+| `stop_clip()` | 멈춤 |
+| `fade(alpha, 초, then_remove)` | 그 투명도로 서서히 (0 안 보임 ~ 1 그린 그대로, 어떤 재질이든); `then_remove`면 끝나면 치움 (치울 수 있는 것만) |
+| `remove()` | 이제 치움: 이 플러그인의 `Local`, 또는 게임 모듈이 플러그인에 맡긴 것 (look `"death": "none"`으로 쓰러진 농장의 몬스터). 플레이어와 서버 쪽 엔티티는 서버의 것이라 아무 일 없음 |
+
+```rust
+Target::Me.play_clip_with("wave", Clip { upper: true, ..Clip::default() }); // 걸으며 손 흔들기, 답 전에 바로
+for p in Players::near(8.0) { p.target().set_material("frost"); }
+```
 
 ### World — 엔진에 묻기
 
@@ -595,7 +611,7 @@ fn asked(l: ChatLine) {
 |---|---|
 | `Balloon::lift_off()` `land()` `state()` | 열기구 여행의 장면 (아래) |
 | `Mobs::near(r)` → `MobView { n, pos, hp }`, `kind()` | 이 층의 몬스터 (`n` 서버의 번호, `hp` 남은 체력 0-1) |
-| `MobView::set_material(id)` `play_clip(clip)` `remove()` `target()` | 그 몬스터를 이 게임에서만: 이 플러그인의 재질(`Material::create`; `""` 제 재질로), 그 모델의 클립 한 번, 이제 치움, 대상으로 |
+| `MobView::target()` → `Target` | 그 몬스터를 대상으로: 이 게임에서만 재질·클립·사라지기·치우기 ([Target](#target--월드에-그려진-것)), 외곽선·궤적·파티클 |
 | `mob_target(n)` → `Target` | 번호로 몬스터를 대상으로 (`Target::Module("mob", n)`: 외곽선·궤적·파티클) |
 | `MobDeath::of(&ModuleEvent)` → `Option<MobDeath { n, kind, pos }>`, `mob()` | 이 게임에서 쓰러진 몬스터 (`module` 이벤트의 `"v.mob_death"`: 번호, 종류의 id, 자리(칸)) |
 | `World::path(from, to)` → `Vec<(x, z)>` (트레잇 `TownPath`) | 마을 길 (주민의 길찾기): 꺾이는 점들, 마을 밖이거나 마을 없는 월드면 `[]` |
@@ -607,7 +623,7 @@ fn asked(l: ChatLine) {
 
 몬스터가 쓰러지면 게임 쪽마다 `module` 이벤트(`"v.mob_death"`)가 옵니다. 종류의 look(규칙의 [`monsters_add`](rules#몬스터-monsters_add))
 `"death"`가 `"dissolve"`(기본: 타서 사라짐)나 `"fade"`(투명해지며)이면 게임의 사라짐이 그대로 이어지고, `"none"`이면 `die` 클립 뒤에도
-몸이 남아 플러그인이 나머지를 그리고 `MobView::remove`로 치웁니다(치우지 않으면 60초 뒤 저절로). 예: 쓰러지면 제 셰이더를 씌우고
+몸이 남아 플러그인이 나머지를 그리고 `mob().target().remove()`(또는 `mob_target(n).remove()`)로 치웁니다(치우지 않으면 60초 뒤 저절로). 예: 쓰러지면 제 셰이더를 씌우고
 1초 동안 uniform을 올린 뒤 치움.
 
 ```rust
@@ -624,14 +640,14 @@ fn told(e: ModuleEvent) {
     let Some(d) = MobDeath::of(&e) else { return };   // (look "death": "none"인 종류)
     let id = format!("melt{}", d.n % 8); // (머티리얼 여덟 개를 돌려 씀: 하나 만들 때마다 셰이더를 새로 컴파일하므로)
     Material::create(&id, "spatial", MELT);
-    d.mob().set_material(&id);
+    d.mob().target().set_material(&id);
     dying().push((d.n, 0.0));
 }
 fn frame(f: Frame) {
     dying().retain_mut(|(n, t)| {
         *t += f.dt();
         Material::set(&format!("melt{}", *n % 8), "t", t.min(1.0));
-        if *t >= 1.0 { MobView { n: *n, pos: (0.0, 0.0, 0.0), hp: 0.0 }.remove(); }
+        if *t >= 1.0 { mob_target(*n).remove(); }
         *t < 1.0
     });
 }
@@ -685,11 +701,11 @@ for m in Mobs::near(25.0) {
 }
 ```
 
-`Local::fade(id, alpha, 초, then_remove)`: 글·패널·모델이 그 투명도로 서서히(`then_remove`면 끝나면 사라짐). 피해 숫자:
+`Target::Local(id).fade(alpha, 초, then_remove)`: 글·패널·모델이 그 투명도로 서서히(`then_remove`면 끝나면 사라짐). 피해 숫자:
 
 ```rust
 let id = Local::spawn_text("20!", x, y + 1.5, z, "ffd84a", 64);
 Local::glide_to(id, x, y + 3.2, z, 0.9);
-Local::fade(id, 0.0, 0.9, true);
+Target::Local(id).fade(0.0, 0.9, true);
 ```
 

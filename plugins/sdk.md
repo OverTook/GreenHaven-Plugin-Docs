@@ -359,7 +359,7 @@ Bukkit의 `Entity` 계층처럼, 월드에 있는 것은 모두 `Entity` 트레�
 타입이 따로 있고, 공통 동작은 트레잇으로 나눕니다(`&dyn Entity`는 어느 것이든 받음).
 
 ```text
-Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  is_alive  distance_to
+Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  is_alive  health  distance_to
 ├── ModelEntity            이 플러그인의 모델 (World::spawn)
 ├── ItemEntity             땅에 놓인 아이템 (World::items, ground_drop)
 ├── EnemyEntity            몬스터 (바닐라 모듈: vanilla::EnemyEntity, MobStep::mob)
@@ -378,6 +378,7 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | `play_anim(clip)` / `stop_anim()` | 모두에게 보이는 애니메이션: 모델은 그 클립, 아바타는 동작, 진짜 플레이어는 이모트(서 있을 때만), 몬스터는 클립 한 번, 아이템은 `set_model`한 모델의 클립 |
 | `remove()` | 월드에서 없앰 (진짜 플레이어는 아무 일 없음) |
 | `is_alive()` → `bool` | 아직 있음 (플레이어: 쓰러져 있지 않음) |
+| `health()` → `f64` | 지금 체력: 플레이어의 것, 플러그인의 엔티티의 것 (`ModelEntity::set_health`; 없으면 0), 게임 모듈의 것 (농장의 몬스터). `NaN`: 체력이 없는 것 (아이템) |
 | `distance_to(&dyn Entity)` → `f64` | 땅 위의 거리 |
 | `set_interact_with(label, hold_secs, reach)` | `set_interact`인데 E를 `hold_secs`초 눌러야(0이면 누르기, 30초까지) `reach` m 안에서만(0이면 손 닿는 1.6 m, 16 m까지) 쓰임(로블록스의 ProximityPrompt): 게임이 「E 길게: label」과 차오르는 링을 그리고, **서버가 누르기 시작부터 시간을 잼**(그보다 이른 사용, 시작 없는 사용은 거절; 거리는 시작과 끝 둘 다) |
 | `set_interact(label)` | 플레이어가 E로 쓸 수 있음: 가까이 가면 「E: label」, 누르면 [`EntityInteract`](events#entityinteract) (이 플러그인에만). `""` 끄기. 플러그인의 엔티티(`ModelEntity` `Avatar`)만 |
