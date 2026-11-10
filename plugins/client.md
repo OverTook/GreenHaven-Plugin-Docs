@@ -114,7 +114,7 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 }
 ```
 
-`client!`에는 여덟 중 쓰는 것만 적습니다.
+`client!`에는 쓰는 것만 적습니다.
 
 | 핸들러 | 언제 | |
 |---|---|---|
@@ -126,6 +126,7 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 | `action` → `Action` | [액션](#액션과-터치-버튼)(`Input::bind`)의 키·마우스·패드·터치 버튼을 누르거나 뗌 | `name()` 액션 이름, `pressed()` |
 | `step` → `Step` | 고정 스텝, 1초에 60번 (게임의 물리 틱): 서버와 같은 코드(`src/shared.rs`)로 미리 계산할 것. 그리기는 `frame`에서 | `n()` 몇 번째, `dt()` 한 스텝의 초 |
 | `chat` → `ChatLine` | 이 게임의 채팅 상자가 보여 주는 줄 하나 (다른 사람의 들린 줄, 이 플레이어가 보낸 줄, 서버의 알림; 채팅 필터의 별표 그대로) | `text()`, `sender()` 채팅에 보이는 이름 (내 것은 `text("me")`, 알림은 `""`), `channel()` (`""` 근처, 팀 이름, 플러그인의 채널, `"sys"` 알림), `rich()` |
+| `module` → `ModuleEvent` | 게임 모듈의 이벤트 (농장의 `"v.mob_death"`: [몬스터의 죽음](#몬스터의-죽음)) | `kind()` 이름, `num(k)` `text(k)` 그 이벤트의 값 |
 
 전역 변수(`static mut`)는 서버를 떠날 때까지 남습니다. 시간은 프레임 수가 아니라 `Frame::time()` / `dt()`로 재세요.
 
@@ -531,7 +532,7 @@ fn act(a: Action) {
 ### 연출: 빛, 외곽선, 파티클, 궤적
 
 모두 이 플레이어의 화면에서만입니다. 서버를 떠나면 게임의 것으로 돌아옵니다. 대상(`Target`)은 `Target::Me`(자기),
-`Target::Local(id)`(자기 `Local` 물체), `Target::Entity(id)`(서버 쪽 엔티티가 이 게임에 그려진 것).
+`Target::Local(id)`(자기 `Local` 물체), `Target::Entity(id)`(서버 쪽 엔티티가 이 게임에 그려진 것), `Target::Player(id)`, `Target::Module(종류, 번호)`(게임 모듈이 그린 것, 키 `"종류:번호"`: 농장의 몬스터는 `vanilla::mob_target(n)`).
 
 | | |
 |---|---|
@@ -594,10 +595,47 @@ fn asked(l: ChatLine) {
 |---|---|
 | `Balloon::lift_off()` `land()` `state()` | 열기구 여행의 장면 (아래) |
 | `Mobs::near(r)` → `MobView { n, pos, hp }`, `kind()` | 이 층의 몬스터 (`n` 서버의 번호, `hp` 남은 체력 0-1) |
+| `MobView::set_material(id)` `play_clip(clip)` `remove()` `target()` | 그 몬스터를 이 게임에서만: 이 플러그인의 재질(`Material::create`; `""` 제 재질로), 그 모델의 클립 한 번, 이제 치움, 대상으로 |
+| `mob_target(n)` → `Target` | 번호로 몬스터를 대상으로 (`Target::Module("mob", n)`: 외곽선·궤적·파티클) |
+| `MobDeath::of(&ModuleEvent)` → `Option<MobDeath { n, kind, pos }>`, `mob()` | 이 게임에서 쓰러진 몬스터 (`module` 이벤트의 `"v.mob_death"`: 번호, 종류의 id, 자리(칸)) |
 | `World::path(from, to)` → `Vec<(x, z)>` (트레잇 `TownPath`) | 마을 길 (주민의 길찾기): 꺾이는 점들, 마을 밖이거나 마을 없는 월드면 `[]` |
 | `DOING_ASLEEP` 3 `DOING_TOOL` 4 `DOING_BITE` 8 `DOING_REEL` 9 | 농장의 `PlayerView::doing` (엔진의 `DOING_*`는 뿌리에) |
 
 조준의 `HitKind::Mob`은 엔진의 것(게임 모듈이 그린 것)이고, 농장에서는 그 몬스터입니다.
+
+### 몬스터의 죽음
+
+몬스터가 쓰러지면 게임 쪽마다 `module` 이벤트(`"v.mob_death"`)가 옵니다. 종류의 look(규칙의 [`monsters_add`](rules#몬스터-monsters_add))
+`"death"`가 `"dissolve"`(기본: 타서 사라짐)나 `"fade"`(투명해지며)이면 게임의 사라짐이 그대로 이어지고, `"none"`이면 `die` 클립 뒤에도
+몸이 남아 플러그인이 나머지를 그리고 `MobView::remove`로 치웁니다(치우지 않으면 60초 뒤 저절로). 예: 쓰러지면 제 셰이더를 씌우고
+1초 동안 uniform을 올린 뒤 치움.
+
+```rust
+use greenhaven_client::*;
+use greenhaven_client::vanilla::*;
+greenhaven_client::client! { module => told, frame => frame }
+
+const MELT: &str = "uniform float t = 0.0;
+void fragment() { ALBEDO = mix(vec3(0.6, 0.9, 1.0), vec3(0.1, 0.3, 1.0), t); EMISSION = vec3(0.2, 0.5, 1.0) * t; ALPHA = 1.0 - t; }";
+static mut DYING: Vec<(i64, f64)> = Vec::new(); // (몬스터 번호, 지난 초)
+fn dying() -> &'static mut Vec<(i64, f64)> { unsafe { &mut *std::ptr::addr_of_mut!(DYING) } }
+
+fn told(e: ModuleEvent) {
+    let Some(d) = MobDeath::of(&e) else { return };   // (look "death": "none"인 종류)
+    let id = format!("melt{}", d.n % 8); // (머티리얼 여덟 개를 돌려 씀: 하나 만들 때마다 셰이더를 새로 컴파일하므로)
+    Material::create(&id, "spatial", MELT);
+    d.mob().set_material(&id);
+    dying().push((d.n, 0.0));
+}
+fn frame(f: Frame) {
+    dying().retain_mut(|(n, t)| {
+        *t += f.dt();
+        Material::set(&format!("melt{}", *n % 8), "t", t.min(1.0));
+        if *t >= 1.0 { MobView { n: *n, pos: (0.0, 0.0, 0.0), hp: 0.0 }.remove(); }
+        *t < 1.0
+    });
+}
+```
 
 ### Balloon — 열기구
 
