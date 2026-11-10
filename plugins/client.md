@@ -128,7 +128,9 @@ fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
 | `chat` → `ChatLine` | 이 게임의 채팅 상자가 보여 주는 줄 하나 (다른 사람의 들린 줄, 이 플레이어가 보낸 줄, 서버의 알림; 채팅 필터의 별표 그대로) | `text()`, `sender()` 채팅에 보이는 이름 (내 것은 `text("me")`, 알림은 `""`), `channel()` (`""` 근처, 팀 이름, 플러그인의 채널, `"sys"` 알림), `rich()` |
 | `module` → `ModuleEvent` | 게임 모듈의 이벤트 (농장의 `"v.mob_death"`: [몬스터의 죽음](#몬스터의-죽음)) | `kind()` 이름, `num(k)` `text(k)` 그 이벤트의 값 |
 
-전역 변수(`static mut`)는 서버를 떠날 때까지 남습니다. 시간은 프레임 수가 아니라 `Frame::time()` / `dt()`로 재세요.
+전역 변수는 서버를 떠날 때까지 남습니다: `static mut` 대신 `Global<T>`(서버 쪽 SDK와 같은 것, [SDK › Global](sdk#global)):
+`static N: Global<i64> = Global::new(0);` 그리고 `N.get()` `N.set(..)` `N.with(|n| *n += 1)` `N.borrow()`. 시간은 프레임 수가 아니라
+`Frame::time()` / `dt()`로 재세요.
 
 ## 서버 쪽과 주고받기
 
@@ -190,13 +192,13 @@ fn frame(_: Frame) { send_fast("aim", &format!("{:.3}", Camera::yaw())); }
 // server.rs
 #[on(FastPacket)]
 fn aim(e: FastPacket) {
-    if e.channel() == "aim" { e.player().set("aim", e.data().parse().unwrap_or(0.0)); }
+    if e.channel() == "aim" { e.player().set("aim", e.data().parse().unwrap_or(0.0)); } // (Store)
 }
 ```
 
 ## 소리
 
-이 플레이어에게만 들리는 소리와 음악입니다(모두가 듣는 것은 서버 쪽 `World::sound` / `play_music`). `id`는 플러그인이 붙이는
+이 플레이어에게만 들리는 소리와 음악입니다(모두가 듣는 것은 서버 쪽 [`Audience`](sdk#audience)의 `sound` / `music`). `id`는 플러그인이 붙이는
 이름이고, 경로는 게임의 것이나 플러그인 `assets/`의 `res://….ogg` / `.wav`.
 
 | | |
@@ -205,6 +207,7 @@ fn aim(e: FastPacket) {
 | `Sound::set(id, volume_db, pitch, secs)` | 소리 크기와 피치를 `secs`초에 걸쳐 바꿈 |
 | `Sound::move_to(id, x, y, z)` | 월드의 소리를 옮김 |
 | `Sound::stop(id, secs)` | `secs`초에 걸쳐 줄이며 멈춤 |
+| `Sound::once(name, (x, y, z))` / `Sound::ui(name)` | 게임의 짧은 소리(`"hit"` `"pickup"` `"click"` … 또는 `res://….ogg`) 한 번: 그 자리에서 / 내 자리에서 (HUD의 클릭, 총소리). 예전 자유 함수 `sound(name, x, y, z)` |
 
 ```rust
 Sound::play("hum", "res://plugins/my_plugin/hum.ogg", -12.0, 1.0, true, Some((x, y, z)), false);
@@ -218,7 +221,7 @@ Sound::play("hum", "res://plugins/my_plugin/hum.ogg", -12.0, 1.0, true, Some((x,
 |---|---|
 | `Sound::effect(key, bus, effect)` / `clear_effect(key)` | 버스에 효과: `Effect::LowPass { hz, q }` `HighPass { hz, q }` `Reverb { room, wet }` `Distort { drive }` `Echo { ms, feedback }`. `Bus::Plugin` 플러그인 소리만 (`Sound::play`의 것은 모두 이 버스로), `Bus::All` 들리는 모든 것 (섬광탄의 멍멍함, 물속), `Bus::Music`, `Bus::Sfx`. 모든 플러그인 합쳐 8개 |
 | `Sound::duck(bus, db, secs)` | 그 버스 소리를 `db`(0 그대로, -60까지)로 `secs`초에 걸쳐 줄였다가, 0으로 되돌림. 플레이어의 음량 설정은 건드리지 않음 |
-| `Sound::attach(id, target)` | 그 소리가 대상을 따라감 (1 m 위; 남의 차의 엔진 소리, 날아가는 상자의 소리). 자리 없이 튼 소리는 그 자리부터 3D로 |
+| `target.attach_sound(id)` | 그 소리가 대상(`Target`)을 따라감 (1 m 위; 남의 차의 엔진 소리, 날아가는 상자의 소리). 자리 없이 튼 소리는 그 자리부터 3D로. 예전 `Sound::attach(id, target)` |
 
 ```rust
 // 섬광탄: 2초 동안 귀가 멍멍하게, 그 뒤 1초에 걸쳐 돌아옴 (frame에서 시간을 재서)
@@ -258,8 +261,9 @@ fn frame(f: Frame) {
 }
 ```
 
-**월드에 붙이기**: `pin(id, Some((x, y, z)))`는 이 플러그인의 HUD 요소(`Hud::add`)를 월드의 한 점 위에 붙여 둡니다(머리 위 바,
-물건 위 이름표; 카메라 뒤로 가면 숨김). `pin(id, None)`이면 앵커의 자리로 돌아갑니다.
+**월드에 붙이기**: `Hud::pin_to(id, Some(&PinTo::At(x, y, z)), 위 m, 최대 거리)`는 이 플러그인의 HUD 요소(`Hud::add`)를 월드의 한 점
+위에 붙여 둡니다(머리 위 바, 물건 위 이름표; 카메라 뒤로 가면 숨김). 무언가의 위에는 `target.pin()` → `Option<PinTo>`(`Me` `Player`
+`Entity` 농장의 몬스터; `Local`은 `None`이라 `PinTo::At`으로). `None`이면 앵커의 자리로 돌아갑니다. (예전 자유 함수 `pin(id, at)`은 없어짐.)
 
 **월드 속 UI 패널**: `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → id. 어떤 HUD 요소든(패널·글·그림·바·
 버튼·입력 칸·캔버스, 자식까지) `(px_w, px_h)` 픽셀로 그려 월드에 선 너비 `width_m` m의 판에 붙입니다(`face_camera`면 늘 카메라를 봄).
@@ -276,7 +280,7 @@ pub const PRESSED: &str = "pressed"; // 서버 → 게임: 센 횟수
 
 // client.rs
 greenhaven_client::client! { load => loaded, packet => heard, click => clicked }
-static mut PANEL: i64 = 0;
+static PANEL: Global<i64> = Global::new(0);
 
 fn board(n: &str) -> El {
     El::panel("parch").anchor(Anchor::TopLeft).size(360.0, 220.0)
@@ -285,13 +289,13 @@ fn board(n: &str) -> El {
 }
 fn loaded(_: Load) {
     let (x, y, z) = Me::position();
-    unsafe { PANEL = Local::spawn_panel(&board("0"), x + 3.0, y + 1.6, z, 1.8, (360.0, 220.0), true) };
+    PANEL.set(Local::spawn_panel(&board("0"), x + 3.0, y + 1.6, z, 1.8, (360.0, 220.0), true));
 }
 fn clicked(c: Click) {
     if c.on() == PRESS { Camera::shake(0.05, 0.2) }   // 바로 (서버의 답보다 먼저)
 }
 fn heard(p: Packet) {
-    if p.channel() == PRESSED { Local::set_panel(unsafe { PANEL }, &board(&p.data())) }
+    if p.channel() == PRESSED { Local::set_panel(PANEL.get(), &board(&p.data())) }
 }
 
 // server.rs
@@ -299,7 +303,7 @@ fn heard(p: Packet) {
 fn asked(e: Packet) {
     if e.channel() == PRESS {
         let p = e.player();
-        let n = p.get("presses") + 1.0;
+        let n = p.get("presses") + 1.0; // (Store)
         p.set("presses", n);
         p.hud().send_text(PRESSED, &format!("{n}"));
     }
@@ -404,7 +408,7 @@ fn loaded(_: Load) {
 | `Camera::set_oriented(눈, 볼 곳, 위)` | 이번 프레임 그 자리에서, `위`를 위로 (비행기의 위: 기체와 함께 기우는 추적·조종석 카메라) |
 | `Camera::set_up(x, y, z)` `Camera::roll(라디안, 초)` | 그 뒤 샷들의 위 (0, 0, 0: 세계의 위) / 시야 굴리기 (+ 오른쪽 아래; 게임 카메라도) |
 | `Camera::sensitivity(배)` | 마우스(와 터치 끌기)의 회전 배율 (조준경: 0.5) |
-| `Camera::kick(위 도, 옆 도, 돌아오는 초)` | 반동: 게임 카메라를 돌렸다 서서히 되돌림 (30도까지 쌓임, `forward`에도 들어감) |
+| `Camera::kick(위 라디안, 옆 라디안, 돌아오는 초)` | 반동: 게임 카메라를 돌렸다 서서히 되돌림 (약 0.5까지 쌓임, `forward`에도 들어감; 2026-11-11 전에는 도) |
 | `Crosshair::show(글자, 색, 크기)` `hide()` | 화면 가운데 십자선 (HUD 요소 `aim.crosshair`) |
 | `Crosshair::hit(색, 초)` | 맞힘 표시: 가운데 ✕가 튀어나왔다 사라짐 |
 
@@ -416,10 +420,10 @@ fn loaded(_: Load) {
 |---|---|
 | `Screen::fade(색, 불투명도, 초)` | 화면을 그 색(`"000000"`)으로 덮음 (0 투명 ~ 1 가득), 그대로 남음 |
 | `Screen::flash(색, 초)` | 번쩍임, `초`에 걸쳐 사라짐 |
-| `particle(name, x, y, z)` | 이 플레이어에게만 보이는 파티클 (`"fire"` `"smoke"` `"sparkle"` `"splash"` `"leaf"` `"hit"` 또는 `res://….png`) |
-| `sound(name, x, y, z)` | 이 플레이어에게만 들리는 소리 (`"hit"` `"pickup"` `"click"` … 또는 `res://….ogg`) |
+| `Particles::burst(name, (x, y, z))` | 이 플레이어에게만 보이는 게임의 파티클 한 번 (`"fire"` `"smoke"` `"sparkle"` `"splash"` `"leaf"` `"hit"` 또는 `res://….png`; 예전 자유 함수 `particle`) |
+| `Sound::once(name, (x, y, z))` / `Sound::ui(name)` | 이 플레이어에게만 들리는 소리 (`"hit"` `"pickup"` `"click"` … 또는 `res://….ogg`; 예전 자유 함수 `sound`) |
 
-모두가 보고 들어야 하는 것은 서버 쪽 `World::particle` / `sound`입니다.
+모두가 보고 들어야 하는 것은 서버 쪽 [`Audience`](sdk#audience)의 `particle` / `sound`입니다.
 
 ### Local — 자기에게만 보이는 것
 
@@ -433,7 +437,7 @@ fn loaded(_: Load) {
 | `Local::spawn_text` `set_text` `set_transform` | 3D 글자, 회전·크기 ([그래픽](#그래픽)) |
 | `Target::Local(id)` | 그 물체의 클립·재질·사라지기·없애기 (아래 [Target](#target--월드에-그려진-것)) |
 | `Local::spawn_panel(&El, x, y, z, width_m, (px_w, px_h), face_camera)` → `i64` / `Local::set_panel(id, &El)` | 월드에 선 UI 패널 (마우스로 누르고 씀), 다시 그리기 ([월드 속 UI 패널](#직접-그리는-ui)) |
-| `Local::attach(id, &AttachTo::Camera \| AttachTo::Viewmodel { fov } \| AttachTo::Bone(Target, "RightHand"), offset, rot)` `detach(id)` | 카메라(x 오른쪽, y 위, −z 앞)나 무언가의 뼈에 들려 매 프레임 따라감. `Viewmodel`: 따로 그리는 층(자기 월드, 그 화각)에 그려 **벽을 뚫지 않고**, 시선을 돌리면 흔들리고 걸으면 출렁임 |
+| `Local::attach(id, &AttachTo::Camera \| AttachTo::Viewmodel { fov } \| AttachTo::Bone(Target, "RightHand"), offset, rot)` `detach(id)` | 카메라(x 오른쪽, y 위, −z 앞)나 무언가의 뼈에 들려 매 프레임 따라감 (`rot`: 라디안 (yaw, pitch, roll), `set_rotation`과 같은 차례; 2026-11-11 전에는 도로 (pitch, yaw, roll)). `Viewmodel`: 따로 그리는 층(자기 월드, 그 화각)에 그려 **벽을 뚫지 않고**, 시선을 돌리면 흔들리고 걸으면 출렁임 |
 | `Viewmodel::arms(bool)` `Viewmodel::motion(sway, bob)` | 게임의 1인칭 팔 그리기 (끄면 플러그인의 손이 그 자리에) / 흔들림·출렁임 배율 (1 게임의 것, 0 고정) |
 | `Target::Local(id).play_clip_with(clip, Clip { speed, blend, .. })` + 이벤트 `anim_end` (`LocalAnimEnd::id()` `clip()`) | 속도(음수: 거꾸로)와 섞는 초를 주고 클립, 끝나면 이벤트 (장전 뒤 대기 동작; `play_clip`도 같음) |
 | `Local::anim_marks(id, clip, &[(초, "이름")])` + 이벤트 `anim_mark` (`LocalAnimMark::id()` `clip()` `name()`) | 클립 중간의 표시 (Roblox의 마커): 재생이 그 시각을 지날 때마다 알림 (앞·뒤로, 반복마다, 속도가 바뀌어도; 한 프레임에 이름마다 한 번, 시간 순서로; 끝난 클립의 남은 표시는 `anim_end` 앞에). 클립마다 32개, 한 물체에 클립 16개, 빈 목록은 지움. 탄피 배출, 발소리, 장전 소리 (예제 `blaster`) |
@@ -446,22 +450,30 @@ fn loaded(_: Load) {
 
 월드에 그려지는 것은 모두 한 핸들 `Target`입니다: `Target::Me`(자기), `Target::Player(id)`(`PlayerView::target()`),
 `Target::Local(id)`(자기 `Local` 물체), `Target::Entity(id)`(서버 쪽 엔티티: `EntityView::target()`), `Target::Module(종류, 번호)`(게임
-모듈이 그린 것: 농장의 몬스터는 `MobView::target()`, `vanilla::mob_target(n)`). 게임의 연출(외곽선, 파티클, 궤적, `Sound::attach`, 래그돌,
-`AttachTo::Bone`)이 이것에 걸리고, 이 게임에서만 다르게 그리는 것도 그 메서드입니다. 모두가 보는 것은 서버 쪽의 것입니다(서버 쪽
-`Player::play_clip`, `Entity::play_anim`): 장전을 답 전에 바로 그리고, 서버의 것이 오면 이어받습니다.
+모듈이 그린 것: 농장의 몬스터는 `MobView::target()`, `vanilla::mob_target(n)`). 게임의 연출(외곽선, 궤적, 붙인 소리, 래그돌, 이미터의 `on`,
+`AttachTo::Bone`)이 그 메서드로 걸리고(2026-11-11: 예전 `Highlight::add` `Trail::on` `Local::trail` `Sound::attach` `Physics::ragdoll`
+`unragdoll`, 자유 함수 `pin`), 이 게임에서만 다르게 그리는 것도 그 메서드입니다. 모두가 보는 것은 서버 쪽의 것입니다(서버 쪽
+`Player::play_clip_with`, `Entity::play_clip`): 장전을 답 전에 바로 그리고, 서버의 것이 오면 이어받습니다.
 
 | | |
 |---|---|
 | `set_material(id)` | 이 플러그인의 재질(`Material::create`)로 그림, `""` 제 재질로 (얼음, 빛남, 나만의 죽음) |
-| `play_clip(clip)` | 그 모델의 클립 한 번. 클립 이름은 서버 쪽 `Player::play_clip`과 같음: [감정 표현](models) id, `res://` 경로, `"경로#클립"`, 게임의 것 |
+| `play_clip(clip)` | 그 모델의 클립 한 번. 클립 이름은 서버 쪽 `Player::play_clip_with`와 같음: [감정 표현](models) id, `res://` 경로, `"경로#클립"`, 게임의 것 |
 | `play_clip_with(clip, Clip { speed, blend, upper, looped })` | 그렇게: `speed`배 빠르기(음수: 거꾸로; 아바타는 0.1-4), `blend`초 동안 섞어 들어감(-1: 모델의 것), `upper`면 아바타의 척추부터 위만(걷는 몸 위에 겹침), `looped`면 `stop_clip`까지. `Clip::default()`: 1.0, -1.0, false, false. `Local`의 것은 끝나면 `anim_end` |
 | `stop_clip()` | 멈춤 |
 | `fade(alpha, 초, then_remove)` | 그 투명도로 서서히 (0 안 보임 ~ 1 그린 그대로, 어떤 재질이든); `then_remove`면 끝나면 치움 (치울 수 있는 것만) |
 | `remove()` | 이제 치움: 이 플러그인의 `Local`, 또는 게임 모듈이 플러그인에 맡긴 것 (look `"death": "none"`으로 쓰러진 농장의 몬스터). 플레이어와 서버 쪽 엔티티는 서버의 것이라 아무 일 없음 |
+| `highlight(key, fill, outline, width, through_walls)` | 외곽선과 채움 (로블록스의 Highlight; `key`는 이 플러그인의 이름, 모든 플러그인 합쳐 16개, 지우기 `Highlight::remove(key)`): 색 `"rrggbb"` 또는 `"rrggbbaa"` (채움은 알파만큼: `"ff000040"`), `width` m, `through_walls` 벽 너머로도 |
+| `trail(key, color, width, secs)` | 지나간 자리에 남는 띠 (로블록스의 Trail): 점마다 `secs`초 (0: 없앰), 모든 플러그인 합쳐 32개 |
+| `attach_sound(id)` | `Sound::play`의 소리 `id`가 따라감 (1 m 위; 다시 틀면 다시 붙임) |
+| `ragdoll(push, secs)` / `unragdoll()` | 축 늘어짐 ([연출 물리](#연출-물리-파편-놓아-준-물체-래그돌)) |
+| `pin()` → `Option<PinTo>` | HUD 요소를 그 위에 붙일 곳 (`Hud::pin_to`; `Local`은 `None`) |
 
 ```rust
 Target::Me.play_clip_with("wave", Clip { upper: true, ..Clip::default() }); // 걸으며 손 흔들기, 답 전에 바로
 for p in Players::near(8.0) { p.target().set_material("frost"); }
+Target::Entity(car).trail("skid", "202020", 0.3, 1.5);
+if let Some(at) = Target::Entity(car).pin() { Hud::pin_to("car_hp", Some(&at), 1.5, 40.0); }
 ```
 
 ### World — 엔진에 묻기
@@ -470,7 +482,7 @@ for p in Players::near(8.0) { p.target().set_material("frost"); }
 
 | | |
 |---|---|
-| `World::raycast(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸) |
+| `World::cast_to(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸; 2026-11-11 전 `raycast`) |
 | `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 게임 모듈이 그린 것(`HitKind::Mob`: 농장의 몬스터, `id` 그 번호, 서버가 재는 몸; 농장 없는 월드에는 없음), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
 | `World::overlap(lo, hi)` → `Vec<(HitKind, id)>` | 그 상자(한 변 16 m까지) 안의 것 (32개까지) |
 | `World::ground(x, z)` → `f64` | 게임이 가진 그곳의 땅 높이 (모르면 NaN) |
@@ -554,9 +566,9 @@ fn act(a: Action) {
 |---|---|
 | `Lighting::set(&Light { fog_end, fog_color, ambient, ambient_energy, exposure, glow, saturation, brightness, contrast }, 초)` | 빛 덮어쓰기: `Some`인 것만, 나머지는 게임의 것 (낮밤·날씨는 그 밑에서 계속). `fog_end` 안개 끝 (m), `ambient` 사방의 빛 색, `exposure` 노출 (1 그대로), `glow` 번짐 (0 없음), `saturation` `brightness` `contrast` (1 그대로). `초`에 걸쳐 바뀜 |
 | `Lighting::reset(초)` | 게임의 빛으로 되돌림 |
-| `Highlight::add(key, target, fill, outline, width, through_walls)` / `remove(key)` | 외곽선과 채움 (로블록스의 Highlight, 모든 플러그인 합쳐 16개): 색 `"rrggbb"` 또는 `"rrggbbaa"` (채움은 알파만큼: `"ff000040"`), `width` m, `through_walls` 벽 너머로도 |
-| `Particles::emit(&Emitter { at, on, offset, texture, color, color_end, size, life, rate, count, speed, dir, spread, gravity })` → `i64` / `stop(id)` | 파티클 (로블록스의 ParticleEmitter): `count`개 한 번에 (`life` 뒤 사라짐) 또는 `rate` 초당 (`stop`까지; 이때 `count: 0`), `at` 그 자리 (칸) 또는 `on` 대상에 붙어 `offset`만큼, `texture` `res://` 그림 (`""` 부드러운 점), `color`에서 `color_end`로, `size` m, `speed` m/초로 `dir` 쪽 `spread`도 안에서, `gravity` 아래로 m/초². 모든 플러그인 합쳐 32개, 입자 4096개 |
-| `Local::trail(id, color, width, 초)` / `Trail::on(key, target, color, width, 초)` | 지나간 자리에 남는 띠 (로블록스의 Trail): 점마다 `초` 동안 (0: 없앰), 모든 플러그인 합쳐 32개 |
+| `target.highlight(key, fill, outline, width, through_walls)` / `Highlight::remove(key)` | 외곽선과 채움 (로블록스의 Highlight, 모든 플러그인 합쳐 16개): 색 `"rrggbb"` 또는 `"rrggbbaa"` (채움은 알파만큼: `"ff000040"`), `width` m, `through_walls` 벽 너머로도 ([Target](#target--월드에-그려진-것); 예전 `Highlight::add`) |
+| `Particles::emit(&Emitter { at, on, offset, texture, color, color_end, size, life, rate, count, speed, dir, spread, gravity })` → `i64` / `stop(id)` | 파티클 (로블록스의 ParticleEmitter): `count`개 한 번에 (`life` 뒤 사라짐) 또는 `rate` 초당 (`stop`까지; 이때 `count: 0`), `at` 그 자리 (칸) 또는 `on` 대상에 붙어 `offset`만큼, `texture` `res://` 그림 (`""` 부드러운 점), `color`에서 `color_end`로, `size` m, `speed` m/초로 `dir` 쪽 `spread` 라디안 안에서(기본 0.5236; 2026-11-11 전에는 도), `gravity` 아래로 m/초². 모든 플러그인 합쳐 32개, 입자 4096개 |
+| `target.trail(key, color, width, 초)` | 지나간 자리에 남는 띠 (로블록스의 Trail): 점마다 `초` 동안 (0: 없앰), 모든 플러그인 합쳐 32개 (`Local`이면 `Target::Local(id).trail(..)`; 예전 `Local::trail` `Trail::on`) |
 
 | `Particles::smoke(at, radius, secs, color)` → `i64` | 연막 프리셋: `radius` m 둘레에 부드러운 연기가 `secs`초(60까지) 천천히 오르고 퍼짐, 카메라가 그 안에 들어가면 화면이 그 색으로 뿌옇게 (휴대폰 렌더러에는 볼륨 안개가 없어서). `color` `""` 회색. `stop(id)`로 일찍 끝냄; 파티클 수에 같이 셈 |
 
@@ -568,13 +580,13 @@ fn act(a: Action) {
 | | |
 |---|---|
 | `Physics::debris(&Debris { at, count, size, color, model, speed, up, spin, mass, life })` | 파편: `count`개(한 번에 32)의 큐브(`size` m, `color`) 또는 `model`(`res://` 장면)의 사본이 `at`에서 `speed` m/초까지 튀어 나감 (`up` 0-1 그중 위쪽, `spin` 초당 바퀴), `life`초(30까지) 뒤 줄어들며 사라짐. 땅·건물·서로에 튕기고 플레이어와는 안 부딪힘. 모든 플러그인 합쳐 64개: 넘으면 가장 오래된 것부터 |
-| `Local::physics(id, vel, spin, mass, life)` | `Local` 하나를 놓아 줌: 그것을 감싼 상자로 강체가 되어 `vel` m/초로 던져짐. 그 뒤 `glide_to`는 안 먹고 `remove`는 먹음; 그 Local을 가리키는 `Target`과 `Sound::attach`는 그대로 따라감. 파편과 같이 셈 |
-| `Physics::ragdoll(target, push, secs)` / `unragdoll(target)` | 축 늘어짐: `Target::Me`, `Target::Player(id)`, 아바타 엔티티 (`Target::Entity`)의 몸이 `push` m/초로 밀려 쓰러지고 `secs`초(0이면 `unragdoll`까지) 뒤 클립으로 돌아옴. 게임의 휴머노이드 뼈대(플레이어 동물, 주민, 그 뼈대의 플러그인 모델)만. 그려지는 모양만이라 그 사람의 자리는 서버의 것: 죽음 연출이면 서버 쪽에서 `freeze`. 동시에 8명 |
+| `Local::physics(id, vel, spin, mass, life)` | `Local` 하나를 놓아 줌: 그것을 감싼 상자로 강체가 되어 `vel` m/초로 던져짐. 그 뒤 `glide_to`는 안 먹고 `remove`는 먹음; 그 Local을 가리키는 `Target`과 붙인 소리(`attach_sound`)는 그대로 따라감. 파편과 같이 셈 |
+| `target.ragdoll(push, secs)` / `target.unragdoll()` | 축 늘어짐 (예전 `Physics::ragdoll`): `Target::Me`, `Target::Player(id)`, 아바타 엔티티 (`Target::Entity`)의 몸이 `push` m/초로 밀려 쓰러지고 `secs`초(0이면 `unragdoll`까지) 뒤 클립으로 돌아옴. 게임의 휴머노이드 뼈대(플레이어 동물, 주민, 그 뼈대의 플러그인 모델)만. 그려지는 모양만이라 그 사람의 자리는 서버의 것: 죽음 연출이면 서버 쪽에서 `freeze`. 동시에 8명 |
 
 ```rust
 Physics::debris(&Debris { at: (x, y + 0.3, z), count: 24, size: 0.2, color: "6b5a48", speed: 7.0, life: 5.0, ..Default::default() });
 Particles::smoke((x, y, z), 3.5, 6.0, "");
-for o in Players::near(6.0) { Physics::ragdoll(Target::Player(o.id), (0.0, 4.0, 5.0), 2.5); }
+for o in Players::near(6.0) { Target::Player(o.id).ragdoll((0.0, 4.0, 5.0), 2.5); }
 ```
 
 `Fx::vibrate(ms)`: 휴대폰을 짧게 떨게 함 (로블록스의 HapticService; 500 ms까지, 모든 플러그인 합쳐 1초에 4번; PC에서는 아무것도 안 함).
@@ -633,18 +645,17 @@ greenhaven_client::client! { module => told, frame => frame }
 
 const MELT: &str = "uniform float t = 0.0;
 void fragment() { ALBEDO = mix(vec3(0.6, 0.9, 1.0), vec3(0.1, 0.3, 1.0), t); EMISSION = vec3(0.2, 0.5, 1.0) * t; ALPHA = 1.0 - t; }";
-static mut DYING: Vec<(i64, f64)> = Vec::new(); // (몬스터 번호, 지난 초)
-fn dying() -> &'static mut Vec<(i64, f64)> { unsafe { &mut *std::ptr::addr_of_mut!(DYING) } }
+static DYING: Global<Vec<(i64, f64)>> = Global::new(Vec::new()); // (몬스터 번호, 지난 초)
 
 fn told(e: ModuleEvent) {
     let Some(d) = MobDeath::of(&e) else { return };   // (look "death": "none"인 종류)
     let id = format!("melt{}", d.n % 8); // (머티리얼 여덟 개를 돌려 씀: 하나 만들 때마다 셰이더를 새로 컴파일하므로)
     Material::create(&id, "spatial", MELT);
     d.mob().target().set_material(&id);
-    dying().push((d.n, 0.0));
+    DYING.with(|v| v.push((d.n, 0.0)));
 }
 fn frame(f: Frame) {
-    dying().retain_mut(|(n, t)| {
+    DYING.borrow().retain_mut(|(n, t)| {
         *t += f.dt();
         Material::set(&format!("melt{}", *n % 8), "t", t.min(1.0));
         if *t >= 1.0 { mob_target(*n).remove(); }

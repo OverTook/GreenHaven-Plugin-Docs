@@ -68,7 +68,7 @@ fn change(c: Command) {
 
 #[command("인사", "가만히 서서 손을 흔들어요")]
 fn wave(c: Command) {
-    c.player().play_anim("wave");
+    c.player().play_emote("wave");
 }
 
 #[on(Join)]
@@ -81,9 +81,9 @@ fn dress(e: Join) {
 |---|---|
 | `Player::set_model(id)` | 이 서버에서 이 모델로 그림. 같은 월드의 모두에게 바로 보임 |
 | `Player::clear_model()` | 원래 모습으로 |
-| `Player::play_anim(id)` | 감정 표현 재생 |
-| `Player::stop_anim()` | 재생 중인 감정 표현 끝내기 |
-| `Player::play_clip(id, upper, looped)` `stop_clip()` | 감정 표현(이나 아무 클립)을 걷는 몸 위에 겹쳐서: `upper`면 척추부터 위만. 서 있지 않아도 됨 ([SDK](sdk)) |
+| `Player::play_emote(id)` | 감정 표현 재생 (2026-11-11 전 `play_anim`) |
+| `Player::stop_emote()` | 재생 중인 감정 표현 끝내기 (전 `stop_anim`) |
+| `Player::play_clip_with(id, Clip { upper, looped, .. })` `stop_clip()` | 감정 표현(이나 아무 클립)을 걷는 몸 위에 겹쳐서: `upper`면 척추부터 위만. 서 있지 않아도 됨 ([SDK](sdk#player); 전 `play_clip(id, upper, looped)`) |
 
 ## 동작 규칙
 

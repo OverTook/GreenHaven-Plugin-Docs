@@ -31,7 +31,7 @@ w.set_talk_range(0.0);                         // 묶음 없는 사람의 목소
 p.lang(); p.device(); p.ping_ms();             // "ko", "pc" / "phone" / "pad", 왕복 ms (되감기가 쓰는 값, 1초마다)
 ```
 
-- 채팅의 서식: 플러그인이 쓴 줄(`Chat::replace`, `chat_to`, `message`, `broadcast`)은 게임이 `El::rich`와 같은 화이트리스트로
+- 채팅의 서식: 플러그인이 쓴 줄(`Chat::replace`, `chat_to`, `Audience::message` (플레이어, 월드, 서버))은 게임이 `El::rich`와 같은 화이트리스트로
   그립니다(`[b] [i] [u] [s] [color=#7fd0ff] [size=16]`, `[[`는 `[` 그대로) — 그리고 `[cmd=/party accept kim]수락[/cmd]`: 누르면
   그 명령어를 친 것처럼. 플레이어가 친 말은 친 그대로이고, 플러그인의 줄에 넣을 때는 `escape_rich`.
 - 명령어: `#[command("party", "파티", aliases = "파티 p", usage = "<invite|accept|leave> [이름]", args = "invite accept leave")]`.

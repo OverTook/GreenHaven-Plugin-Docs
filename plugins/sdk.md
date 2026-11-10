@@ -41,16 +41,15 @@ redirect_from:
 |---|---|
 | `name()` → `String` | 이름 (`""`: 월드 주인) |
 | `position()` → `(f64, f64)` | 위치 (칸) |
-| `facing()` → `(f64, f64)` | 바라보는 방향 (행동의) |
+| `facing()` → `(f64, f64)` | 바라보는 방향 (길이 1의 x, z; 어느 플레이어든 그 사람의 것. 2026-11-11 전에는 행동의 것) |
 | `give(item, n)` / `take(item, n)` | 아이템 주기 / 가져가기 |
 | `heal(n)` | 체력 |
 | `teleport(x, z)` | 옮기기 (서버의 이동 판정도 그 자리를 받아들임; `PlayerTeleport`가 먼저) |
 | `teleport_to(x, y, z, yaw)` | 3D로 옮기기 (`y` NaN: 그 자리의 땅 위, `yaw` NaN: 바라보던 대로; 라디안, 게임의 것) |
 | `y()` `yaw()` | 발의 높이, 바라보는 방향(라디안) — 그 게임이 마지막으로 알린 것 (pitch는 서버가 모름) |
 | `damage_by(amount, cause, by)` | 피해 (2026-11-10 `damage`에서 이름이 바뀜; 원인 없이는 `LivingEntity::damage(amount)`) (`cause` "": 플러그인 이름, `by` `Some(&친 사람)`): `PlayerDamage` 뒤 보호구가 몫을 덜고, 체력이 다하면 쓰러짐(`PlayerDeath`의 `killer()`). 방 안에서도 |
-| `set_health(n)` `set_max_health(n)` | 체력을 n으로 (0으로 쓰러지지는 않음: `damage`로) / 그 사람의 최대 체력 (저장됨; 0: 규칙의 `max_health`) |
+| `set_health(n)` `set_max_health(n)` | (`LivingEntity`) 체력을 n으로 (0으로 쓰러지지는 않음: `damage`로) / 그 사람의 최대 체력 (저장됨; 0: 규칙의 `max_health`) |
 | `team()` `join_team(team)` `leave_team()` | 이 월드에서의 팀 ([피해, 체력, PvP, 팀](#피해-체력-pvp-팀)) |
-| `set_time(minute)` | 그 사람이 있는 월드의 시각 (6:00 = 360 ~ 2:00 = 1560; 날짜는 그대로), 그 월드의 게임에 바로 알림 |
 | `set_walk_speed(times)` | 걸음 빠르기 배수 (1이 원래). 게임의 걸음과 서버의 이동 판정이 함께 바뀜. 바꿀 때까지 유지 |
 | `inventory()` → [`PlayerInventory`](#playerinventory) | 그 사람의 가방 (Bukkit의 getInventory) |
 | `mount_seat(&entity, seat, speed, (x, y, z))` | 자리 `seat`에 태움: 0 운전석(`mount`처럼), 나머지 승객(엔티티 가운데에서 오른쪽·위·앞 m에 실려 감, 걸음은 판정하지 않고 탈것 근처인지만) ([탈것](moving#탈것)) |
@@ -68,20 +67,18 @@ redirect_from:
 | `undisguise()` | 원래대로 (엔티티 지움; 나가거나 월드를 옮겨도) |
 | `set_nametag(text, colour)` `set_nametag_visible(on)` | 머리 위 이름 (`""` 이름 그대로; 색 `"ff3030"`, `""` 게임 색), 보이기 |
 | `set_scale(times)` | 모든 게임에서 그 크기로 (0.25-4) |
-| `play_clip(clip, upper, looped)` `play_clip_at(clip, upper, looped, speed)` `stop_clip()` | 걷고 뛰는 몸 위에 겹치는 클립 (장전, 조준, 시전, 달리며 손 흔들기): `upper`면 척추부터 위만 (다리는 걷기 그대로), 아니면 몸 전체; `looped`면 멈출 때까지, 아니면 한 번; 빠르기 0.1-4. 클립: [감정 표현](models) id, `res://` 경로 (팩의 GLB는 `"경로#클립"`), 게임의 것 (`"ATK1"` `"Shoot"` `"Victory"` `"Greet"` `"cast"`). 모든 게임에서 보임. 도구 동작·감정 표현 중에는 그 아래에서 기다림 |
+| `play_clip_with(clip, Clip { speed, blend, upper, looped })` `stop_clip()` | 걷고 뛰는 몸 위에 겹치는 클립 (장전, 조준, 시전, 달리며 손 흔들기): `upper`면 척추부터 위만 (다리는 걷기 그대로), 아니면 몸 전체; `looped`면 멈출 때까지, 아니면 한 번; `speed` 0.1-4 (`Clip::default()`: 1, -1, false, false; `Entity::play_clip(clip)`은 그 기본값). 2026-11-11 전의 `play_clip(clip, upper, looped)` `play_clip_at`. 클립: [감정 표현](models) id, `res://` 경로 (팩의 GLB는 `"경로#클립"`), 게임의 것 (`"ATK1"` `"Shoot"` `"Victory"` `"Greet"` `"cast"`). 모든 게임에서 보임. 도구 동작·감정 표현 중에는 그 아래에서 기다림 |
 | `set_body(half_width, tall)` | 몸의 크기 (m; 0, 0이면 게임의 것): 게임의 캡슐이 그 크기로 움직이고 **서버의 걸음 판정도 그 몸으로** (키는 블록 단위, 1 m 넘게 넓으면 세 칸 폭). **맞는 상자도 그 크기** (정한 쪽만; 나머지는 0.4 × 1.6 m × `set_scale`): 서버의 cast·cast_for·overlap·explode·발사체, 게임 쪽 조준(AimHitbox)도. 숨바꼭질의 소품, 작은 동물 |
 | `set_jump_power(times)` `set_gravity(times)` | 점프 높이 배수 (0-10), 중력 배수 (0.1-5): 게임이 그렇게 움직이고 **서버의 공중 검사도 그 배율로** 판정 |
 | `freeze(on)` | 제자리 (게임의 걷기·점프 꺼짐, 걸음은 서버가 되돌림): 카운트다운 |
 | `set_hand_visible(on)` | `false`: 손에 든 것을 안 그림 (자기 게임에서도, 남이 보는 아바타에서도: 서버가 모델을 전하지 않음). 게임 쪽 뷰모델과 함께; `hud().hide("hotbar")`면 숫자 키·휠도 칸을 안 바꿈 |
 | `set_spectator(on)` | 관전자: 아무에게도 안 보이고, 모든 것을 뚫고 날며(서버의 공중·벽 검사 꺼짐), 구경꾼처럼만 행동(도구·농사 없음), 몬스터도 안 따라옴 |
 | `set_public(key, value)` | 월드의 모든 게임이 읽는 값 (게임 쪽 [`Players::get(id).public(key)`](client#세상-읽기)): 숫자, 글(64자), `Public::None`(지움); 32키, 키 24자. 공개이니 비밀은 넣지 말 것. 연결된 동안만 |
-| `play_anim(id)` `stop_anim()` | [감정 표현](models) 재생 / 끝내기. 가만히 서 있을 때만, 움직이거나 행동하면 끝남 |
+| `play_emote(id)` `stop_emote()` | [감정 표현](models) 재생 / 끝내기 (2026-11-11 전 `play_anim` `stop_anim`). 가만히 서 있을 때만, 움직이거나 행동하면 끝남 |
 | `show_block(x, y, z, b)` `clear_fake_blocks()` | 그 사람의 게임에만 보이는 [가짜 블록](world#가짜-블록), 모두 거두기 |
 | `say(line)` | 머리 위의 한마디 |
-| `message(line)` | 채팅 한 줄 |
-| `title(line)` | 화면 가운데 큰 제목 |
+| `message` `title` `title_with` `action_bar` `sound` `particle` `music` `music_with` `stop_music` `sky` | 그 사람에게만: [`Audience`](#audience) |
 | `where_text(line)` | 화면의 장소 문구 (`""`: 게임의 것) |
-| `play_music(track)` | 지금 곡 틀기 (`Music.TRACKS`의 id나 `res://….ogg`; `""`: 원래 목록으로) |
 | `reset()` | 지금 가방 그룹의 몫(가방·체력, 게임 모듈의 돈·기력·스킬)을 이 월드 규칙의 새 손으로 (그 월드의 `starter`: 경기마다 새 장비); 있는 곳은 그대로 |
 | `move_world(world)` | 서버의 다른 월드로 옮김 (`world`: [`Server::create_world`](#server)로 만든 id, `""` 모두의 월드): 그 월드의 스폰(`World::set_spawn`)으로. 떠난 월드에서 `Leave`, 간 월드에서 `Join`; 가방과 게임 모듈의 몫(돈·스킬)은 그대로 따라감 |
 | `move_world_at(world, at)` | `move_world`인데 게임 모듈이 그 월드에서 아는 자리 `at`으로: 농장의 `"station"`(열기구에서 내리듯 그 월드의 정거장), `"desert"`(사막의 정거장). `""`이나 모르는 이름이면 스폰 |
@@ -97,7 +94,8 @@ redirect_from:
 | `show(&Gui)` | 창 띄우기 ([`Gui`](#gui)). `PlayerLogin`에서는 들어오기 전의 입력 창 |
 | `hud()` → `Hud` | 그 사람의 화면: HUD 요소, 게임 HUD 숨기기, 키, 채널 ([화면](screen)) |
 | `open_inventory(&Inventory)` / `close_inventory(id)` | 이 플러그인의 인벤토리 창 열기(다시 부르면 지금 칸으로) / 닫기 ([인벤토리 창](screen#인벤토리-창)) |
-| `get(k)` / `set(k, v)` | 그 사람에게 남기는 숫자 (이 플러그인의 것; 저장됨). plugin.json의 바가 보여 주는 값 |
+| `get(k)` / `set(k, v)` | 그 사람에게 남기는 숫자 ([`Store`](#store); 이 플러그인의 것; 저장됨). plugin.json의 바가 보여 주는 값 |
+| `move_to(x, y, z)` (`Entity`) | `teleport_to(x, y, z, NaN)`: 3D로, 바라보던 대로 (2026-11-11 전에는 y를 버림) |
 | `data_put(key, &[u8])` → `bool` | 그 사람의 바이트 ([데이터 저장](#데이터-저장)) |
 | `data_get(key)` → `Option<Vec<u8>>` | |
 | `data_del(key)` | |
@@ -109,7 +107,7 @@ redirect_from:
 그 게임에 알려집니다(`{"t":"own"}`). 어느 이벤트에서든: `Tick`, `ServerTick`, `Chat`, `FastPacket`, `PlayerMove` ...
 
 {: .note }
-그 사람 자신에게는: `give` `take`(바닐라 모듈의 `add_gold` `add_energy`도)와 가방 바꾸기(`inventory()`의 `add` `remove` `clear`, 바닐라 모듈의 `Gear::set_enchant`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)와 그 플레이어의 이벤트(`Join`, `Leave`, `Chat`, `PlayerMove`, `PlayerItemHeld`, `FastPacket`, `EntityDismount`)에서 그 사람의 가방·돈·기력에 됩니다 (Bukkit의 `PlayerJoinEvent#getPlayer().getInventory().addItem`처럼; 게임에도 바로 보임). `Leave`에서 준 것은 그날이 저장되는 서버(`save-mode=live`, `World::set_live_saving`)에서만 남습니다. `say` `drop_item` `fx` `prop`는 플레이어가 한 일의 이벤트에서만 됩니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람이고, 남을 고른 뒤의 `e.player()`도 다시 이벤트의 그 사람입니다.
+그 사람 자신에게는: `give` `take`(바닐라 모듈의 `add_gold` `add_energy`도)와 가방 바꾸기(`inventory()`의 `add` `remove` `clear`, 바닐라 모듈의 `Gear::set_enchant`)는 플레이어가 한 일의 이벤트(행동, 명령어, 버튼, `Words`, `Use`, `Morning`, `PlayerDeath`, `LevelUp`, `MobDeath`, `BlockPlace` `BlockBreak` `Packet` `InventoryClick`)와 그 플레이어의 이벤트(`Join`, `Leave`, `Chat`, `PlayerMove`, `PlayerItemHeld`, `FastPacket`, `EntityDismount`)에서 그 사람의 가방·돈·기력에 됩니다 (Bukkit의 `PlayerJoinEvent#getPlayer().getInventory().addItem`처럼; 게임에도 바로 보임). `Leave`에서 준 것은 그날이 저장되는 서버(`save-mode=live`, `World::set_live_saving`)에서만 남습니다. `say` `drop_item` `sound_here`(예전 `fx`) `prop`는 플레이어가 한 일의 이벤트에서만 됩니다. `Tick::players()`의 `Player`는 모아 두어도(`collect`) 저마다 그 사람이고, 남을 고른 뒤의 `e.player()`도 다시 이벤트의 그 사람입니다.
 
 ## 피해, 체력, PvP, 팀
 
@@ -121,9 +119,9 @@ redirect_from:
 | `World::team(name, color, friendly_fire)` → `bool` | 팀 만들기·바꾸기 (`color` 이름표 색 `"#ff4040"`; 64개까지) |
 | `World::remove_team(name)` `teams()` `team_members(name)` | |
 | `Player::join_team(name)` → `bool` `leave_team()` `team()` | 한 팀에만; 같은 팀끼리는 `friendly_fire`일 때만 맞음 |
-| `ModelEntity::set_health(hp, max)` `health()` `max_health()` `damage(amount)` | 엔티티의 체력 (`LivingEntity`): 휘두름이 맞히면 [`ModelEntityDamage`](events#modelentitydamage--modelentitydeath), 0이면 사라짐 |
+| `set_health(hp)` `set_max_health(most)` `health()` `max_health()` `damage(amount)` | 엔티티의 체력 (`LivingEntity`; 2026-11-11 전 `ModelEntity::set_health(hp, max)`): 휘두름이 맞히면 [`ModelEntityDamage`](events#modelentitydamage--modelentitydeath), 0이면 사라짐 |
 | `World::cast(from, dir, len)` → `Option<Hit>` | 광선 판정: 블록(`HitKind::Block`), 충돌층의 상자(`Box`), 플레이어의 몸(`Player`, `who`; 폭 0.8 m, 발에서 1.6 m, 이벤트의 플레이어는 빼고), 체력 있거나 단단한 엔티티(`Entity`, `entity`) 가운데 처음 것, `at` `normal` `distance` (256 m까지) |
-| `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 움직이는 엔티티(체력 있거나 단단한 것)와 몬스터도 왕복 시간의 반 + 100 ms 전 자리로. 몬스터에 맞으면 바닐라 모듈의 `Hit::mob()` → `EnemyEntity`, `damage(양)`으로 피해(0이면 쓰러지고 드롭·경험치). 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`으로 |
+| `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 움직이는 엔티티(체력 있거나 단단한 것)와 몬스터도 왕복 시간의 반 + 100 ms 전 자리로. 몬스터에 맞으면 바닐라 모듈의 `Hit::mob()` → `EnemyEntity`, `damage(양)`으로 피해(0이면 쓰러지고 드롭·경험치). 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`(`Store`)으로 |
 | `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
 | `World::overlap(center, r, mask)` `overlap_box(min, max, mask)` → `Vec<Found>` | 범위 안의 것(폭발, 범위 스킬): `PLAYERS`(몸 있는 모두: 이벤트의 그 사람과 숨은 사람도; PvP·팀은 플러그인이), `ENTITIES`(날아가는 것 빼고), 바닐라 모듈의 `vanilla::MOBS`(그 사람의 층의 몬스터)를 `\|`로. 가까운 것부터 256개까지, 반지름·반폭 64 m까지; `Found`의 `kind` `who` `entity` `at`(발) `distance`, `player()` `model_entity()` (바닐라 모듈의 `mob()`) |
 | `World::projectile(모델, from, vel, gravity, radius, life)` → `Option<ModelEntity>` | 발사체: 서버가 스텝마다 움직이고 게임은 미끄러지듯 그림; 처음 닿는 블록·상자·플레이어(쏜 사람 빼고, PvP는 위와 같음)·엔티티에서 끝나고 [`ProjectileHit`](events#projectilehit); 한 월드에 64개 |
@@ -135,7 +133,7 @@ redirect_from:
 | `World::rand()` `rand_in(tag)` `rand_range(tag, lo, hi)` | 월드의 이 플러그인의 난수: 같은 월드는 같은 순서로 같은 수, 다시 켜도 이어짐 |
 | `ModelEntity::set_gravity(g)` `set_velocity(vx, vy, vz)` `set_persistent(on)` | 블록·상자 위로 떨어짐(m/s²), 움직임(블록·상자·다른 단단한 엔티티에 옆으로도 부딪힘: 비스듬히 가면 벽을 따라 미끄러지고 정면이면 멈춤, 천장에서 멈춤, 내려앉으면 멈춤; 몸은 0.8 × 1.6 m에 `scale`배; 단단한 엔티티는 플레이어의 몸에서도 멈춤, 이미 몸 안이면 빠져나감), 월드와 함께 저장(다시 켜도 그 자리에) |
 | `Server::player(name)` → `Option<Player>` | 서버 어디든 접속한 사람 (위치는 1초마다의 것) |
-| `Server::players()` → `Vec<(이름, 월드)>` `worlds()` → `Vec<(월드, 사람 수)>` `broadcast(line)` | 접속한 사람들, 누가 있는 월드, 서버 모두의 채팅 |
+| `Server::players()` → `Vec<(이름, 월드)>` `online()` → `Vec<Player>` `worlds()` → `Vec<(월드, 사람 수)>` `broadcast(line)` | 접속한 사람들(이름과 월드 / 하나하나 다룰 `Player`), 누가 있는 월드, 서버 모두의 채팅 (`Audience::message`와 같음) |
 | `World::players()` → `Vec<Player>` | 이 월드에 있는 사람들 |
 
 게임은 팀을 `{"t":"teams","l":{팀: {"color","ff","members"}},"pvp"}`로(상태의 `teams` `pvp`도) 받습니다: `Net.teams`, `Net.team_of(name)`, `Net.pvp`.
@@ -190,12 +188,11 @@ p.inventory().set_held_slot(0);
 
 ### 알림과 효과
 
+월드의 모두에게 말·소리·파티클·음악·하늘: [`Audience`](#audience) (`message` `title` `sound(name, (x, y, z))` `particle` `music` `sky` …;
+2026-11-11 전의 `broadcast` `play_music` `set_sky` `particle(name, x, y, z)` `sound(name, x, y, z)`).
+
 | 메서드 | |
 |---|---|
-| `broadcast(line)` | 월드 모두의 채팅 |
-| `play_music(track)` | 월드의 모두에게 곡 (`""`: 원래 목록으로) |
-| `particle(name, x, y, z)` | 파티클: `"fire"` `"smoke"` `"sparkle"` `"splash"` `"leaf"` `"hit"` 또는 `res://….png` |
-| `sound(name, x, y, z)` | 소리: `"hit"` `"pickup"` `"click"` `"step_soft"` `"step_hard"` 또는 `res://….ogg` |
 | `set_weather(name, days_ahead)` | 그날(0 오늘, 112일 뒤까지)의 날씨: 규칙 `weather`의 이름 `"Clear Sky"` `"Cloudy 1"` `"Rain"` `"Storm"` `"Snow"` `"Foggy"` … (다른 이름은 무시) |
 
 ### 엔티티
@@ -212,14 +209,14 @@ p.inventory().set_held_slot(0);
 
 | 메서드 | |
 |---|---|
-| `get(k)` / `set(k, v)` | 월드에 남기는 숫자 (이 플러그인의 것; 저장됨) |
+| `get(k)` / `set(k, v)` | 월드에 남기는 숫자 ([`Store`](#store); 이 플러그인의 것; 저장됨) |
 | `data_put(key, &[u8])` → `bool` | [데이터 저장](#데이터-저장) |
 | `data_get(key)` → `Option<Vec<u8>>` | |
 | `data_del(key)` | |
 | `data_keys(prefix)` → `Vec<String>` | 이 플러그인의 키 중 `prefix`로 시작하는 것 |
 | `save_now()` | 월드를 지금 저장 (게임, 블록, 데이터; 날은 그대로 이어짐) |
 | `set_live_saving(on)` | 새 날만이 아니라 1분마다·플레이어가 나갈 때 저장 (농장은 잠으로 끝난 날에 저장: RPG 서버의 것). server.properties `save-mode`보다 우선 |
-| `set_spawn(x, y, z, yaw)` | 월드의 스폰: 칸, 발 높이(높이 y 블록의 윗면은 y + 0.5), 바라보는 쪽(도). 쓰러진 뒤, `move_world`로 올 때도 여기 (게임 모듈의 자리가 없으면: 농장의 침대·의료실·정거장). 월드에 저장 ([월드 만들기](world#월드-만들기)) |
+| `set_spawn(x, y, z, yaw)` | 월드의 스폰: 칸, 발 높이(높이 y 블록의 윗면은 y + 0.5), 바라보는 쪽(라디안, 0이 +z; 2026-11-11 전에는 도). 쓰러진 뒤, `move_world`로 올 때도 여기 (게임 모듈의 자리가 없으면: 농장의 침대·의료실·정거장). 월드에 저장 ([월드 만들기](world#월드-만들기)) |
 | `set_quit_warning(text)` | 그날이 저장되기 전에 나갈 때 게임이 띄우는 경고 (`""` 없음, 200자까지). server.properties `quit-warning`보다 우선 |
 
 ### 하루
@@ -227,6 +224,7 @@ p.inventory().set_held_slot(0);
 | 메서드 | |
 |---|---|
 | `set_day(day)` | 날짜 (1이 첫날; 계절은 날짜에서). 월드의 게임에 바로 알림 |
+| `minute()` / `set_minute(m)` | 월드의 시계: 이벤트가 시작될 때의 분 (6:00 = 360) / 그 분으로 (그날의 시작과 끝 안; 월드의 게임에 바로 알림. 예전 `Player::set_time`) |
 | `set_morning_time(minute)` `clear_morning_time()` | 밤이 끝나는 시각 (해가 뜨고 몬스터가 사라짐, 6:30 = 390) / 계절의 해 뜨는 시각으로 |
 | `set_night_time(minute)` `clear_night_time()` | 밤이 시작되는 시각 (해가 지고 몬스터가 나옴, 18:00 = 1080) / 계절의 해 지는 시각으로 |
 | `set_day_end_time(minute)` `clear_day_end_time()` | 시계로 하루가 끝나는 시각 (자정부터 분, 26 * 60 = 다음 날 2:00, 48 * 60까지) / 규칙의 `day_end`로 |
@@ -239,6 +237,7 @@ p.inventory().set_held_slot(0);
 | `set_inventory_group(name)` | 이 월드의 가방 그룹 (`""` 모두의 월드의 것): 다른 그룹에서 오면 자기 몫을 바꿔 받음 |
 | `set_sync(tiers, chat)` | 위치를 거리별로 얼마나 자주 (`&[(m, ms)]`, 6개까지), 채팅이 닿는 거리 (`Some(0.0)` 월드 전체, `None` 48 m) |
 | `set_sync_with(tiers, chat, full, send)` | 더해서 첫 구간을 받을 가까운 인원(1~64, `None` 10), 게임이 보내는 초당 위치 수(5~30, `None` 게임의 것) |
+| `set_view(&View { curve, fog, sight, occlusion })` `clear_view()` | 게임이 이 월드를 그리는 법 (`View::default()`: true, 112, 150, false; [월드](world#월드를-그리는-법)) |
 
 ### 블록
 
@@ -265,14 +264,14 @@ p.inventory().set_held_slot(0);
 | `path((x0, z0), (x1, z1))` → `Vec<(f64, f64)>` | 걸어갈 길. 두 끝이 모두 농장의 마을 격자 위면 마을의 길(주민의 길찾기와 같음: 지은 것을 돌아서, 길은 싸게): 첫 걸음 뒤로 꺾이는 점들, 마지막이 목적지. 그 밖에는(마을 없는 월드도) `path_blocks`로(각 기둥 맨 위에서), 칸마다. 비어 있으면 길이 없음 |
 | `path_blocks((x, y, z), (x, y, z), max)` → `Vec<(f64, f64, f64)>` | 어느 월드 어디서나 블록 위로 걷는 길: 첫 걸음부터 목적지까지 칸마다 `(x, 발 높이, z)`, 비어 있으면 길이 없음. 끝은 발 아래(조금 묻혀도) 가장 높은 설 수 있는 칸, 물속이면 물 위. 설 수 있는 칸: 단단한 블록 위에 몸 들어갈 두 칸(1.6 m)이 비었거나 물 맨 위(헤엄). 한 번에 한 칸 위로(플레이어 점프 1.5 m, 물에서 나올 때도), 네 칸까지 아래로, 여덟 방향, 모서리는 몸이 들어갈 때만. 플러그인의 단단하지 않은 블록은 지나감. `max`: 살필 칸 수(16384까지), 시작에서 가로세로 64칸 안; 두 끝이 그보다 멀거나 한쪽이 한 번도 만들어진 적 없는 청크면 찾지 않고 바로 빈 것. 엔진의 A*: 연료가 아니라 걸린 시간으로 셈 |
 | `is_solid(x, y, z)` → `bool` | 그 칸이 단단한가: 블록, 또는 충돌층의 상자(구조물의 히트박스, 건물 벽, 울타리, 성벽, 단단한 엔티티) |
-| `raycast(from, dir, most)` → `Option<f64>` | `from`에서 `dir`로 처음 닿는 단단한 칸까지 m (`most`, 256 m까지 안에서) |
+| `cast_blocks(from, dir, most)` → `Option<f64>` | `from`에서 `dir`로 처음 닿는 단단한 칸까지 m (`most`, 256 m까지 안에서; 2026-11-11 전 `raycast`) |
 
 ### 구조물
 
 | 메서드 | |
 |---|---|
 | `structures()` → `Vec<Structure>` | 월드에 선 것들 (건물, 울타리, 성벽, 성문, 정거장 …) |
-| `put_structure(json)` → `Option<Structure>` | 세우기: `{"k": "building", "m": "house_Lv1", "x", "z", "yaw", "plot"}`, 칸 사각형 종류는 `{"k": "block", "cells": [x, z, w, d]}`, 히트박스 `"hit": [[x, z, w, d, y, h], …]` ([히트박스](world#히트박스와-충돌)) |
+| `put_structure(&Placement)` → `Option<Structure>` | 세우기 ([`Placement`](#placement); 2026-11-11 전에는 JSON 글). `None`: 모르는 모델, 월드의 한도 |
 | `remove_plot(plot)` | 구획 통째로 치우기 (`"wall"`: 성벽·성문·바위 둑·암초, `"station"`, `"core"` 마을 한가운데 …) |
 
 [월드와 하루](world)에 자세히.
@@ -283,10 +282,12 @@ p.inventory().set_held_slot(0);
 
 | 메서드 | |
 |---|---|
-| `get(k)` → `f64` | 어느 이벤트에서나 읽음 |
+| `get(k)` → `f64` | ([`Store`](#store)) 어느 이벤트에서나 읽음 |
 | `set(k, v)` | `PlayerLogin`과 그 입력 창의 `Button`, `ServerTick`에서만 |
+| `online()` → `Vec<Player>` | 어느 월드든 접속한 모두 (`players()`는 이름과 월드만). 말·소리는 [`Audience`](#audience)로 서버 모두에게 |
 | `create_world(id)` → `bool` | 플러그인의 월드 하나 (서버의 생성기: server.properties `level-type`, 저만의 씨앗, 여느 월드처럼 저장; `id`는 영문·숫자·`_ - .` 32자까지, `false`: 쓸 수 없는 이름). 그 월드에서 `WorldCreate`·`ChunkGenerate`가 불림 ([플러그인의 월드](world#플러그인의-월드)). 서버가 함께 돌리는 월드는 16 + 접속 한도의 두 배(256까지): 넘으면 만들어지지 않음(서버 로그) |
-| `create_world_with(id, generator, options)` → `bool` | 생성기를 골라: `"flat"`(높이 0의 풀, 위에 아무것도 없음) `"void"`(아무것도 없음) `"vanilla"`(농장의 땅과 마을), `options`는 그 생성기의 JSON 객체(`""` 없음; 농장의 `{"town": false}`: 마을 없는 땅). 처음 만들 때만 셈 ([월드 만들기](world#월드-만들기)) |
+| `create_world_with(id, generator, options)` → `bool` | 생성기를 골라: `"flat"`(높이 0의 풀, 위에 아무것도 없음) `"void"`(아무것도 없음) `"vanilla"`(농장의 땅과 마을) `"<플러그인>:<이름>"`(플러그인의 [생성기](#chunkgenerator)) `"map"`(아래), `options`는 그 생성기의 JSON 객체(`""` 없음; 농장의 `{"town": false}`: 마을 없는 땅). 처음 만들 때만 셈 ([월드 만들기](world#월드-만들기)) |
+| `create_map_world(id, glb, collision, spawn)` → `bool` | 모델 한 채가 곧 맵인 월드 (생성기 `"map"`): 땅은 비고, 이 플러그인의 GLB(`res://plugins/<이름>/…glb`)가 원점에 영구 `ModelEntity`로, `collision`(`None`: GLB 자신)의 삼각형으로 단단; 모두 `spawn` (x, y, z, yaw 라디안)으로 들어옴; 평평하게, 가림 컬링 켬 ([맵 월드](world#맵-월드)) |
 | `create_world_from(id, template)` → `bool` | 이 플러그인이 만든 월드 `template`의 지금 모습을 복사한 월드 ([월드마다의 규칙](world#월드마다의-규칙가방시계-월드의-수명-미니게임-허브)) |
 | `reset_world(id, to)` / `remove_world(id, to)` → `bool` | 이 플러그인이 만든 월드를 만든 그대로 다시 / 지움; 안의 사람은 먼저 `to`로 (`""`: 모두의 월드, reset이면 다시 들어옴) |
 | `worlds()` → `Vec<(String, usize)>` | 만들었거나 읽은 월드들과 사람 수 (아무도 없어 내린 월드도) |
@@ -304,7 +305,74 @@ p.inventory().set_held_slot(0);
 ```rust
 #[on(ServerTick)]
 fn count(_e: ServerTick) {
-    Server.set("clock", Server.get("clock") + 1.0);
+    Server.set("clock", Server.get("clock") + 1.0); // (Store)
+}
+```
+
+## Audience
+
+말·소리·볼거리를 받는 쪽 (Adventure의 Audience): `Player`(그 사람만), `World`(그 월드의 모두), `Server`(접속한 모두, 어느 월드든).
+2026-11-11에 흩어져 있던 메서드를 이 트레잇 하나로 모았습니다. 자리는 칸 `(x, y, z)`.
+
+| 메서드 | |
+|---|---|
+| `message(line)` | 채팅 한 줄 |
+| `title(line)` / `title_with(&Title)` | 화면 가운데 큰 글 / `Title { title, subtitle, fade_in, stay, fade_out }`(초; NaN은 게임 기본 0, 2.5, 0.8) |
+| `action_bar(line)` | 단축바 위 한 줄, 2초 (`""`: 지움) |
+| `sound(name, (x, y, z))` | `"hit"` `"pickup"` `"click"` `"step_soft"` `"step_hard"` 또는 `res://….ogg` |
+| `particle(name, (x, y, z))` | `"fire"` `"smoke"` `"sparkle"` `"splash"` `"leaf"` `"hit"` 또는 `res://….png` |
+| `music(track)` / `music_with(&Music)` / `stop_music()` | 지금 곡 (`Music.TRACKS`의 id나 `res://….ogg`; `""`: 원래 목록으로). `Music::track(t)`은 fade 1초, volume 1, looped |
+| `sky(&Sky)` | 날씨 위에 덮는 하늘: `Sky { cloud_coverage, rain, light_intensity, lightning }`(모두 `Option`; `Sky::default()`: 날씨대로) |
+
+`Title` `Music` `Sky`(와 `Clip`)는 `greenhaven_common`의 것을 SDK가 다시 내보냅니다. 이벤트의 칸에서 월드의 모두에게 들리는 게임의
+소리는 `Base::sound_here(name)`(예전 `fx`). 없어진 것: `Player::play_sound` `spawn_particle` `play_music` `play_music_with` `set_sky`
+`title_with(5개 인자)`, `World::broadcast` `particle`/`sound`(인자 넷) `play_music` `play_music_with` `set_sky`.
+
+```rust
+#[command("시작", "")]
+fn start(c: Command) {
+    let w = c.world();
+    w.title_with(&Title { subtitle: "준비".into(), ..Title::new("3") });
+    w.music_with(&Music { fade: 2.0, looped: false, ..Music::track("res://plugins/arena/battle.ogg") });
+    w.sky(&Sky { light_intensity: Some(0.3), ..Sky::default() });
+    Server.message("경기가 시작됐어요");
+}
+```
+
+## Store
+
+이 플러그인이 무언가에 남기는 숫자 (Bukkit의 PersistentDataContainer의 숫자판): `get(key)` → `f64`(안 쓴 키는 0), `set(key, v)`.
+다른 플러그인은 읽지 못합니다. 바이트는 `data_put` / `data_get`.
+
+| 구현 | |
+|---|---|
+| `World` | 월드에 (월드와 함께 저장) |
+| `Player` | 이 월드 안의 그 사람에게 (저장됨) |
+| `Server` | 서버 하나에, 모든 월드에 같은 것 (쓰기는 `PlayerLogin`·그 `Button`·`ServerTick`에서만) |
+| `ModelEntity`, `Avatar` | 엔티티 하나에: 엔티티가 사라지면 함께, 64개까지, 게임에는 보내지 않음 (2026-11-11 새로) |
+
+값은 ±1e12에서 잘립니다(NaN·무한은 0).
+
+## Global
+
+이벤트 사이에 남는 전역 값 (`static mut` + `unsafe` 대신). 플러그인의 모듈은 이벤트 사이에 살아 있다가 트랩이나 다시 읽기 뒤
+새로 만들어지니, 오래 남길 것은 `Store`나 데이터에. 게임 쪽 SDK에도 같은 것이 있습니다.
+
+| | |
+|---|---|
+| `Global::new(v)` | `static G: Global<T> = Global::new(..);` (`const fn`) |
+| `get()` → `T` | 복사본 (`T: Clone`) |
+| `set(v)` / `replace(v)` → `T` | 바꾸기 / 바꾸고 예전 것 돌려받기 |
+| `with(\|v\| ..)` → `R` | 그 자리에서 바꾸기 (`G.with(\|n\| *n += 1)`) |
+| `borrow()` → `RefMut<T>` | 잠깐 쥐고 쓰기 (`G.borrow().push(..)`). 쥐고 있는 동안 또 빌리면 panic: 그 핸들러만 트랩처럼 멈추고 메모리는 안전 |
+
+```rust
+static ROUND: Global<Vec<String>> = Global::new(Vec::new());
+
+#[on(Join)]
+fn joined(e: Join) {
+    ROUND.with(|r| r.push(e.player().name()));
+    e.player().message(&format!("{}번째 참가자예요", ROUND.borrow().len()));
 }
 ```
 
@@ -357,15 +425,18 @@ fn richest(c: Command) {
 
 Bukkit의 `Entity` 계층처럼, 월드에 있는 것은 모두 `Entity` 트레잇을 구현합니다. Rust에는 클래스 상속이 없어서 종류마다
 타입이 따로 있고, 공통 동작은 트레잇으로 나눕니다(`&dyn Entity`는 어느 것이든 받음). 체력 있는 것은 `LivingEntity`도
-(Bukkit의 LivingEntity; 2026-11-10 `Entity::health`는 여기로 옮겨 감).
+(Bukkit의 LivingEntity; 2026-11-10 `Entity::health`는 여기로 옮겨 감). 2026-11-11: `play_anim`/`stop_anim`은 `play_clip`/`stop_clip`,
+체력 쓰기는 `LivingEntity::set_health(hp)` / `set_max_health(most)`.
 
 ```text
-Entity (트레잇)                location  move_to  play_anim  stop_anim  remove  is_alive  distance_to …
-├── LivingEntity (트레잇)      health  max_health  damage
+Entity (트레잇)                location  move_to  play_clip  stop_clip  remove  is_alive  distance_to …
+├── Structure                  땅 위에 선 것 (World::put_structure)
+├── Npc                        농장의 주민 (바닐라 모듈; move_to: 걸어감)
+├── LivingEntity (트레잇)      health  max_health  set_health  set_max_health  damage
 │   ├── PlayerEntity (트레잇)  name  facing
 │   │   ├── Player             진짜 플레이어
 │   │   └── Avatar             플러그인이 만든 플레이어 아바타 (World::spawn_avatar)
-│   ├── ModelEntity            이 플러그인의 모델 (World::spawn; 체력은 set_health)
+│   ├── ModelEntity            이 플러그인의 모델 (World::spawn)
 │   └── EnemyEntity            몬스터 (바닐라 모듈: vanilla::EnemyEntity, MobStep::mob, World::mobs)
 └── ItemEntity                 땅에 놓인 아이템 (World::items, ground_drop)
 ```
@@ -386,7 +457,7 @@ struct Wisp(EnemyEntity); // 이 플러그인의 "wisp" (monsters_add)
 
 impl Wisp {
     fn of(m: &EnemyEntity) -> Option<Wisp> { m.of_kind("wisp").map(Wisp) }
-    fn enrage(&self) { self.0.set_speed(self.0.speed() * 1.5); self.0.play_anim("Attack01"); }
+    fn enrage(&self) { self.0.set_speed(self.0.speed() * 1.5); self.0.play_clip("Attack01"); }
 }
 
 #[command("충격파", "")]
@@ -396,7 +467,7 @@ fn shockwave(c: Command) {
         if e.as_player().is_some_and(|p| p.name() == c.player().name()) { continue; } // (나는 빼고)
         if let Some(l) = e.as_living() { l.damage(5.0); } // 체력 있는 것만 (원인: 이 플러그인 이름)
     }
-    for (m, _, _) in w.mobs() { // 농장의 몬스터
+    for m in w.mobs() { // 농장의 몬스터 (자리: m.location())
         if let Some(wisp) = Wisp::of(&m) { wisp.enrage(); } else if m.distance_to(&c.player()) < 6.0 { m.damage(5.0); }
     }
 }
@@ -407,9 +478,9 @@ fn shockwave(c: Command) {
 | 메서드 | |
 |---|---|
 | `location()` → `(x, y, z)` | 칸 좌표, y는 발 높이 (진짜 플레이어와 몬스터는 0: 땅 위) |
-| `move_to(x, y, z)` | 그곳으로 (진짜 플레이어는 `Player::teleport`, 몬스터는 x z). 플러그인의 엔티티는 게임이 플러그인의 말 사이를 고른 빠르기로 그려서 틱마다의 걸음이 부드럽게 보임 (8 m 넘게는 바로) |
+| `move_to(x, y, z)` | 그곳으로 (진짜 플레이어는 `Player::teleport_to`, 몬스터·구조물은 x z, 주민은 걸어감). 플러그인의 엔티티는 게임이 플러그인의 말 사이를 고른 빠르기로 그려서 틱마다의 걸음이 부드럽게 보임 (8 m 넘게는 바로) |
 | `glide_to(x, y, z, secs)` | `secs`초에 걸쳐 고른 빠르기로 그려지며 감: 걷기 하나나 비행 하나를 한 번에 (자리는 이미 끝: `location`). 플러그인의 엔티티만, 다른 것은 `move_to`와 같음 |
-| `play_anim(clip)` / `stop_anim()` | 모두에게 보이는 애니메이션: 모델은 그 클립, 아바타는 동작, 진짜 플레이어는 이모트(서 있을 때만), 몬스터는 클립 한 번, 아이템은 `set_model`한 모델의 클립 |
+| `play_clip(clip)` / `stop_clip()` | 모두에게 보이는 클립 한 번: 모델은 그 클립, 아바타는 동작, 진짜 플레이어는 몸 전체에 (`Player::play_clip_with`; 감정 표현 id도), 몬스터는 클립 한 번, 아이템은 `set_model`한 모델의 클립; 구조물·주민은 아무 일 없음 |
 | `remove()` | 월드에서 없앰 (진짜 플레이어는 아무 일 없음) |
 | `is_alive()` → `bool` | 아직 있음 (플레이어: 쓰러져 있지 않음) |
 | `distance_to(&dyn Entity)` → `f64` | 땅 위의 거리 |
@@ -420,7 +491,7 @@ fn shockwave(c: Command) {
 
 ### ModelEntity
 
-이 플러그인의 엔티티 (`World::spawn`). **저장되지 않습니다**: 서버를 다시 켜면 사라지니, 남길 것은 `World::set`에.
+이 플러그인의 엔티티 (`World::spawn`). **저장되지 않습니다**(`set_persistent(true)`면 저장): 서버를 다시 켜면 사라지니, 남길 것은 `World::set`에.
 
 | 메서드 | |
 |---|---|
@@ -428,13 +499,16 @@ fn shockwave(c: Command) {
 | `set_yaw(yaw)` | yaw만 |
 | `scale()` / `set_scale(times)` | 크기 배율 (100까지) |
 | `model()` `anim()` `held()` `name()` → `String` | 모델(`res://` 경로, `"avatar"`), 지금 클립, 손에 든 것, 머리 위 이름 (`""` 없음) |
+| `set_name(name)` | 머리 위 이름 (`""` 없음) |
+| `get(k)` / `set(k, v)` | 이 엔티티에 남기는 숫자 ([`Store`](#store): 게임에 안 감, 엔티티와 함께 사라짐, 64개까지) |
 | `as_avatar()` → `Option<Avatar>` | 아바타면 그것으로 |
 | `set_public(key, value)` | 모든 게임이 읽는 값 (`Player::set_public`처럼; 게임 쪽 `Entities::get(id).public(key)`) |
 | `set_hitbox(&[[x, z, w, d, y, h]])` | 히트박스 (`set_solid`가 단단하게 하는 모양; [히트박스](world#히트박스와-충돌)) |
-| `set_health(hp, max)` / `health()` `max_health()` | 체력 (0: 없음, 맞지 않음; `LivingEntity`): 플레이어의 휘두름 → `ModelEntityDamage`, 0이면 `ModelEntityDeath` 뒤 사라짐 |
+| `set_health(hp)` `set_max_health(most)` / `health()` `max_health()` | 체력 (0: 없음, 맞지 않음; `LivingEntity`; 2026-11-11 전 `set_health(hp, max)`): 플레이어의 휘두름 → `ModelEntityDamage`, 0이면 `ModelEntityDeath` 뒤 사라짐 |
 | `damage(amount)` | 폭발의 한 대처럼 피해: `ModelEntityDamage` / `ModelEntityDeath` (원인은 이 플러그인 이름, `Explosion` 이벤트 없음) |
 
 2026-11-10: 글 키의 `get` `set` `text`는 감춰졌습니다. 위치는 `Entity`의 `location` / `move_to`, 나머지는 위의 메서드로.
+2026-11-11부터 `get` / `set`은 `Store`(플러그인의 숫자)입니다.
 
 ### Avatar
 
@@ -442,7 +516,7 @@ fn shockwave(c: Command) {
 
 | 메서드 | |
 |---|---|
-| `play_anim(동작)` | `"idle"` `"walk"` `"run"`(걷기·달리기는 빠르기로) `"sleep"` `"swim"` `"jump"` `"fall"`, 도구 `"axe"` `"pickaxe"` `"hoe"` `"scythe"` `"sword"` `"water"` `"cast"`(부를 때마다 한 번 휘두름), `"emote:<id>"` |
+| `play_clip(동작)` | `"idle"` `"walk"` `"run"`(걷기·달리기는 빠르기로) `"sleep"` `"swim"` `"jump"` `"fall"`, 도구 `"axe"` `"pickaxe"` `"hoe"` `"scythe"` `"sword"` `"water"` `"cast"`(부를 때마다 한 번 휘두름), `"emote:<id>"` |
 | `set_look(json)` | 모습: CatLook JSON `{"species": "Dog", "skin": "Dog03", "hat": "Cap_turboA"}` (`"{}"` 기본 고양이) |
 | `hold(item)` | 손에 든 아이템 (`"axe"` …, `""` 없음) |
 | `set_name(name)` / `name()` | 머리 위 이름 (`""` 없음) |
@@ -457,7 +531,7 @@ fn shockwave(c: Command) {
 |---|---|
 | `item()` → `String` / `amount()` | 아이템 id (`""` 없음), 개수 (광산 층은 바닐라 모듈의 `floor()`) |
 | `consume_by(&dyn Entity)` | 그 엔티티가 먹음: 땅에서 없어지고(아무도 못 얻음), 모든 게임에서 그쪽으로 날아 들어감 |
-| `set_model(path)` | 아이템 대신 그 `res://` 모델로 그림 (`""` 아이템 모양으로) — 그 모델의 클립은 `play_anim` |
+| `set_model(path)` | 아이템 대신 그 `res://` 모델로 그림 (`""` 아이템 모양으로) — 그 모델의 클립은 `play_clip` |
 | `move_to(x, y, z)` | 옮김 (게임에서 미끄러지듯) |
 
 ```rust
@@ -485,15 +559,56 @@ fn fireball(e: Button) {
 
 ## Structure
 
-월드에 선 것 하나 (`Structure(id)`).
+땅 위에 서서 월드와 함께 저장되는 것 하나 (`Structure(id)`): 마을의 건물·울타리·성벽, 플러그인의 소품. 혼자 움직이지 않고 체력도
+없는 가장 단순한 `Entity`입니다(움직이고 날고 맞는 것은 `ModelEntity`). 2026-11-11에 타입 있는 메서드가 됐고, 글 키의 `get` `text`는
+없어졌습니다.
 
 | 메서드 | |
 |---|---|
-| `get(k)` → `f64` | `"x"` `"z"` `"y"` `"yaw"` `"w"` `"d"` `"scale"` |
-| `text(k)` → `String` | `"k"`(무엇) `"m"`(모델) `"plot"` `"n"` `"key"` `"kind"` `"label"` `"text"` `"s"` `"owner"` |
-| `kind()` / `plot()` | `text("k")` / `text("plot")` |
-| `remove()` | |
-| `move_to(x, z, yaw)` | |
+| `kind()` | 무엇인지: `"building"` `"prop"` `"fence"` `"wall"` `"block"`(아무도 못 서는 칸) … (`""` 없어짐) |
+| `model()` | 모델 (`res://` 경로, 또는 게임의 모델 이름) |
+| `plot()` | 세운 구획 (`World::remove_plot`이 한꺼번에 치움) |
+| `name()` / `key()` | 장면 속 이름 (농장의 건물: 그 방의 이름, `World::room`) / 장소의 키 (농장의 `"shop"` `"clinic"` …) |
+| `yaw()` / `set_yaw(yaw)` | 방향 (라디안, 0이 +z; 구조물은 90°씩: 가장 가까운 것으로) |
+| `scale()` | 크기 |
+| `size()` → `(w, d)` | 사각형의 가로·세로 칸 (밭, 막힌 칸, 헛간의 너비) |
+| `location()` (`Entity`) | `(x, 땅 위 높이, z)` |
+| `move_to(x, y, z)` (`Entity`) | 땅 위로 옮김 (높이는 제 것, 방향 그대로) |
+| `remove()` `is_alive()` (`Entity`) | 치우기, 아직 있는지 |
+
+## Placement
+
+`World::put_structure`에 주는 세울 것 하나 (빌더):
+
+| | |
+|---|---|
+| `Placement::prop(model)` | 서 있는 것: 이 플러그인의 `res://` GLB, 또는 게임의 모델 이름 (`"barrel"`) |
+| `Placement::building(model)` | 건물 (게임의 모델: 문, 방) |
+| `Placement::blocked(x, z, w, d)` | 아무도 못 서는 칸 (보이지 않는 칸의 벽) |
+| `.at(x, z)` | 서는 칸 |
+| `.raised(y)` | 그 자리 땅에서 y블록 위로 |
+| `.turned(yaw)` | 방향 (라디안, 0이 +z; 가장 가까운 90°로) |
+| `.scaled(s)` | 크기 |
+| `.plot(name)` | 구획 (`World::remove_plot`이 한꺼번에) |
+| `.hitbox(&[[x, z, w, d, y, h]])` | 히트박스 ([히트박스](world#히트박스와-충돌); 없으면 모델의 크기) |
+
+```rust
+let lamp = w.put_structure(&Placement::prop("res://plugins/deco/lamp.glb").at(12.0, 5.0).turned(1.57).scaled(1.2).plot("deco"));
+if let Some(s) = lamp { s.set_yaw(3.14); }
+w.put_structure(&Placement::building("house_Lv1").at(40.0, 60.0).plot("my_house"));
+w.put_structure(&Placement::blocked(0, 0, 9, 1)); // 9칸의 보이지 않는 벽
+```
+
+## ChunkGenerator
+
+월드의 땅을 처음부터 이 플러그인이 만드는 생성기 (Bukkit의 ChunkGenerator; 2026-11-11). 자세히: [플러그인의 월드 생성기](world#플러그인의-월드-생성기).
+
+| | |
+|---|---|
+| `#[generator("name")] struct X;` + `impl ChunkGenerator for X { fn generate(&self, c: &mut ChunkData) }` | 생성기 `"<플러그인>:<name>"` (`Server::create_world_with`, server.properties `level-type`). 단위 구조체가 아니면 `Default`로 |
+| `ChunkData` | `chunk()` `first_cell()` `size()`(32) `seed()` `noise()` `columns()` `contains(x, z)` `set(x, y, z, b)` `get(x, y, z)` `fill(from, to, b)` `top(x, z)` |
+| `Noise::new(seed)` | `noise2(x, z)` `noise3(x, y, z)` `fbm2(x, z, octaves)`: 씨앗의 Perlin 노이즈, 약 −1~1 |
+| `Trees { trunk, leaves, per_chunk, height, crown }` | `Trees::new(trunk, leaves)`(4그루, 4~6 높이, 수관 2) `.place(c, \|x, z\| Option<땅 높이>)`: 청크 경계에서도 온전한 숲 |
 
 ## Block
 
@@ -525,7 +640,8 @@ fn fireball(e: Button) {
 | `Registry::set(path, json)` | 값 하나: `Registry::set("bag.slots", "48")` |
 | `Registry::add(table, id, json)` | 표에 하나 |
 | `Registry::block(id, &BlockKind)` | 블록 종류 ([새 블록 종류](world#새-블록-종류)): `BlockKind::new(name, look, tint)` `textured(name, png)` `model(name, glb, size)`, `solid` `item` `texture` `top` `bottom` `alpha` `model` `side` `size` |
-| `Registry::item` `model` `emote` `(id, json)` | `items` `models_add` `emotes_add` (농장의 `crop` `monster` `animal` `villager`는 바닐라 모듈) |
+| `Registry::item(id, &ItemDef)` | `items`: `ItemDef::new(이름)` `.desc` `.icon` `.color` `.price` `.sell` `.kind(ItemKind::Tool \| Block \| Misc)` `.usable()` `.model` `.action` `.with(키, JSON)` ([규칙 등록](rules#아이템)); `ItemDef::default()`는 게임의 것 바꾸기 |
+| `Registry::model` `emote` `(id, json)` | `models_add` `emotes_add` (농장의 `crop` `monster` `animal` `villager`는 바닐라 모듈) |
 | `Registry::text(from, to)` | 화면 글자 바꾸기 |
 | `Registry::tick_rate(n)` | 이 플러그인의 [`Tick`](events#tick)을 1초에 n번 (기본 1번; 월드의 `tick-rate`보다 자주는 아님). `Enable`에서 |
 
@@ -548,7 +664,7 @@ fn fireball(e: Button) {
 | `.text(s)` | 본문 |
 | `.image(path)` | `res://` 그림 |
 | `.button(id, label)` | 버튼 (나무) |
-| `.button_styled(id, label, style)` | `"go"`(초록) `"red"` `""`(나무) |
+| `.button_styled(id, label, style)` | `ButtonStyle::Go`(초록) `Red` `Wood`(나무) |
 | `.input(id, label, placeholder, max)` | 한 줄 입력 칸 (`max` 글자, 1~256). 누르면 `Button::input(id)` |
 | `.secret(id, label, placeholder, max)` | 가려 쓰는 칸 (비밀번호) |
 | `.json()` | 보낼 JSON (원본 ABI의 `gui`) |
@@ -557,7 +673,7 @@ fn fireball(e: Button) {
 #[on(PlayerLogin)]
 fn ask(e: PlayerLogin) {
     e.player().show(&Gui::new("pw").title("비밀번호").text("이 서버의 비밀번호를 넣어 주세요")
-        .secret("pw", "비밀번호", "", 64).button_styled("ok", "들어가기", "go"));
+        .secret("pw", "비밀번호", "", 64).button_styled("ok", "들어가기", ButtonStyle::Go));
 }
 ```
 
@@ -600,7 +716,7 @@ fn ping(c: Command) {
 
 #[on(HttpDone)]
 fn done(e: HttpDone) {
-    if !e.ok() { e.world().broadcast(&format!("알림 실패: {} {}", e.status(), e.error())); }
+    if !e.ok() { e.world().message(&format!("알림 실패: {} {}", e.status(), e.error())); }
 }
 ```
 
@@ -648,11 +764,10 @@ fn skill(e: Packet) {
 
 | | |
 |---|---|
-| `Player::title_with(title, sub, fade_in, stay, fade_out)` | 큰 글과 그 아래 줄 (초; NaN은 게임 기본 0, 2.5, 0.8) |
-| `Player::action_bar(line)` | 단축바 위 한 줄, 2초 (`""`: 지움) |
-| `Player::play_sound(name, x, y, z)` / `spawn_particle(...)` | 그 사람만 (이름은 `World::sound`·`particle`과 같음) |
+| `Player`의 `title_with(&Title)` `action_bar(line)` `sound(name, (x, y, z))` `particle(..)` | 그 사람만 ([`Audience`](#audience)) |
 | `World::weather()` | 오늘의 날씨 |
-| `World::spawn_location()` | `set_spawn`의 `(x, y, z, yaw)`, None: 생성기의 것 (농장: 농장 집 문 앞) |
+| `World::spawn_location()` | `set_spawn`의 `(x, y, z, yaw 라디안)`, None: 생성기의 것 (농장: 농장 집 문 앞) |
+| `World::minute()` | 월드의 시계 (이벤트가 시작될 때) |
 | `World::set_minute(m)` | 월드의 시계 |
 | `World::team_option(team, key, value)` | `"prefix"` `"suffix"` (16자), `"nametag"` `"all"` \| `"team"` \| `"others"` \| `"none"`, `"collide"` `"on"` \| `"off"` (끄면 단단한 엔티티가 지나감) |
 
@@ -737,7 +852,7 @@ fn efficiency(c: Command) {
 | `set_dawn_time(minute)` `clear_dawn_time()` | 몬스터가 강해지는 시각 (2:00 = 120), 아침까지 / 기본값으로 |
 | `strike(x, z, radius, damage)` | 그 둘레의 몬스터 공격 |
 | `spawn_mob(kind, x, z)` | 이벤트의 층에 몬스터 하나 (지상은 밤에만 남음) |
-| `mobs()` | 이벤트의 층(지상은 밤의 것, 광산 층, 던전 방)의 몬스터 `[(EnemyEntity, x, z)]` |
+| `mobs()` → `Vec<EnemyEntity>` | 이벤트의 층(지상은 밤의 것, 광산 층, 던전 방)의 몬스터 (자리는 `location()`; 2026-11-11 전에는 `(EnemyEntity, x, z)`) |
 | `ground_drop_on(item, n, x, y, z, floor)` → `Option<ItemEntity>` | `World::ground_drop`을 광산 층 `floor`에 (0 지상) |
 | `debris_at(x, z)` → `String` | 그 칸(지상)의 야생 것: `"oak"` `"maple"` `"rock"` `"weeds"` `"stump"` 광맥 … (`""` 없음) |
 | `debris_hp(x, z)` → `i64` | 그 칸의 야생 것이 사라지기까지 남은 체력 (도구 한 번이 1 + 등급 …; 0 없음) |
@@ -750,23 +865,25 @@ fn efficiency(c: Command) {
 
 ### Npc
 
-주민 (`Npc(id)`; `Words::npc()`, `World::npcs()`).
+주민 (`Npc(id)`; `Words::npc()`, `World::npcs()`). 2026-11-11부터 `Entity`(예전 `get(k)` `position()`은 없어짐). 클립은 주민의 하루의 것이라
+`play_clip`은 아무 일 없음.
 
 | 메서드 | |
 |---|---|
-| `get(k)` | `"x"` `"z"` `"moving"` `"hidden"` `"indoors"` |
-| `position()` → `(f64, f64)` | |
+| `location()` → `(x, 0, z)` (`Entity`) | 있는 곳 |
+| `is_moving()` `is_hidden()` `is_indoors()` | 걷는 중 / 안 보임(하루 일정으로 자리 비움) / 건물 방 안 |
+| `move_to(x, y, z)` (`Entity`) | 그곳으로 걸어감 (`go_to(x, z, 0)`) |
 | `go_to(x, z, hold_secs)` | 그곳(설 수 있는 가장 가까운 칸)으로 보내 몇 초 머물게 함. 일정보다 먼저 |
 | `say(line)` | 머리 위의 한마디, 월드의 모두에게 |
 | `set(json)` | 덮어쓰기 (`{"home": "...", "schedule": [...]}`) |
-| `remove()` | 월드에서 빼기 |
+| `remove()` `is_alive()` (`Entity`) | 월드에서 빼기, 아직 있는지 |
 
 ### EnemyEntity
 
 몬스터 하나 (`EnemyEntity(serial)`; `MobStep::mob()`, `World::mobs()`, `Hit::mob()`). 예전 이름 `Mob`은 없어졌습니다.
-`Entity`이자 `LivingEntity`: `play_anim(clip)`은 그 종류 모델의 클립을 그 층의 모든 게임에서 한 번(`"Attack01"` `"Victory"` …),
+`Entity`이자 `LivingEntity`: `play_clip(clip)`은 그 종류 모델의 클립을 그 층의 모든 게임에서 한 번(`"Attack01"` `"Victory"` …),
 `location()` `health()` `max_health()`(나올 때의 체력)는 **번호로 어느 이벤트에서나**(이벤트의 층; 자기 `mob` 이벤트 안에서는 그 이벤트의 값;
-그런 몬스터가 없으면 NaN). 엔진의 적은 체력 있는 플러그인의 엔티티(`ModelEntity::set_health`)입니다.
+그런 몬스터가 없으면 NaN). 엔진의 적은 체력 있는 플러그인의 엔티티(`LivingEntity::set_health`를 준 `ModelEntity`)입니다.
 2026-11-10: 글 키의 `get` / `set`은 없어지고 아래의 타입 있는 메서드가 됐습니다. 종류별 타입은 없습니다(종류는 데이터):
 자기 종류는 `struct Wisp(EnemyEntity)`처럼 감쌉니다([엔티티](#엔티티)의 예).
 
@@ -779,7 +896,7 @@ fn efficiency(c: Command) {
 | `attack_damage()` / `set_attack_damage(v)` | 닿을 때 플레이어에게서 가져가는 체력 |
 | `size()` | 너비 m |
 | `age()` | 나온 뒤 초 (자기 시계 `t`: 패턴의 위상) |
-| `set_health(hp)` | 체력 (0이면 사라짐, 떨굼 없음) |
+| `set_health(hp)` `set_max_health(most)` | 체력 (`LivingEntity`; 0이면 사라짐, 떨굼 없음), 최대 체력 |
 | `set_velocity(vx, vz)` | 이번 걸음의 속도 (초당 칸): 원래 움직임 대신 |
 | `move_to(x, y, z)` | 옮기기 (x z) |
 | `attack(damage, reach)` | 그 거리 안의 가장 가까운 플레이어를 침 (닿을 때의 공격은 따로 그대로) |

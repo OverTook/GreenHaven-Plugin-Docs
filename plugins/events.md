@@ -51,7 +51,7 @@ fn cmd(c: Command) { /* … */ }
 | `player()` → [`Player`](sdk#player) | 이벤트의 플레이어 |
 | `world()` → [`World`](sdk#world) | 이벤트의 월드 |
 | `drop_item(item, n)` | 이벤트의 칸에 아이템 떨구기 (수확처럼) |
-| `fx(name)` | 이벤트의 칸에서 게임의 소리 (`"hit"` `"pickup"` `"click"` …), 월드의 모두에게 |
+| `sound_here(name)` | 이벤트의 칸에서 게임의 소리 (`"hit"` `"pickup"` `"click"` …), 월드의 모두에게 (2026-11-11 전 `fx`) |
 | `prop(name, v)` | 그 칸에 선 것의 속성 (`"scale"`: 나무·바위·과일나무를 그 크기로 그림) |
 
 ### `num` / `text`의 키
@@ -254,7 +254,7 @@ fn armor(e: PlayerDamage) {
 
 ### ModelEntityDamage / ModelEntityDeath
 
-`ModelEntity::set_health(hp, max)`로 체력을 준 이 플러그인의 엔티티를 플레이어의 휘두름이 맞힐 때: `entity()`, `amount()` / `set_amount(n)`,
+`set_health(hp)` / `set_max_health(most)`(`LivingEntity`)로 체력을 준 이 플러그인의 엔티티를 플레이어의 휘두름이 맞힐 때: `entity()`, `amount()` / `set_amount(n)`,
 `by()` 친 사람; 취소: 안 다침. 0이 되면 `ModelEntityDeath`(`drop_item`은 친 사람 자리에) 뒤 사라집니다. 그 플러그인에만 옵니다.
 (`EntityDamage` / `EntityDeath`는 예전부터 `Damage` / `MobDeath`의 별칭입니다.)
 
@@ -383,7 +383,7 @@ plugin.json의 버튼, 또는 [`Gui`](sdk#gui) 창의 버튼을 눌렀을 때. �
 | `button()` | 버튼 id |
 | `gui()` | 창의 id (`""`: plugin.json의 버튼) |
 | `input(id)` | 누를 때 그 창의 입력 칸에 쓴 글 |
-| `player().facing()` | 누를 때 바라보던 방향 |
+| `player().facing()` | 그 사람이 바라보는 방향 |
 
 ```rust
 use greenhaven_plugin::vanilla::*; // Gui::npc (VanillaGui)
@@ -391,7 +391,7 @@ use greenhaven_plugin::vanilla::*; // Gui::npc (VanillaGui)
 #[command("하늘", "하늘을 불러요")]
 fn call(c: Command) {
     c.player().show(&Gui::new("haneul").npc("haneul").title("하늘").text("무슨 일이에요?")
-        .button("story", "이야기 들려줘").button_styled("bye", "아니야", "red"));
+        .button("story", "이야기 들려줘").button_styled("bye", "아니야", ButtonStyle::Red));
 }
 
 #[on(Button)]
@@ -509,7 +509,7 @@ fn fly(t: Tick) { /* 매끄러워야 하는 것: 1초에 20번 */ }
 #[every(1.0)]
 fn regen(t: Tick) {
     for p in t.players() {
-        p.set("mana", (p.get("mana") + 5.0 * t.dt()).min(100.0)); // 1초에 5씩, 몇 번 불리든
+        p.set("mana", (p.get("mana") + 5.0 * t.dt()).min(100.0)); // 1초에 5씩, 몇 번 불리든 (Store)
     }
 }
 ```
@@ -538,7 +538,7 @@ fn timer(e: Timer) {
 
 ### ServerTick
 
-서버의 틱: 아무도 없어도 1초에 두 번, 어느 월드에도 속하지 않습니다. 여기서 [`Server::set`](sdk#server)으로 서버 값을
+서버의 틱: 아무도 없어도 1초에 두 번, 어느 월드에도 속하지 않습니다. 여기서 [`Server::set`](sdk#store)으로 서버 값을
 바꾸고(월드의 이벤트들은 읽기만), `Server::create_world`(플러그인의 월드)를 부를 수 있습니다. `num("players")` 지금 접속 수, `now()` 벽시계.
 
 ### DayEnd
@@ -581,6 +581,9 @@ fn timer(e: Timer) {
 | `first_cell()` → `(x0, z0)` | 첫 칸: 칸은 `x0..x0+size`, `z0..z0+size` |
 | `size()` | 한 변의 칸 수 (32) |
 | `clear_props()` | 그 위의 덤불·풀·유목 치우기 |
+
+땅을 처음부터 만드는 것은 이 이벤트가 아니라 [플러그인의 월드 생성기](world#플러그인의-월드-생성기)(`#[generator]`, 서버의 이벤트
+`"gen:<이름>"`: 그 생성기의 플러그인에만, 그 생성기로 만든 월드에서만)입니다. 생성기가 청크를 만든 뒤에도 이 이벤트는 그대로 옵니다.
 
 ### PlayerInteract
 

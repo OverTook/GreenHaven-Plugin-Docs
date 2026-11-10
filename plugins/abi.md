@@ -69,8 +69,8 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `gold(d: i64)` `energy(d: f64)` | 골드, 기력 |
 | `prop(p, len, v: f64)` | 그 칸에 선 것의 속성 (`scale`) |
 | `say(p, len)` | 플레이어에게 한마디 |
-| `fx(p, len)` | 그 칸에서 소리 |
-| `particle(p, len, x, y, z: f64)` `sound(p, len, x, y, z: f64)` | 파티클, 소리 (월드의 모두에게) |
+| `fx(p, len)` | 그 칸에서 소리 (SDK `Base::sound_here`) |
+| `particle(p, len, x, y, z: f64)` `sound(p, len, x, y, z: f64)` | 파티클, 소리 (월드의 모두에게; SDK `World`의 `Audience::particle` / `sound`) |
 | `strike(x, z, r: f64, damage: i64)` | 둘레의 몬스터 공격 |
 | `reply(p, len)` | `words`: 주민이 대신 할 말 / `chat`: 대신 할 말 |
 | `gui(p, len)` | 창: `{"id", "title", "text", "npc", "image", "buttons": [{"id", "label", "style"}], "inputs": [{"id", "label", "placeholder", "max", "secret"}]}`; 닫기 `{"id", "close": true}` |
@@ -79,8 +79,8 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 
 | 함수 | |
 |---|---|
-| `where_text(p, len)` `title(p, len)` `chat(p, len)` | 위치 문구, 큰 제목, 채팅 한 줄 |
-| `broadcast(p, len)` | 월드 모두의 채팅 |
+| `where_text(p, len)` `title(p, len)` `chat(p, len)` | 위치 문구, 큰 제목, 채팅 한 줄 (SDK `Player`의 `Audience`) |
+| `broadcast(p, len)` | 월드 모두의 채팅 (SDK `World`의 `Audience::message`) |
 | `teleport(x, z: f64)` `heal(n: f64)` | 옮기기, 체력 |
 | `xp(p, len, n: i64)` `friendship(p, len, n: i64)` | 경험치, 호감도 |
 | `open_shop(p, len)` | 가게 열기 |
@@ -90,10 +90,10 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_check(p, len, on: i32)` | 서버의 이동 검사 하나(`speed` `walls` `air` `teleport` `reach`)를 그 플레이어에게만 끄고 켬 ([이동 방식 만들기](moving#서버의-이동-검사)) |
 | `death(hold: i32)` `respawn()` | 쓰러뜨림 (`hold` 0이 아니면 쓰러진 채 대기), 일으킴 |
 | `set_model(p, len)` | [커스텀 모델](models) (빈 문자열: 원래 모습) |
-| `play_anim(p, len)` `stop_anim()` | [감정 표현](models) 재생, 끝내기 |
-| `set_time(minute: i64)` | 그 월드의 시각 |
+| `play_anim(p, len)` `stop_anim()` | [감정 표현](models) 재생, 끝내기 (SDK `Player::play_emote` / `stop_emote`) |
+| `set_time(minute: i64)` | 그 월드의 시각 (SDK `World::set_minute`) |
 | `move_world_at(p, len, ap, al)` | 그 플레이어를 서버의 그 월드로 (`""` 모두의 월드), 게임 모듈이 아는 자리 `ap`(32바이트까지)로: 농장의 `"station"`(그 월드의 열기구 정거장) `"desert"`(사막의 정거장); `""`이나 모르는 이름이면 그 월드의 스폰. 예전의 `move_world(p, len, station: i32)`는 없어졌습니다 |
-| `music_play(p, len)` `music_all(p, len)` | 그 플레이어 / 월드 모두에게 곡 |
+| `music_play(p, len)` `music_all(p, len)` | 그 플레이어 / 월드 모두에게 곡 (SDK `Audience::music` / `music_with`) |
 | `player(i: i32) -> i32` | tick: i번째 플레이어를 고름 (뒤의 `pget` `me` 등이 그 사람; -1: 이벤트의 그 사람으로 돌아감) |
 | `player_named(p, len) -> i32` | 서버 어디든 접속한 그 이름의 사람을 `player(i)`의 번호로 (-1: 없음; `num("player.i.x")` 등도 채움) |
 | `char_view(p, len)` | 보기 그룹 (`Player::set_view_group`; 빈 이름: 없음) |
@@ -109,7 +109,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `damage(amount: f64, cp, cl, bp, bl)` | 피해 (원인, 친 사람) — `plugin_api/combat.rs` |
 | `set_health(n: f64)` `set_max_health(n: f64)` | 체력, 최대 체력 |
 | `set_pvp(on: i32)` `pvp() -> i32` | 월드의 PvP |
-| `ent_set_health(id: i64, hp, max: f64)` `ent_health(id: i64) -> f64` | 엔티티의 체력 |
+| `ent_set_health(id: i64, hp, max: f64)` `ent_health(id: i64) -> f64` | 엔티티의 체력 (SDK `LivingEntity::set_health` / `set_max_health`) |
 | `ent_damage(id: i64, amount: f64)` | 엔티티에 피해: 폭발의 한 대처럼 `EntityDamage` / `EntityDeath`(원인은 플러그인 이름, 친 사람은 이벤트의 플레이어), `Explosion` 이벤트 없음 |
 | `cast(x, y, z, dx, dy, dz, len: f64, wp, wl, p, cap) -> len` | 광선 판정 → `"kind	who	x	y	z	nx	ny	nz	거리"`(`""` 없음; kind `block` `box` `player` `entity`); `wp` 이름이 있으면 그 사람의 한 발(되감기, 눈, PvP, 초당 20) |
 | `trail_at(wp, wl, ms_ago: f64, p, cap) -> len` | 그 사람(`""` 이벤트의 사람)이 있던 곳 `"x	y	z	yaw"` |
@@ -144,14 +144,15 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `save_now()` | 월드를 지금 저장 |
 | `set_live_saving(on: i32)` | 실시간 저장 |
 | `set_quit_warning(p, len)` | 나가기 경고 |
-| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름; id만이면 서버의 생성기 `level-type`); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void", ...그 생성기의 옵션}`(농장의 `"town": false`); `"template"`: 그 월드의 복사 |
-| `set_spawn(x: f64, y: f64, z: f64, yaw: f64)` | 월드의 스폰 |
+| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름; id만이면 서버의 생성기 `level-type`); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void" \| "map" \| "<플러그인>:<이름>", ...그 생성기의 옵션}`(농장의 `"town": false`, 맵의 `"glb"` `"collision"` `"spawn": [x, y, z, yaw 도]`); `"template"`: 그 월드의 복사 |
+| `set_spawn(x: f64, y: f64, z: f64, yaw: f64)` | 월드의 스폰 (yaw 도; SDK `World::set_spawn`은 라디안을 받아 바꿔 넘김) |
 | `set_rule(kp, kl, jp, jl) -> i32` `clear_rules()` | 이 월드의 규칙 패치 (키, JSON 값; 1 / 0: JSON이 아니거나 월드마다 둘 수 없는 키) |
 | `set_clock_rate(f: f64)` | 이 월드의 시계 배율 (0 멈춤, 음수 규칙대로) |
 | `set_inventory_group(p, len)` | 이 월드의 가방 그룹 (`""` 서버의) |
 | `set_mode(p, len) -> i32` | `"none"` / `"vanilla"` (server.properties `game-module`과 같은 이름; 1 / 0: 그런 모드 없음) |
 | `set_action_rate(rate: f64, burst: f64)` | 이 월드의 행동 한도 (음수: 서버의 것) |
 | `world_hud(p, len, hidden: i32)` | 이 월드 모두의 HUD 부분 숨김 / 보임 |
+| `world_view(flags: i32, fog: f64, sight: f64)` | 이 월드를 그리는 법: `flags` 비트 1 곡률, 비트 2 가림 컬링(occlusion); 음수면 server.properties의 것 (SDK `World::set_view(&View)`) |
 | `set_sync(p, len)` | JSON `{"tiers": [[m, ms], ...], "chat": m, "full": n, "send": 초당}` (`{}` 서버의 것으로) |
 | `world_list(p, cap) -> i32` | 만들었거나 읽은 월드마다 `id	players	loaded
 ` |
@@ -201,7 +202,8 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 |---|---|
 | `ent_spawn(p, len, x, y, z: f64) -> i64` | 엔티티 만들기 (id, 0 실패) |
 | `ent_get(id, k, kl) -> f64` `ent_set(id, k, kl, v)` | `x` `y` `z` `yaw` `pitch` `roll` `scale` (`get`은 `alive` `hp` `max_hp`도); `glide`(초)를 먼저 쓰고 `x` `y` `z`를 쓰면 그만큼에 걸쳐 그려지며 감 (SDK의 `glide_to`) |
-| `ent_anim(id, p, len)` `ent_remove(id)` | 클립 (아바타: 동작, 부를 때마다 한 번) |
+| `ent_var(id, k, kl) -> f64` `ent_set_var(id, k, kl, v: f64)` | 엔티티에 이 플러그인이 남기는 숫자 (SDK `Store for ModelEntity`): NaN 없음 / NaN을 쓰면 지움. 게임에 안 감, 엔티티와 함께 사라짐, 엔티티에 64개, 키 32바이트 |
+| `ent_anim(id, p, len)` `ent_remove(id)` | 클립 (아바타: 동작, 부를 때마다 한 번; SDK `Entity::play_clip`) |
 | `ent_look(id, p, len)` `ent_held(id, p, len)` | 아바타(`ent_spawn("avatar", …)`)의 CatLook JSON, 손에 든 아이템 id |
 | `ent_name(id, p, len)` | 아바타 머리 위 이름 (`""` 없음) |
 | `ent_text(id, kp, kl, p, cap) -> i32` | `model` `anim` `held` `name` |
@@ -232,16 +234,17 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `show_block(x, y, z: i64, b: i32)` `clear_fake_blocks()` | 그 플레이어의 게임에만 보이는 블록, 거두기 |
 | `fill(x0, y0, z0, x1, y1, z1: i64, b: i32)` | 양 끝 포함, 한 번에 청크 넷까지 |
 | `props_clear()` | `chunk.generate`: 그 청크의 덤불·풀·유목 치우기 |
+| `chunk_put(p, len, op, ol)` | 생성기의 청크 하나 통째로 (`"gen:<이름>"` 이벤트에서만; SDK `#[generator]`의 `run_generator`): `p`는 기둥 32 × 32개 × 높이 64바이트(블록 번호, y는 `Block::LOWEST`부터; 기둥 (lx, lz)는 `(lz * 32 + lx) * 64`에서), `op`는 청크 밖에 놓은 큰 블록들(13바이트씩: x, y, z `i32` 리틀 엔디언, 블록 번호)로 이 청크에 들어오는 부품이 놓임 ([생성기](world#플러그인의-월드-생성기)) |
 | `set_blocks(p, len)` | 블록 여럿을 한 번에: 블록마다 `i32` x, y, z, 번호 (리틀 엔디언, 16바이트), 65 536개까지. `chunk.generate` / `chunk.load`에서는 그 청크의 것만 |
 | `chunk_mark(x, z: i64, p, len) -> i64` | 청크 (x, z)에 이 플러그인이 남긴 숫자 `name` (0 없음; 월드와 함께 저장) |
 | `chunk_set_mark(x, z: i64, p, len, v: i64)` | 그 숫자 정하기 |
 | `structure_count() -> i64` `structure_id(i) -> i64` | 구조물 목록 |
-| `structure_get(id, k, kl) -> f64` | `x` `z` `y` `yaw` `w` `d` `scale` |
+| `structure_get(id, k, kl) -> f64` | `x` `z` `y` `yaw`(도) `w` `d` `scale` (SDK는 타입 있는 `Structure` 메서드, yaw 라디안) |
 | `structure_text(id, k, kl, p, cap) -> i32` | `k` `m` `plot` `n` `key` `kind` `label` `text` `s` `owner` |
-| `structure_put(p, len) -> i64` | 세우기 (id, 0 실패; `"hit"`: 히트박스, 누군가의 몸에 걸리면 놓이지 않음) |
+| `structure_put(p, len) -> i64` | 세우기: `{"k", "m", "x", "z", "y", "yaw"(도), "scale", "plot", "cells": [x, z, w, d], "hit": [[..]]}` (id, 0 실패; `"hit"`: 히트박스, 누군가의 몸에 걸리면 놓이지 않음; SDK `&Placement`) |
 | `solid_at(x, y, z: f64) -> i32` | 그 칸이 단단한가 (블록이나 충돌층의 상자: 1/0) |
-| `raycast(x, y, z, dx, dy, dz, most: f64) -> f64` | 광선이 처음 닿는 단단한 칸까지 m (−1 없음, 256 m까지) |
-| `structure_remove(id)` `structure_remove_plot(p, len)` `structure_move(id, x, z, yaw: f64)` | |
+| `raycast(x, y, z, dx, dy, dz, most: f64) -> f64` | 광선이 처음 닿는 단단한 칸까지 m (−1 없음, 256 m까지; SDK `World::cast_blocks`) |
+| `structure_remove(id)` `structure_remove_plot(p, len)` `structure_move(id, x, z, yaw: f64)` | 치우기, 구획 통째로, 옮기기 (yaw 도; NaN은 그대로) |
 | `debris_at(x, z: i64, p, cap) -> i32` | 그 칸(지상)의 야생 것 id (`""` 없음) |
 | `tree_fell(x, z: i64, tx, tz: f64) -> i32` | 나무를 마지막 도끼질처럼 (tx, tz) 쪽으로 베기 (1/0): 그루터기, 나무는 누구나 |
 | `debris_break(x, z: i64) -> i32` | 돌·잡초·그루터기·광맥 부수기 (1/0) |
@@ -326,8 +329,8 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 
 | 함수 | |
 |---|---|
-| `title_with(t, tl, s, sl, in: f64, stay: f64, out: f64)`, `action_bar(p, len)` | 그 사람의 화면 (`ui.title`, `ui.bar`) |
-| `sound_to(name, len, x, y, z)`, `particle_to(...)` | 그 사람만 (`ui.fx`) |
+| `title_with(t, tl, s, sl, in: f64, stay: f64, out: f64)`, `action_bar(p, len)` | 그 사람의 화면 (`ui.title`, `ui.bar`; SDK `Player`의 `Audience::title_with(&Title)` / `action_bar`) |
+| `sound_to(name, len, x, y, z)`, `particle_to(...)` | 그 사람만 (`ui.fx`; SDK `Player`의 `Audience::sound` / `particle`) |
 | `set_energy(n: f64)` | |
 | `equip_list(ptr, cap) -> i32`, `equip_set(slot, len, id, len)` | `"칸\t아이템\n"` (`""` 빔) |
 | `world_weather(ptr, cap) -> i32`, `world_spawn(i) -> f64` | 0 x 1 y 2 z 3 yaw, NaN 없음 |

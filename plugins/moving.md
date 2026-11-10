@@ -380,8 +380,8 @@ Me::set_position(p[0], p[1], p[2]);
 #[on(Enable)]
 fn enable(_e: Enable) {
     Registry::set("price.magic_staff", "300");
-    Registry::item("magic_staff", r#"{"name": "마법 지팡이", "usable": true, "type": "misc",
-        "icon": "res://plugins/riding/staff.png", "model": "res://plugins/riding/staff.glb", "action": "cast", "hit": 0.45}"#);
+    Registry::item("magic_staff", &ItemDef::new("마법 지팡이").usable().kind(ItemKind::Misc).icon("res://plugins/riding/staff.png")
+        .model("res://plugins/riding/staff.glb").action("cast").with("hit", "0.45"));
 }
 
 #[on(Use)]

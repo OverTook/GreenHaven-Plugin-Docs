@@ -32,7 +32,7 @@ fn enable(_e: Enable) {
     Registry::set("bag.slots", "48");                 // 값 하나: 경로와 JSON
     Registry::text("가방", "큰 가방");                 // 화면 글자
     Registry::crop("golden_carrot", r#"{"days": 8, "seasons": [0, 1, 2], "name": "황금 당근", "look": "carrot", "tint": "ffd23f"}"#);
-    Registry::item("golden_carrot", r#"{"name": "황금 당근", "icon": "res://plugins/golden_crops/golden_carrot.png", "color": "f2c14e"}"#);
+    Registry::item("golden_carrot", &ItemDef::new("황금 당근").icon("res://plugins/golden_crops/golden_carrot.png").color("f2c14e"));
     Registry::set("price.golden_carrot_seeds", "120");
     Registry::patch(r#"{"edible": {"golden_carrot": 150}, "progress": {"quests+": [["golden_harvest", "황금빛 수확", "황금 당근 3개를 가져다주세요.", {"deliver": {"golden_carrot": 3}}, 2000, "doyun"]]}}"#);
 }
@@ -44,7 +44,7 @@ fn enable(_e: Enable) {
 | `Registry::set(path, json)` | `"bag.slots"` 같은 경로의 값 하나 (`"48"`, `"\"글\""`, `"[1, 2]"`) |
 | `Registry::add(table, id, json)` | 표 `table`에 `id` 더하기·바꾸기 (`set("table.id", json)`) |
 | `Registry::block(id, &BlockKind)` | `blocks_add` — [새 블록 종류](world#새-블록-종류) |
-| `Registry::item(id, json)` | `items` |
+| `Registry::item(id, &ItemDef)` | `items` ([아래](#아이템)) |
 | `Registry::model(id, json)` `Registry::emote(id, json)` | `models_add` `emotes_add` ([커스텀 모델](models)) |
 | `Registry::text(from, to)` | `texts` |
 
@@ -58,6 +58,30 @@ fn enable(_e: Enable) {
 | `Registry::villager(id, json)` | `villagers_add` |
 
 `Registry::add("crops", id, json)`처럼 표 이름으로 부르면 들여오지 않아도 같습니다.
+
+### 아이템
+
+`Registry::item(id, &ItemDef)` (2026-11-11; 예전엔 JSON 글): `ItemDef::new(이름)` 위에 말한 것만 `items`의 그 아이템에 들어갑니다.
+
+| `ItemDef` | |
+|---|---|
+| `new(name)` | 이름 |
+| `.desc(text)` | 설명 (툴팁) |
+| `.icon(path)` | 아이콘: 이 플러그인의 `res://….png`, 또는 게임의 아이템 id |
+| `.color("e0115f")` | 아이콘이 없을 때의 색 |
+| `.price(gold)` / `.sell(gold)` | 상점 값 / 파는 값 |
+| `.kind(ItemKind::Tool \| Block \| Misc)` | 휘두르는 도구(`action`) / 놓는 블록 / 그 밖 (`"type"`) |
+| `.usable()` | 단축바에서 사용 ([`Use`](events#use)) |
+| `.model(path)` | 손에 든 모습 (`res://….glb`) |
+| `.action("slash" \| "cast" \| "chop" …)` | 쓸 때의 몸짓 |
+| `.with(key, json)` | 그 밖의 `items` 키, 값은 JSON (`.with("hit", "0.45")`, `.with("stack", "1")`) |
+
+`ItemDef::default()`(이름 없이)는 게임의 아이템을 말한 것만 바꿉니다: `Registry::item("carrot", &ItemDef::default().price(50))`.
+
+```rust
+Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::Misc).usable()
+    .model("res://plugins/riding/staff.glb").action("cast").icon("res://plugins/riding/staff.png"));
+```
 
 이 문서의 JSON 예는 모두 `Registry::patch`에 넘기는 모양입니다. SDK 없이는 plugin.json `events`에 `"enable"`을 구독하고
 `on_event`에서 "gh" [`register(ptr, len)`](abi#등록과-화면)를 부릅니다(샘플 `wild_fish`).
@@ -211,7 +235,8 @@ fn enable(_e: Enable) {
 ```
 
 지금 맞는 것 중에서 무작위 (두 번 넣으면 두 배 자주). `where`: `"outdoors"` `"indoors"` `"mine"` 또는 방 id. `id`는
-`assets/music`의 이름이나 플러그인 `assets/`의 `res://….ogg`. 코드에서는 `Player::play_music` / `World::play_music`.
+`assets/music`의 이름이나 플러그인 `assets/`의 `res://….ogg`. 코드에서는 [`Audience`](sdk#audience)의 `music(track)` /
+`music_with(&Music { track, fade, volume, looped })` / `stop_music()` (`Player` 그 사람, `World` 월드의 모두, `Server` 서버의 모두).
 
 ## 몬스터와 농장 동물 더하기
 

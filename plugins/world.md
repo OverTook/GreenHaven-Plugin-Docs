@@ -42,6 +42,57 @@ fn flat(e: ChunkGenerate) {
 }
 ```
 
+## 플러그인의 월드 생성기
+
+`ChunkGenerate`는 바닐라 땅이 이미 깔린 청크를 고칩니다. 땅을 처음부터 만들려면 **생성기**를 씁니다(Bukkit의 ChunkGenerator;
+2026-11-11, 예제 [`islands`](samples)). `ChunkGenerator`를 구현한 타입에 `#[generator("이름")]`을 붙이면 생성기
+`"<플러그인>:<이름>"`(이름은 영문·숫자·`_ - .` 32자까지)이 생깁니다. 그것으로 만든 월드 — `Server.create_world_with(id, "islands:islands", "")`,
+모두의 월드면 server.properties `level-type=islands:islands` — 의 청크가 처음 만들어질 때마다 `generate`가 불립니다.
+
+```rust
+use greenhaven_plugin::*;
+
+#[generator("islands")]
+struct Islands;
+
+impl ChunkGenerator for Islands {
+    fn generate(&self, c: &mut ChunkData) {
+        let n = c.noise(); // 월드의 씨앗
+        let ground = |x: i64, z: i64| (n.fbm2(x as f64 / 96.0, z as f64 / 96.0, 4) * 26.0 - 4.0) as i64;
+        for (x, z) in c.columns() {
+            let h = ground(x, z).clamp(Block::LOWEST + 2, 40);
+            c.fill((x, Block::LOWEST, z), (x, h - 1, z), Block::STONE);
+            c.set(x, h, z, if h <= 1 { Block::SAND } else { Block::GRASS });
+            if h < 0 { c.fill((x, h + 1, z), (x, 0, z), Block::WATER); } // 바다
+        }
+        let trunk = Block::named("islands_trunk").unwrap_or(Block::DIRT);
+        Trees::new(trunk, Block::GRASS).place(c, |x, z| Some(ground(x, z)).filter(|h| *h > 1 && *h < 40));
+    }
+}
+```
+
+| `ChunkData` | |
+|---|---|
+| `chunk()` / `first_cell()` / `size()` | 청크 번호 (x, z) / 첫 칸 (x0, z0: 칸은 x0..x0+32, z0..z0+32) / 32 |
+| `seed()` / `noise()` | 월드의 씨앗 / `Noise::new(seed)` |
+| `columns()` | 칸 기둥 `(x, z)` 하나씩 |
+| `contains(x, z)` | 이 청크의 칸인지 |
+| `set(x, y, z, b)` / `get(x, y, z)` | 블록 놓기 / 지금까지 놓은 것 (밖은 공기) |
+| `fill(from, to, b)` | 상자 채우기 (두 끝 포함, 이 청크 안만) |
+| `top(x, z)` → `Option<i64>` | 공기 아닌 가장 높은 칸 |
+
+- 좌표는 월드의 칸, y는 `Block::LOWEST`(−8)부터 64칸. 놓지 않은 칸은 공기입니다.
+- 블록마다 호스트 호출을 하지 않습니다: 핸들러가 끝나면 청크 하나가 버퍼 하나로 서버에 갑니다(호스트 함수 [`chunk_put`](abi)). 서버는
+  그 플러그인에만, 그 생성기로 만든 월드에서만 이벤트 `"gen:<이름>"`을 보냅니다.
+- **큰 블록**(여러 칸 종류)은 부품과 함께 놓입니다. 청크 **바로 밖**에 놓은 큰 블록이 이 청크로 들어오면 이 청크에도 그 부품이 놓이니,
+  큰 블록이 닿는 청크마다 같은 `set`을 하세요. 그 밖의 청크 밖 칸은 무시됩니다.
+- **같은 씨앗, 같은 땅**: 월드를 리셋하면 청크를 다시 만들므로, 땅은 씨앗과 좌표만으로 정해져야 합니다. `Noise::new(seed)`의
+  `noise2(x, z)` `noise3(x, y, z)` `fbm2(x, z, 옥타브)`(약 −1~1; 좌표를 척도로 나눔: `x / 64.0`이면 64칸쯤에 언덕 하나).
+- **나무**: `Trees::new(줄기, 잎)`(청크에 4그루, 줄기 4~6, 수관 2; 필드 `per_chunk` `height` `crown`)`.place(c, |x, z| 땅 높이 또는 None)`.
+  청크마다 자기 나무와 이웃 청크 나무의 이 청크 부분을 놓아, 청크 경계에 선 나무도 온전합니다.
+- 만든 청크는 여느 청크처럼 저장되고 그 뒤 `ChunkGenerate` / `ChunkLoad`도 그대로 옵니다. 생성기가 없거나(플러그인이 꺼짐) 아무것도
+  만들지 못하면 빈 청크입니다.
+
 ## 새 블록 종류
 
 플러그인은 [`Enable`](events#enable)에서 블록 종류를 등록합니다. 그려지는 모습은 셋 중 하나입니다(앞의 것이 있으면 그것):
@@ -82,6 +133,8 @@ fn enable(_e: Enable) {
 - **여러 칸**: 놓은 칸에 그 종류, 나머지 칸은 그려지지 않는 부품 블록이 되어 건물처럼 그 칸들 모두 막힙니다(`solid`가 꺼져
   있으면 모두 지나다님). 놓을 때 모든 칸이 비어 있어야 하고, 어느 칸을 부숴도 전체가 사라져 아이템 하나로 돌아옵니다.
   `set_block` / `set_blocks`로 놓아도 부품까지 채워집니다(청크 이벤트 안에서는 그 청크의 칸만).
+- 큰 블록의 한 칸 위에 다른 블록을 놓으면(`set_block` `set_blocks` `fill`) **그 큰 블록 전체가 먼저 사라집니다**: 반쪽 조각상이나 부서지지
+  않는 부품이 남지 않습니다. 큰 종류로 `fill`하면 그 크기 간격으로, 상자 안에 다 들어가는 것만 온전히 놓입니다.
 - **충돌**은 칸 단위입니다: 단단한 종류는 모양과 상관없이 그 칸 전체가 막힙니다(서버의 걷기 판정과 같게).
 - 비쳐 보이거나 모델이거나 지나다니는 종류 옆의 블록 면은 그려집니다.
 
@@ -134,31 +187,36 @@ fn joined(e: Join) {
 성벽은 성문으로만 넘음, 정거장 내리는 곳, 레버)과 게임의 그림이 모두 이 목록에서 나옵니다: **성벽 구조물을 빼면 성벽
 판정도 사라집니다.**
 
+구조물은 [`Entity`](sdk#structure)입니다(`location` `move_to` `remove`; 혼자 움직이지 않고 체력이 없음). 세울 것은 [`Placement`](sdk#placement)
+빌더로 줍니다(2026-11-11; 예전엔 JSON 글, `Structure`의 글 키 `get` `text`도 타입 있는 메서드로 바뀜).
+
 ```rust
 #[on(WorldCreate)]
 fn open(e: WorldCreate) {
     e.world().remove_plot("wall"); // 성벽·성문·바위 둑·암초
     for s in e.world().structures() {
-        if s.plot() == "station" { s.move_to(s.get("x") + 4.0, s.get("z"), s.get("yaw")) }
+        if s.plot() == "station" { let (x, y, z) = s.location(); s.move_to(x + 4.0, y, z); }
     }
-    e.world().put_structure(r#"{"k": "building", "m": "house_Lv1", "x": 40, "z": 60, "yaw": 0, "plot": "my_house"}"#);
+    e.world().put_structure(&Placement::building("house_Lv1").at(40.0, 60.0).plot("my_house"));
+    e.world().put_structure(&Placement::prop("res://plugins/deco/lamp.glb").at(12.0, 5.0).turned(1.57).scaled(1.2).plot("deco"));
 }
 ```
 
-목수가 짓는 건물도 구조물로 들어갑니다.
+`Placement::prop(model)`(서 있는 것: 플러그인의 GLB나 게임의 모델 이름) `building(model)`(게임의 건물: 문과 방) `blocked(x, z, w, d)`(아무도
+못 서는 칸) 위에 `.at(x, z)` `.raised(y)` `.turned(yaw 라디안)` `.scaled(s)` `.plot(name)` `.hitbox(..)`. 목수가 짓는 건물도 구조물로 들어갑니다.
 
 ## 히트박스와 충돌
 
 블록이 아닌 것도 부딪힙니다. 구조물과 단단한 엔티티는 **히트박스**를 가지고, 서버는 월드마다 그 상자들을 청크별로
-모아 둡니다(충돌층). 걸음 판정, `path_blocks`·`path`, 밤의 몬스터, `World::is_solid` / `raycast`가 블록과 함께 이 상자를
-단단한 것으로 보고, 게임도 같은 상자로 몸을 만듭니다(부딪히고, 게임 쪽 코드의 `raycast` 질의에 닿음). 마을의 건물 벽,
+모아 둡니다(충돌층). 걸음 판정, `path_blocks`·`path`, 밤의 몬스터, `World::is_solid` / `cast_blocks`가 블록과 함께 이 상자를
+단단한 것으로 보고, 게임도 같은 상자로 몸을 만듭니다(부딪히고, 게임 쪽 코드의 `World::cast_to` 질의에 닿음). 마을의 건물 벽,
 헛간, 울타리, 성벽 선도 같은 층에 있습니다.
 
 히트박스는 상자 목록 `[[x, z, w, d, y, h], ...]`(32개까지)입니다: 그 물건의 칸에서 (x, z)칸 떨어진 곳부터(방향 0일 때,
 x·z는 월드의 칸) 가로 w × 세로 d칸, 바닥 블록(땅 위에 섰을 때 발이 있는 블록)에서 y블록 위부터 h블록 높이. 물건의
 방향을 90도 단위로 반올림해 함께 돕니다.
 
-- 구조물: `put_structure`의 JSON에 `"hit"`. 바닥은 그 칸의 가장 높은 단단한 블록 바로 위(+ `y`). 적지 않은 `prop`·`building`은
+- 구조물: `Placement::hitbox(&[[x, z, w, d, y, h]])`. 바닥은 그 칸의 가장 높은 단단한 블록 바로 위(+ `y`). 적지 않은 `prop`·`building`은
   놓을 때 서버가 정합니다: 플러그인 자산의 GLB면 그 크기, 아니면 발자국에 2블록 높이.
 - 엔티티: `set_solid(true)`(기본은 지나감), 모양은 `set_hitbox(&[[x, z, w, d, y, h]])`(없으면 GLB 크기, 아니면 한 칸 두 블록).
   움직이면 따라가고, 지우면 빠집니다. 플레이어가 타고 있는 탈것은 그 플레이어의 걸음에서는 빼고 봅니다. yaw가 직각이면 상자째
@@ -166,31 +224,32 @@ x·z는 월드의 칸) 가로 w × 세로 d칸, 바닥 블록(땅 위에 섰을 
 - 바닐라 구조물은 종류대로: 건물 벽 12블록, 울타리 4블록(가늘게: 옆에 선 몸은 그 칸에 들어가도 됨), 성벽 선(성문으로만).
 
 ```rust
-w.put_structure(r#"{"k": "prop", "m": "res://plugins/arena/pillar.glb", "x": 10, "z": 4, "hit": [[0, 0, 2, 2, 0, 4]]}"#);
+w.put_structure(&Placement::prop("res://plugins/arena/pillar.glb").at(10.0, 4.0).hitbox(&[[0, 0, 2, 2, 0, 4]]));
 let gate = w.spawn("res://plugins/arena/gate.glb", 12.0, 0.5, 4.0).unwrap();
 gate.set_hitbox(&[[0, -1, 1, 3, 0, 3]]);
 gate.set_solid(true);
 if w.is_solid(11.0, 1.0, 4.0) { /* 블록이나 상자 */ }
-let d = w.raycast((0.0, 1.0, 4.0), (1.0, 0.0, 0.0), 30.0); // 처음 닿는 단단한 칸까지 m
+let d = w.cast_blocks((0.0, 1.0, 4.0), (1.0, 0.0, 0.0), 30.0); // 처음 닿는 단단한 칸까지 m
 ```
 
 ### 메시 충돌: 완성된 맵
 
-칸 상자로는 경사로, 얇은 벽, 난간, 계단을 만들 수 없습니다. 맵을 GLB로 만들었다면 그 삼각형 그대로 충돌시키세요.
+칸 상자로는 경사로, 얇은 벽, 난간, 계단을 만들 수 없습니다. 맵을 GLB로 만들었다면 그 삼각형 그대로 충돌시키세요(한 번에 하려면
+아래 [맵 월드](#맵-월드)).
 
 ```rust
 // 빈 월드(server.properties level-type=void, 또는 create_world_with(id, "void", ..))의 Enable이나 world.create에서
 let map = w.spawn("res://plugins/arena/map.glb", 0.0, 0.0, 0.0).unwrap();   // 그리는 모델
 map.set_collision_mesh("res://plugins/arena/map_col.glb");                 // 충돌용(같은 GLB여도 됨)
 map.set_persistent(true);
-w.set_view(false, 300.0, 400.0);                                           // 평평하게, 멀리까지
+w.set_view(&View { curve: false, fog: 300.0, sight: 400.0, occlusion: true }); // 평평하게, 멀리까지, 벽 뒤는 안 그림
 w.set_spawn(0.0, 1.0, 0.0, 0.0);
 ```
 
 - 충돌 GLB는 그 플러그인 자산 안의 것만, 한 조각에 10만 삼각형까지(큰 맵은 조각으로 나눠 엔티티 여러 개; 월드에 256개까지).
   GLB의 노드 위치·회전·크기를 모두 반영하고, 엔티티의 자리·회전·크기대로 놓입니다.
 - 서버의 걷기 검사: 위치 보고마다 직전 위치와 이은 걸음이 벽을 앞면에서 뚫으면 되돌립니다. 바닥, 경사로, 계단, 2층을 발밑 땅으로
-  봅니다. 총알(`World::cast` / `cast_for`), `raycast`, 투사체, 폭발의 엄폐, `seen_from`도 면에 막힙니다(맞은 것은 `"entity"`, 그 id).
+  봅니다. 총알(`World::cast` / `cast_for`), `cast_blocks`, 투사체, 폭발의 엄폐, `seen_from`도 면에 막힙니다(맞은 것은 `"entity"`, 그 id).
 - 게임도 같은 삼각형으로 몸을 만들어 플레이어가 부딪힙니다.
 - 걷기 판정의 엄격함: 기본(`line`)은 무릎·가슴 높이 선 두 줄만 봐서 정상 플레이어를 잘못 되돌리는 일이 없지만, 조작된 게임이 몸보다
   좁은 틈이나 낮은 창, 벽 뒷면을 지나가는 건 못 잡습니다. 경쟁 맵이면 `w.set_mesh_check(true, 0.25)`(몸 반지름 0.05~0.5 m, 게임 캡슐은
@@ -198,6 +257,27 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
   기본값(server.properties `mesh-walk-check=line|body`, `mesh-walk-radius=0.25`).
 - 길찾기(`path_blocks`)와 몬스터는 칸 단위라 메시를 모릅니다. FPS 맵에는 `World::set_mode("none")`로 몬스터를 끄세요.
 - 엔티티는 플레이어 150 m 안에서만 보이니 맵의 원점을 가운데에 두세요.
+- 게임은 큰 플러그인 메시를 32 m 조각으로 나눠 화면 밖의 조각을 그리지 않고(frustum culling), 월드의 `View`가 `occlusion`이면 충돌
+  메시로 가리개(occluder)를 만들어 벽 뒤를 그리지 않습니다.
+
+### 맵 월드
+
+`Server.create_map_world(id, glb, collision, spawn)` → `bool` (2026-11-11, 생성기 `"map"`)은 위를 한 번에 합니다:
+
+- 땅은 비어 있고(void), 월드가 만들어질 때 이 플러그인의 GLB(`"res://plugins/<이름>/arena.glb"`; 다른 곳의 것은 안 됨)가 원점에
+  **영구 `ModelEntity`**(이 플러그인의 것: `World::entities`에 있고 옮기거나 지울 수 있음)로 섭니다.
+- `collision`의 삼각형으로 단단합니다(`None`: GLB 자신; 같은 모양의 더 단순한 메시가 쌈).
+- 모두 `spawn` `(x, y, z, yaw 라디안)`으로 들어옵니다.
+- 평평하게(`curve` 끔), 가림 컬링 켬(`occlusion`)으로 그립니다: `World::set_view`로 바꿈.
+- `false`: 쓸 수 없는 id. `create_world_with(id, "map", r#"{"glb": "...", "collision": "...", "spawn": [x, y, z, yaw 도]}"#)`와 같습니다.
+
+```rust
+#[command("경기장", "")]
+fn arena(c: Command) {
+    Server.create_map_world("arena", "res://plugins/arena/arena.glb", Some("res://plugins/arena/arena_col.glb"), (0.0, 2.0, -20.0, 0.0));
+    c.player().move_world("arena");
+}
+```
 
 ## 주민
 
@@ -219,7 +299,7 @@ fn neighbor(e: WorldCreate) {
 
 - `look`: 모습·얼굴·목소리·일정을 빌려 올 기존 주민 id.
 - 장소(`home`, `schedule`, `rain`): 마을의 장소 키 (`square` `library` `dock` `general` …, 각 주민의 집, 또는 구조물 `place`의 `key`).
-- 이미 있는 주민은 [`Npc`](sdk#npc)의 `set` `go_to` `say` `remove`.
+- 이미 있는 주민은 [`Npc`](sdk#npc)의 `set` `go_to` `say`, 그리고 `Entity`로서 `location` `move_to`(걸어감) `remove`.
 
 ## 하루
 
@@ -227,7 +307,7 @@ fn neighbor(e: WorldCreate) {
 
 | 바꾸는 것 | |
 |---|---|
-| `Player::set_time(minute)` | 지금 시각 |
+| `World::set_minute(minute)` / `minute()` | 지금 시각 (예전 `Player::set_time`) |
 | `World::set_day(n)` | 날짜 |
 | `World::set_morning_time(minute)` `clear_morning_time()` | 밤이 끝나는 시각 |
 | `World::set_night_time(minute)` `clear_night_time()` | 밤이 시작되는 시각 |
@@ -242,7 +322,7 @@ fn neighbor(e: WorldCreate) {
 
 ### 서버 하나의 시계
 
-`tick`에서 벽시계 `now()`로 서버 시각을 계산해 `Player::set_time`으로 맞추면 모든 월드가 한 시계를 씁니다. 아무도 없는
+`tick`에서 벽시계 `now()`로 서버 시각을 계산해 `World::set_minute`으로 맞추면 모든 월드가 한 시계를 씁니다. 아무도 없는
 동안에도 벽시계는 흐르니 들어오면 그 시각부터입니다. 예: `plugins/server_clock`.
 
 ```rust
@@ -250,7 +330,7 @@ fn neighbor(e: WorldCreate) {
 fn keep_to_the_server(e: Tick) {
     let per_day = setting_num("day_real_minutes", 14.0) * 60_000.0;
     let want = 360 + ((now() % per_day) / per_day * 1200.0) as i64;
-    if (e.num("minute") as i64 - want).abs() > 2 { Player::default().set_time(want) }
+    if (e.world().minute() - want).abs() > 2 { e.world().set_minute(want) }
 }
 ```
 
@@ -285,13 +365,15 @@ fn keep_to_the_server(e: Tick) {
 |---|---|---|
 | `vanilla` (기본) | 바닐라 땅 | 바닐라 마을 (옵션 `{"town": false}`면 없이: 마을 자리는 평평한 풀밭, 마을에 묶인 기능은 꺼짐) |
 | `flat` | 어디나 높이 0의 풀 (그 밑 흙 셋, 그 밑 돌) | 없음 |
-| `void` | 아무것도 없음: 플러그인이 `WorldCreate`·`ChunkGenerate`로 지음 (플러그인만의 생성기) | 없음 |
+| `void` | 아무것도 없음: 플러그인이 `WorldCreate`·`ChunkGenerate`로 지음 | 없음 |
+| `<플러그인>:<이름>` | 그 플러그인의 [생성기](#플러그인의-월드-생성기) (예: `islands:islands`) | 없음 |
+| `map` | 없음, 플러그인의 GLB 한 채 ([맵 월드](#맵-월드)) | 없음 |
 
-- 모두의 월드: server.properties `level-type=vanilla|flat|void` (처음 만들 때만, [서버](server)).
+- 모두의 월드: server.properties `level-type=vanilla|flat|void|<플러그인>:<이름>` (처음 만들 때만, [서버](server)).
 - 플러그인의 월드: `Server.create_world_with("arena", "void", "")` (세 번째는 그 생성기의 옵션 JSON 객체, `""` 없음; 처음 만들 때만 셈).
   `create_world(id)`는 서버의 생성기(`level-type`)로. 바닐라 땅에 마을 없이: `create_world_with("wild", "vanilla", r#"{"town": false}"#)`.
 - 마을이 없는 월드에는 구조물·성벽·방·주민·가축이 없고, 게임도 아무것도 짓지 않습니다(나침반, 우편함, 집터 고르기도 없음).
-- **스폰** `World::set_spawn(x, y, z, yaw)`: 들어오는 곳 (칸, 발 높이: 높이 y 블록의 윗면은 y + 0.5). 정하지 않으면 마을의 농가 문 앞,
+- **스폰** `World::set_spawn(x, y, z, yaw)`: 들어오는 곳 (칸, 발 높이: 높이 y 블록의 윗면은 y + 0.5; yaw 라디안, 0이 +z). 정하지 않으면 마을의 농가 문 앞,
   마을이 없으면 (0, 0)의 가장 높은 블록 위(거기 아무것도 없는 `void` 월드면 서버가 (0, 0, 0)에 돌 한 칸을 놓아 그 위). 침대·의료실·열기구 정거장이 없는 월드에서는 아침에도, 쓰러진 뒤에도, 내릴 때도 여기입니다.
 - **바닐라 기능** `World::set_vanilla(feature, on)` (바닐라 모듈의 `VanillaWorld`; 월드에 저장; 모르는 이름이면 `false`, `is_vanilla`로 읽기): `villagers`(주민),
   `night`(땅 위 밤의 몬스터), `farming`(밭 갈기·심기·물 주기·수확·동물), `wild`(아침마다 나는 나무·바위·채집물), `tutorial`(첫날 할 일),
@@ -369,10 +451,7 @@ fn made(e: WorldCreate) {
 - `World::set_action_rate(rate, burst)`: 이 월드의 행동 한도 (최대 60, 120; 서버는 10, 30), `clear_action_rate()`. 플러그인의 패킷(게임 쪽
   `send`, 버튼, 키)은 따로 초당 30이라 행동 한도를 쓰지 않습니다.
 - `World::hide_hud(part, hidden)`: 게임 HUD의 부분([이름들](screen#게임-hud의-부분))을 이 월드의 모두에게 숨김 (들어오는 사람도).
-- `World::set_view(curve, fog, sight)`: 이 월드를 그리는 법. `curve`가 false면 세계가 휘지 않고 평평(FPS 맵), 안개가 다 가리는 거리
-  `fog` m, 그 너머는 안 그리는 거리 `sight` m(16~2000). `clear_view()`는 서버 기본값. 서버 기본값은 server.properties:
-  `world-curve=true`, `fog-distance=112`, `view-distance=150`. 블록 땅은 플레이어 둘레 ~112 m만 지어지니, 블록 월드에서 안개를 그보다
-  멀리 두면 땅 끝이 보입니다.
+- `World::set_view(&View { curve, fog, sight, occlusion })`: [이 월드를 그리는 법](#월드를-그리는-법).
 
 ```rust
 #[on(WorldCreate)]
@@ -383,7 +462,22 @@ fn made(e: WorldCreate) {
 }
 ```
 
-저장되지 않은 하루가 버려져도 플러그인 모듈의 메모리(전역 변수)는 남습니다. 월드를 디스크에서 다시 읽을 때만 새로 만들어집니다.
+저장되지 않은 하루가 버려져도 플러그인 모듈의 메모리(전역 변수, [`Global`](sdk#global))는 남습니다. 월드를 디스크에서 다시 읽을 때만 새로 만들어집니다.
+
+### 월드를 그리는 법
+
+`World::set_view(&View { curve, fog, sight, occlusion })` / `clear_view()` (월드와 함께 저장; 2026-11-11 전에는 인자 셋):
+
+- `curve`: 세계가 지평선 아래로 휘는지 (농장의 모습). false면 평평 (FPS 맵: 안개까지 그대로 보임).
+- `fog`: 안개가 다 가리는 거리 m, `sight`: 그 너머는 안 그리는 거리 m (16~2000, sight ≥ fog).
+- `occlusion`: 벽에 가려진 것을 그리지 않음. 가리개는 플러그인 엔티티의 충돌 메시입니다: 방과 거리가 많은 맵은 이득, 위에서
+  내려다보는 농장은 비용뿐이라 기본 꺼짐 ([맵 월드](#맵-월드)는 켬).
+- `View::default()`와 `clear_view()`는 server.properties의 `world-curve=true`, `fog-distance=112`, `view-distance=150`, occlusion 꺼짐.
+  블록 땅은 플레이어 둘레 ~112 m만 지어지니, 블록 월드에서 안개를 그보다 멀리 두면 땅 끝이 보입니다.
+
+```rust
+w.set_view(&View { curve: false, fog: 300.0, sight: 400.0, ..View::default() });
+```
 
 ## 영역 복사·붙여넣기 (스키매틱)
 
@@ -409,4 +503,4 @@ w.paste((0, 0, 0), &Server.data_get("arena").unwrap(), 0, false);
 - 나가기 전 경고는 `World::set_quit_warning("...")` (`""`: 띄우지 않음; 실시간 저장이면 기본으로 안 띄움).
 - 주민의 기억(본 일과 소문, 플레이어와 마지막으로 나눈 말과 받은 선물, 최근에 한 말)은 월드와 함께 저장됩니다. 주민이 서 있는
   곳과 하던 일은 저장하지 않고, 월드가 열릴 때 그 시각의 일정대로 다시 놓입니다.
-- 엔티티는 저장되지 않습니다.
+- 엔티티는 저장되지 않습니다(`ModelEntity::set_persistent(true)`나 맵 월드의 맵은 저장됨).
