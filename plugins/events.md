@@ -890,12 +890,13 @@ fn festival(e: Sell) {
 
 | | |
 |---|---|
-| `mob()` → [`EnemyEntity`](sdk#enemyentity) | 그 몬스터 (`get("x")` `"z"` `"hp"` `"tier"` `"speed"` `"damage"` `"size"` `"t"`(나온 뒤 초)) |
+| `mob()` → [`EnemyEntity`](sdk#enemyentity) | 그 몬스터 (`location()` `health()` `max_health()` `tier()` `speed()` `attack_damage()` `size()` `age()`(나온 뒤 초)) |
 | `kind_id()` | 종류 |
 | `target()` → `Option<(이름, x, z, 거리)>` | 같은 층의 가장 가까운 플레이어 |
 | `num("floor")` | 광산 층 (0 지상) |
 
 ```rust
+use greenhaven_plugin::*;
 use greenhaven_plugin::vanilla::*;
 
 #[on(MobStep)]
@@ -903,9 +904,9 @@ fn circle(e: MobStep) {
     let m = e.mob();
     if let Some((_, tx, tz, d)) = e.target() {
         if d < 1.5 { m.attack(2.0, 1.5) }
-        let (dx, dz) = (tx - m.get("x"), tz - m.get("z"));
-        m.set("vx", -dz * 0.5 + dx * 0.2); // 둘레를 돌며 다가감
-        m.set("vz", dx * 0.5 + dz * 0.2);
+        let (mx, _, mz) = m.location();
+        let (dx, dz) = (tx - mx, tz - mz);
+        m.set_velocity(-dz * 0.5 + dx * 0.2, dx * 0.5 + dz * 0.2); // 둘레를 돌며 다가감
     }
 }
 ```
@@ -914,7 +915,7 @@ fn circle(e: MobStep) {
 
 ### MobDeath
 
-몬스터가 쓰러졌을 때: 플레이어의 휘두름, 또는 플러그인의 `EnemyEntity::damage`(광선, 발사체 …). `kind_id()` 종류, `position()` → `(x, z)`,
+몬스터가 쓰러졌을 때: 플레이어의 휘두름, 또는 플러그인의 `EnemyEntity::damage`(`LivingEntity`; 광선, 발사체 …). `kind_id()` 종류, `position()` → `(x, z)`,
 `floor()`(0 지상, 광산 층, 던전 방), `killer()` 쓰러뜨린 사람(휘두른 사람, 또는 `damage`를 부른 이벤트의 플레이어; "" 없음),
 `cause()` "player"(휘두름) 또는 피해를 준 플러그인의 이름. `drop_item`은 그 몬스터 자리에 떨굽니다. 드롭과 경험치는 그대로.
 이 이벤트에서 다른 몬스터를 쓰러뜨리면 그 MobDeath도 오지만 4겹까지입니다.

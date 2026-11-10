@@ -110,6 +110,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_health(n: f64)` `set_max_health(n: f64)` | 체력, 최대 체력 |
 | `set_pvp(on: i32)` `pvp() -> i32` | 월드의 PvP |
 | `ent_set_health(id: i64, hp, max: f64)` `ent_health(id: i64) -> f64` | 엔티티의 체력 |
+| `ent_damage(id: i64, amount: f64)` | 엔티티에 피해: 폭발의 한 대처럼 `EntityDamage` / `EntityDeath`(원인은 플러그인 이름, 친 사람은 이벤트의 플레이어), `Explosion` 이벤트 없음 |
 | `cast(x, y, z, dx, dy, dz, len: f64, wp, wl, p, cap) -> len` | 광선 판정 → `"kind	who	x	y	z	nx	ny	nz	거리"`(`""` 없음; kind `block` `box` `player` `entity`); `wp` 이름이 있으면 그 사람의 한 발(되감기, 눈, PvP, 초당 20) |
 | `trail_at(wp, wl, ms_ago: f64, p, cap) -> len` | 그 사람(`""` 이벤트의 사람)이 있던 곳 `"x	y	z	yaw"` |
 | `projectile(mp, ml, x, y, z, vx, vy, vz, g, radius, life: f64) -> i64` | 발사체 엔티티 (−1 못 만듦) — `plugin_api/projectile.rs` |
@@ -199,7 +200,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | 함수 | |
 |---|---|
 | `ent_spawn(p, len, x, y, z: f64) -> i64` | 엔티티 만들기 (id, 0 실패) |
-| `ent_get(id, k, kl) -> f64` `ent_set(id, k, kl, v)` | `x` `y` `z` `yaw` `scale` (`alive`); `glide`(초)를 먼저 쓰고 `x` `y` `z`를 쓰면 그만큼에 걸쳐 그려지며 감 (SDK의 `glide_to`) |
+| `ent_get(id, k, kl) -> f64` `ent_set(id, k, kl, v)` | `x` `y` `z` `yaw` `pitch` `roll` `scale` (`get`은 `alive` `hp` `max_hp`도); `glide`(초)를 먼저 쓰고 `x` `y` `z`를 쓰면 그만큼에 걸쳐 그려지며 감 (SDK의 `glide_to`) |
 | `ent_anim(id, p, len)` `ent_remove(id)` | 클립 (아바타: 동작, 부를 때마다 한 번) |
 | `ent_look(id, p, len)` `ent_held(id, p, len)` | 아바타(`ent_spawn("avatar", …)`)의 CatLook JSON, 손에 든 아이템 id |
 | `ent_name(id, p, len)` | 아바타 머리 위 이름 (`""` 없음) |
@@ -212,6 +213,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `npc_goto(ip, il, x, z, hold: f64)` `npc_say(ip, il, tp, tl)` | 보내기, 한마디 |
 | `npc_spawn(p, len) -> i32` `npc_set(ip, il, p, len)` `npc_remove(ip, il)` | 더하기 (1/0), 바꾸기, 빼기 |
 | `mob_set(n, k, kl, v)` `mob_attack(n, damage, reach: f64)` | 몬스터 값, 공격 |
+| `mob_get(n, k, kl) -> f64` `mob_kind(n, p, cap) -> i32` | 어느 이벤트에서나 그 번호의 몬스터(이벤트의 층): `x` `z` `hp` `max_hp` `tier` `speed` `damage` `size` `t`, NaN 없음 / 종류 id (`""` 없음) |
 | `mob_spawn(p, len, x, z: f64)` `mob_remove(n)` | 소환, 없애기 |
 | `mob_anim(n, p, len)` | 그 몬스터 모델의 클립 한 번 (그 층의 모든 게임) |
 | `mine_rock(i, j: i32, p, len)` | `mine.floor`: 바위 놓기 (`""` 치우기) |

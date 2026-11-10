@@ -47,7 +47,7 @@ redirect_from:
 | `teleport(x, z)` | 옮기기 (서버의 이동 판정도 그 자리를 받아들임; `PlayerTeleport`가 먼저) |
 | `teleport_to(x, y, z, yaw)` | 3D로 옮기기 (`y` NaN: 그 자리의 땅 위, `yaw` NaN: 바라보던 대로; 라디안, 게임의 것) |
 | `y()` `yaw()` | 발의 높이, 바라보는 방향(라디안) — 그 게임이 마지막으로 알린 것 (pitch는 서버가 모름) |
-| `damage(amount, cause, by)` | 피해 (`cause` "": 플러그인 이름, `by` `Some(&친 사람)`): `PlayerDamage` 뒤 보호구가 몫을 덜고, 체력이 다하면 쓰러짐(`PlayerDeath`의 `killer()`). 방 안에서도 |
+| `damage_by(amount, cause, by)` | 피해 (2026-11-10 `damage`에서 이름이 바뀜; 원인 없이는 `LivingEntity::damage(amount)`) (`cause` "": 플러그인 이름, `by` `Some(&친 사람)`): `PlayerDamage` 뒤 보호구가 몫을 덜고, 체력이 다하면 쓰러짐(`PlayerDeath`의 `killer()`). 방 안에서도 |
 | `set_health(n)` `set_max_health(n)` | 체력을 n으로 (0으로 쓰러지지는 않음: `damage`로) / 그 사람의 최대 체력 (저장됨; 0: 규칙의 `max_health`) |
 | `team()` `join_team(team)` `leave_team()` | 이 월드에서의 팀 ([피해, 체력, PvP, 팀](#피해-체력-pvp-팀)) |
 | `set_time(minute)` | 그 사람이 있는 월드의 시각 (6:00 = 360 ~ 2:00 = 1560; 날짜는 그대로), 그 월드의 게임에 바로 알림 |
@@ -121,7 +121,7 @@ redirect_from:
 | `World::team(name, color, friendly_fire)` → `bool` | 팀 만들기·바꾸기 (`color` 이름표 색 `"#ff4040"`; 64개까지) |
 | `World::remove_team(name)` `teams()` `team_members(name)` | |
 | `Player::join_team(name)` → `bool` `leave_team()` `team()` | 한 팀에만; 같은 팀끼리는 `friendly_fire`일 때만 맞음 |
-| `ModelEntity::set_health(hp, max)` `health()` | 엔티티의 체력: 휘두름이 맞히면 [`ModelEntityDamage`](events#modelentitydamage--modelentitydeath), 0이면 사라짐 |
+| `ModelEntity::set_health(hp, max)` `health()` `max_health()` `damage(amount)` | 엔티티의 체력 (`LivingEntity`): 휘두름이 맞히면 [`ModelEntityDamage`](events#modelentitydamage--modelentitydeath), 0이면 사라짐 |
 | `World::cast(from, dir, len)` → `Option<Hit>` | 광선 판정: 블록(`HitKind::Block`), 충돌층의 상자(`Box`), 플레이어의 몸(`Player`, `who`; 폭 0.8 m, 발에서 1.6 m, 이벤트의 플레이어는 빼고), 체력 있거나 단단한 엔티티(`Entity`, `entity`) 가운데 처음 것, `at` `normal` `distance` (256 m까지) |
 | `World::cast_for(&쏜 사람, from, dir, len)` → `Option<Hit>` | 그 사람의 한 발을 **그 사람이 본 그대로**: 다른 플레이어를 그 사람의 왕복 시간 + 100 ms(게임이 남을 그리는 지연)만큼 되돌려(최대 300 ms) 맞혀 봄. 움직이는 엔티티(체력 있거나 단단한 것)와 몬스터도 왕복 시간의 반 + 100 ms 전 자리로. 몬스터에 맞으면 바닐라 모듈의 `Hit::mob()` → `EnemyEntity`, `damage(양)`으로 피해(0이면 쓰러지고 드롭·경험치). 시작점이 서버가 아는 눈에서 0.5 m 넘게 멀면 눈에서; PvP 꺼짐·friendly_fire 없는 같은 팀은 지나침; 초당 20발까지(넘으면 `None`). 연사 속도·탄약·쿨다운은 플러그인이 `Player::set`으로 |
 | `Player::eye()` → `Option<((x, y, z), yaw)>` `position_at(ms 전)` → `Option<(x, 발, z, yaw)>` | 쏘는 눈 (발 + 0.95 m), 그 사람이 있던 곳 (1초까지) |
@@ -356,16 +356,50 @@ fn richest(c: Command) {
 ## 엔티티
 
 Bukkit의 `Entity` 계층처럼, 월드에 있는 것은 모두 `Entity` 트레잇을 구현합니다. Rust에는 클래스 상속이 없어서 종류마다
-타입이 따로 있고, 공통 동작은 트레잇으로 나눕니다(`&dyn Entity`는 어느 것이든 받음).
+타입이 따로 있고, 공통 동작은 트레잇으로 나눕니다(`&dyn Entity`는 어느 것이든 받음). 체력 있는 것은 `LivingEntity`도
+(Bukkit의 LivingEntity; 2026-11-10 `Entity::health`는 여기로 옮겨 감).
 
 ```text
-Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  is_alive  health  distance_to
-├── ModelEntity            이 플러그인의 모델 (World::spawn)
-├── ItemEntity             땅에 놓인 아이템 (World::items, ground_drop)
-├── EnemyEntity            몬스터 (바닐라 모듈: vanilla::EnemyEntity, MobStep::mob)
-└── PlayerEntity (트레잇)  name  facing
-    ├── Avatar             플러그인이 만든 플레이어 아바타 (World::spawn_avatar)
-    └── Player             진짜 플레이어
+Entity (트레잇)                location  move_to  play_anim  stop_anim  remove  is_alive  distance_to …
+├── LivingEntity (트레잇)      health  max_health  damage
+│   ├── PlayerEntity (트레잇)  name  facing
+│   │   ├── Player             진짜 플레이어
+│   │   └── Avatar             플러그인이 만든 플레이어 아바타 (World::spawn_avatar)
+│   ├── ModelEntity            이 플러그인의 모델 (World::spawn; 체력은 set_health)
+│   └── EnemyEntity            몬스터 (바닐라 모듈: vanilla::EnemyEntity, MobStep::mob, World::mobs)
+└── ItemEntity                 땅에 놓인 아이템 (World::items, ground_drop)
+```
+
+주변의 것을 한 번에: `World::entities_near(x, z, radius)` → `Vec<AnyEntity>` (가까운 것부터). `AnyEntity`는 `Player` `Avatar`
+`Model` `Item` 가운데 하나: `entity()` → `&dyn Entity`, `as_living()` → `Option<&dyn LivingEntity>`(플레이어, 아바타, 체력을 준
+플러그인의 엔티티), `as_player()` → `Option<&dyn PlayerEntity>`(Bukkit의 `instanceof`처럼), 또는 `match`. 농장의 몬스터는 여기에
+없고 바닐라의 [`mobs()`](#바닐라-모듈-greenhaven_pluginvanilla)에 있습니다.
+
+몬스터의 종류는 데이터(rules.json [`monsters_add`](rules#몬스터-monsters_add))라 SDK에 종류별 타입이 없습니다. 자기 종류에 자기
+메서드를 붙이려면 `EnemyEntity` 위에 자기 타입을 만듭니다(`of_kind`):
+
+```rust
+use greenhaven_plugin::*;
+use greenhaven_plugin::vanilla::*;
+
+struct Wisp(EnemyEntity); // 이 플러그인의 "wisp" (monsters_add)
+
+impl Wisp {
+    fn of(m: &EnemyEntity) -> Option<Wisp> { m.of_kind("wisp").map(Wisp) }
+    fn enrage(&self) { self.0.set_speed(self.0.speed() * 1.5); self.0.play_anim("Attack01"); }
+}
+
+#[command("충격파", "")]
+fn shockwave(c: Command) {
+    let (w, (x, z)) = (c.world(), c.player().position());
+    for e in w.entities_near(x, z, 6.0) { // 플레이어, 아바타, 이 플러그인의 것, 땅의 아이템
+        if e.as_player().is_some_and(|p| p.name() == c.player().name()) { continue; } // (나는 빼고)
+        if let Some(l) = e.as_living() { l.damage(5.0); } // 체력 있는 것만 (원인: 이 플러그인 이름)
+    }
+    for (m, _, _) in w.mobs() { // 농장의 몬스터
+        if let Some(wisp) = Wisp::of(&m) { wisp.enrage(); } else if m.distance_to(&c.player()) < 6.0 { m.damage(5.0); }
+    }
+}
 ```
 
 ### Entity
@@ -378,7 +412,6 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | `play_anim(clip)` / `stop_anim()` | 모두에게 보이는 애니메이션: 모델은 그 클립, 아바타는 동작, 진짜 플레이어는 이모트(서 있을 때만), 몬스터는 클립 한 번, 아이템은 `set_model`한 모델의 클립 |
 | `remove()` | 월드에서 없앰 (진짜 플레이어는 아무 일 없음) |
 | `is_alive()` → `bool` | 아직 있음 (플레이어: 쓰러져 있지 않음) |
-| `health()` → `f64` | 지금 체력: 플레이어의 것, 플러그인의 엔티티의 것 (`ModelEntity::set_health`; 없으면 0), 게임 모듈의 것 (농장의 몬스터). `NaN`: 체력이 없는 것 (아이템) |
 | `distance_to(&dyn Entity)` → `f64` | 땅 위의 거리 |
 | `set_interact_with(label, hold_secs, reach)` | `set_interact`인데 E를 `hold_secs`초 눌러야(0이면 누르기, 30초까지) `reach` m 안에서만(0이면 손 닿는 1.6 m, 16 m까지) 쓰임(로블록스의 ProximityPrompt): 게임이 「E 길게: label」과 차오르는 링을 그리고, **서버가 누르기 시작부터 시간을 잼**(그보다 이른 사용, 시작 없는 사용은 거절; 거리는 시작과 끝 둘 다) |
 | `set_interact(label)` | 플레이어가 E로 쓸 수 있음: 가까이 가면 「E: label」, 누르면 [`EntityInteract`](events#entityinteract) (이 플러그인에만). `""` 끄기. 플러그인의 엔티티(`ModelEntity` `Avatar`)만 |
@@ -391,13 +424,17 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 
 | 메서드 | |
 |---|---|
-| `get(k)` / `set(k, v)` | `"x"` `"y"` `"z"` `"yaw"`(라디안, 0이 +z) `"pitch"`(기수 들기) `"roll"`(오른쪽 내리기) `"scale"` (`get`은 `"alive"`도) |
-| `set_rotation(yaw, pitch, roll)` | 통째로 돌림 (라디안: yaw, 그다음 pitch, 그다음 roll): 비행기의 선회, 비탈의 차. 게임은 그 사이를 부드럽게 |
-| `text(k)` → `String` | `"model"` `"anim"` `"held"` `"name"` |
+| `set_rotation(yaw, pitch, roll)` / `rotation()` → `(yaw, pitch, roll)` | 통째로 돌림 (라디안: yaw(0이 +z), 그다음 pitch(기수 들기), 그다음 roll(오른쪽 내리기)): 비행기의 선회, 비탈의 차. 게임은 그 사이를 부드럽게 |
+| `set_yaw(yaw)` | yaw만 |
+| `scale()` / `set_scale(times)` | 크기 배율 (100까지) |
+| `model()` `anim()` `held()` `name()` → `String` | 모델(`res://` 경로, `"avatar"`), 지금 클립, 손에 든 것, 머리 위 이름 (`""` 없음) |
 | `as_avatar()` → `Option<Avatar>` | 아바타면 그것으로 |
 | `set_public(key, value)` | 모든 게임이 읽는 값 (`Player::set_public`처럼; 게임 쪽 `Entities::get(id).public(key)`) |
 | `set_hitbox(&[[x, z, w, d, y, h]])` | 히트박스 (`set_solid`가 단단하게 하는 모양; [히트박스](world#히트박스와-충돌)) |
-| `set_health(hp, max)` / `health()` | 체력 (0: 없음, 맞지 않음): 플레이어의 휘두름 → `ModelEntityDamage`, 0이면 `ModelEntityDeath` 뒤 사라짐 |
+| `set_health(hp, max)` / `health()` `max_health()` | 체력 (0: 없음, 맞지 않음; `LivingEntity`): 플레이어의 휘두름 → `ModelEntityDamage`, 0이면 `ModelEntityDeath` 뒤 사라짐 |
+| `damage(amount)` | 폭발의 한 대처럼 피해: `ModelEntityDamage` / `ModelEntityDeath` (원인은 이 플러그인 이름, `Explosion` 이벤트 없음) |
+
+2026-11-10: 글 키의 `get` `set` `text`는 감춰졌습니다. 위치는 `Entity`의 `location` / `move_to`, 나머지는 위의 메서드로.
 
 ### Avatar
 
@@ -410,7 +447,7 @@ Entity (트레잇)            location  move_to  play_anim  stop_anim  remove  i
 | `hold(item)` | 손에 든 아이템 (`"axe"` …, `""` 없음) |
 | `set_name(name)` / `name()` | 머리 위 이름 (`""` 없음) |
 | `facing()` | 바라보는 쪽 (`yaw`에서) |
-| `entity()` → `ModelEntity` | 모델 엔티티로서 (`set("yaw", ..)` `set("scale", ..)`) |
+| `entity()` → `ModelEntity` | 모델 엔티티로서 (`set_yaw(..)` `set_scale(..)`) |
 
 ### ItemEntity
 
@@ -432,7 +469,7 @@ if let Some(apple) = w.items_near(x, z, 2.0).into_iter().find(|i| i.item() == "a
 
 ### PlayerEntity
 
-`Avatar`와 `Player`가 구현: `name()`(진짜 플레이어 `""`은 월드 주인), `facing()`.
+`Avatar`와 `Player`가 구현(`LivingEntity`이기도: `health` `max_health` `damage`): `name()`(진짜 플레이어 `""`은 월드 주인), `facing()`.
 
 ```rust
 #[on(Button)]
@@ -726,16 +763,27 @@ fn efficiency(c: Command) {
 
 ### EnemyEntity
 
-몬스터 하나 (`EnemyEntity(serial)`; `MobStep::mob()`, `World::mobs()`, `Hit::mob()`). 예전 이름 `Mob`은 없어졌습니다. `Entity`:
-`play_anim(clip)`은 그 종류 모델의 클립을 그 층의 모든 게임에서 한 번(`"Attack01"` `"Victory"` …), `location()`은 자기 `mob` 이벤트 안에서만.
-엔진의 적은 체력 있는 플러그인의 엔티티(`ModelEntity::set_health`)입니다.
+몬스터 하나 (`EnemyEntity(serial)`; `MobStep::mob()`, `World::mobs()`, `Hit::mob()`). 예전 이름 `Mob`은 없어졌습니다.
+`Entity`이자 `LivingEntity`: `play_anim(clip)`은 그 종류 모델의 클립을 그 층의 모든 게임에서 한 번(`"Attack01"` `"Victory"` …),
+`location()` `health()` `max_health()`(나올 때의 체력)는 **번호로 어느 이벤트에서나**(이벤트의 층; 자기 `mob` 이벤트 안에서는 그 이벤트의 값;
+그런 몬스터가 없으면 NaN). 엔진의 적은 체력 있는 플러그인의 엔티티(`ModelEntity::set_health`)입니다.
+2026-11-10: 글 키의 `get` / `set`은 없어지고 아래의 타입 있는 메서드가 됐습니다. 종류별 타입은 없습니다(종류는 데이터):
+자기 종류는 `struct Wisp(EnemyEntity)`처럼 감쌉니다([엔티티](#엔티티)의 예).
 
 | 메서드 | |
 |---|---|
-| `get(k)` | `mob` 이벤트에서: `"x"` `"z"` `"hp"` `"tier"` `"speed"` `"damage"` `"size"` `"t"` |
-| `set(k, v)` | `"x"` `"z"`(옮기기) `"hp"`(0이면 사라짐) `"speed"` `"damage"`, `"vx"` `"vz"`(이번 걸음의 속도: 원래 움직임 대신) |
+| `kind()` → `String` | 종류 id (`"slime"`, 플러그인의 `"wisp"`; `""` 그런 몬스터 없음) |
+| `of_kind(kind)` → `Option<EnemyEntity>` | 그 종류일 때만 (`m.of_kind("wisp").map(Wisp)`) |
+| `tier()` → `i64` | 얼마나 자랐는지 (0 나온 그대로; 새벽, 깊은 층: 더) |
+| `speed()` / `set_speed(v)` | 초당 m |
+| `attack_damage()` / `set_attack_damage(v)` | 닿을 때 플레이어에게서 가져가는 체력 |
+| `size()` | 너비 m |
+| `age()` | 나온 뒤 초 (자기 시계 `t`: 패턴의 위상) |
+| `set_health(hp)` | 체력 (0이면 사라짐, 떨굼 없음) |
+| `set_velocity(vx, vz)` | 이번 걸음의 속도 (초당 칸): 원래 움직임 대신 |
+| `move_to(x, y, z)` | 옮기기 (x z) |
 | `attack(damage, reach)` | 그 거리 안의 가장 가까운 플레이어를 침 (닿을 때의 공격은 따로 그대로) |
-| `damage(amount)` | 피해: 0이면 쓰러지고 그 종류의 드롭(아무나 줍기)과 경험치(이벤트의 플레이어), [`MobDeath`](events#mobdeath)(`killer` 이벤트의 플레이어, `cause` 이 플러그인 이름) |
+| `damage(amount)` | 피해(`LivingEntity`): 0이면 쓰러지고 그 종류의 드롭(아무나 줍기)과 경험치(이벤트의 플레이어), [`MobDeath`](events#mobdeath)(`killer` 이벤트의 플레이어, `cause` 이 플러그인 이름) |
 | `remove()` | 없애기 (떨굼 없음) |
 
 어느 이벤트에서나 쓸 수 있습니다(`tick`·`button`에서 소환한 것을 움직이는 등).
