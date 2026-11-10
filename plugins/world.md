@@ -201,11 +201,15 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
 
 ## 주민
 
+주민은 바닐라 모듈의 것입니다(`use greenhaven_plugin::vanilla::*;`: `VanillaWorld::spawn_npc` `npcs`, [`Npc`](sdk#npc)).
+
 바닐라 주민 10명이 월드를 만들 때 들어가고, 그 목록이 서버의 주민 AI·대사·선물·의뢰와 게임의 주민 표가 됩니다. 주민은
 서버가 걷게 하고 말도 서버가 합니다: 광장의 잡담, 둘이 만나 나누는 말과 소문, 플레이어가 하는 일을 보고 하는 말, 지나갈
 때의 인사, 말을 걸었을 때의 대답이 모두 대사 표(`client.VillagerLines` 등, [등록](rules)으로 더함)에서 나옵니다.
 
 ```rust
+use greenhaven_plugin::vanilla::*;
+
 #[on(WorldCreate)]
 fn neighbor(e: WorldCreate) {
     e.world().spawn_npc(r#"{"id": "haneul", "name": "하늘", "look": "soyul", "home": "library",
@@ -227,7 +231,7 @@ fn neighbor(e: WorldCreate) {
 | `World::set_day(n)` | 날짜 |
 | `World::set_morning_time(minute)` `clear_morning_time()` | 밤이 끝나는 시각 |
 | `World::set_night_time(minute)` `clear_night_time()` | 밤이 시작되는 시각 |
-| `World::set_dawn_time(minute)` `clear_dawn_time()` | 몬스터가 강해지는 시각 |
+| `World::set_dawn_time(minute)` `clear_dawn_time()` | 몬스터가 강해지는 시각 (바닐라 모듈: `VanillaWorld`) |
 | `World::end_day()` | 지금 하루를 끝냄 |
 | [`DayEnd`](events#dayend) | 끝나려는 하루를 막기 |
 | [`DayChange`](events#daychange) | 날짜가 넘어가지 않게 |
@@ -264,11 +268,12 @@ fn keep_to_the_server(e: Tick) {
 
 ### 플러그인의 월드
 
-월드를 더 두려면 플러그인이 만듭니다(Bukkit처럼): `Server.create_world("garden")`은 바닐라 땅과 마을로 된 새 월드(`@garden`,
+월드를 더 두려면 플러그인이 만듭니다(Bukkit처럼): `Server.create_world("garden")`은 서버의 생성기(server.properties `level-type`, 기본 바닐라 땅과 마을)로 된 새 월드(`@garden`,
 저만의 씨앗; `id`는 영문·숫자·`_ - .` 32자까지)를 만들어 서버가 돌리고 저장하며, 그 월드에서 `world.create`와 `chunk.generate`가
-불립니다(`World::id()`가 "garden": 그 월드만의 땅이나 구조물을 거기서; 모두의 월드는 "world"). `Player::move_world("garden", true)`는
-그 플레이어를 그 월드의 열기구 정거장으로 옮깁니다(`false`면 농장 집 앞으로, `""`는 모두의 월드; 떠난 월드에서 `leave`, 간 월드에서
-`join`; 가방·돈·스킬은 함께). 한 서버가 함께 돌리는 월드는 16 + 접속 한도의 두 배(256까지)까지: 넘으면 새 월드는 만들어지지
+불립니다(`World::id()`가 "garden": 그 월드만의 땅이나 구조물을 거기서; 모두의 월드는 "world"). `Player::move_world("garden")`은
+그 플레이어를 그 월드의 스폰으로 옮기고, `move_world_at("garden", "station")`은 게임 모듈이 아는 자리로(바닐라: `"station"` 그 월드의
+열기구 정거장, `"desert"` 사막의 정거장; `""`이나 모르는 이름은 스폰) 옮깁니다(`""` 월드는 모두의 월드; 떠난 월드에서 `leave`, 간
+월드에서 `join`; 가방과 게임 모듈의 몫(돈·스킬)은 함께). 한 서버가 함께 돌리는 월드는 16 + 접속 한도의 두 배(256까지)까지: 넘으면 새 월드는 만들어지지
 않고(서버 로그에 남음) 그리로 옮기는 `move_world`도 그대로 머뭅니다. 예제 [`friend_lands`](samples)(친구 땅).
 
 ## 월드 만들기
@@ -278,25 +283,28 @@ fn keep_to_the_server(e: Tick) {
 
 | 생성기 | 땅 | 마을 |
 |---|---|---|
-| `vanilla` (기본) | 바닐라 땅 | 바닐라 마을 (`town: false`면 없이: 마을 자리는 평평한 풀밭) |
+| `vanilla` (기본) | 바닐라 땅 | 바닐라 마을 (옵션 `{"town": false}`면 없이: 마을 자리는 평평한 풀밭, 마을에 묶인 기능은 꺼짐) |
 | `flat` | 어디나 높이 0의 풀 (그 밑 흙 셋, 그 밑 돌) | 없음 |
 | `void` | 아무것도 없음: 플러그인이 `WorldCreate`·`ChunkGenerate`로 지음 (플러그인만의 생성기) | 없음 |
 
 - 모두의 월드: server.properties `level-type=vanilla|flat|void` (처음 만들 때만, [서버](server)).
-- 플러그인의 월드: `Server.create_world_with("arena", "void", false)` (`create_world(id)`는 바닐라 그대로).
+- 플러그인의 월드: `Server.create_world_with("arena", "void", "")` (세 번째는 그 생성기의 옵션 JSON 객체, `""` 없음; 처음 만들 때만 셈).
+  `create_world(id)`는 서버의 생성기(`level-type`)로. 바닐라 땅에 마을 없이: `create_world_with("wild", "vanilla", r#"{"town": false}"#)`.
 - 마을이 없는 월드에는 구조물·성벽·방·주민·가축이 없고, 게임도 아무것도 짓지 않습니다(나침반, 우편함, 집터 고르기도 없음).
 - **스폰** `World::set_spawn(x, y, z, yaw)`: 들어오는 곳 (칸, 발 높이: 높이 y 블록의 윗면은 y + 0.5). 정하지 않으면 마을의 농가 문 앞,
   마을이 없으면 (0, 0)의 가장 높은 블록 위(거기 아무것도 없는 `void` 월드면 서버가 (0, 0, 0)에 돌 한 칸을 놓아 그 위). 침대·의료실·열기구 정거장이 없는 월드에서는 아침에도, 쓰러진 뒤에도, 내릴 때도 여기입니다.
-- **바닐라 기능** `World::set_vanilla(feature, on)` (월드에 저장; 모르는 이름이면 `false`, `World::is_vanilla`로 읽기): `villagers`(주민),
+- **바닐라 기능** `World::set_vanilla(feature, on)` (바닐라 모듈의 `VanillaWorld`; 월드에 저장; 모르는 이름이면 `false`, `is_vanilla`로 읽기): `villagers`(주민),
   `night`(땅 위 밤의 몬스터), `farming`(밭 갈기·심기·물 주기·수확·동물), `wild`(아침마다 나는 나무·바위·채집물), `tutorial`(첫날 할 일),
   `shops`(사고팔기, 출하, 목공소·대장간·마법사), `sleep`(침대), `mining`(광산), `dungeon`(사막의 던전), `balloon`(열기구), `quests`(퀘스트와
   주민의 의뢰), `mail`(편지), `love`(연애·결혼), `festivals`(축제), `furniture`(가구), 그리고 마을이 없어도 켜지는 `fishing`(낚시),
   `crafting`(제작), `energy`(끄면 도구가 기력을 쓰지 않음, 게임은 기력 바를 숨김), `fall`(끄면 쓰러져도 잃는 것 없이 스폰에서 일어남),
   `day_end`(끄면 시계로는 하루가 끝나지 않고 끝 시각에 하루의 시작으로 돌아감). 정하지 않은 것은 바닐라 마을이 있으면 켜짐, 없으면
-  마을에 묶인 것은 꺼짐. 꺼진 기능의 행동은 서버가 거절합니다. 낮에도 플러그인의 몬스터(`mob_spawn`)는 남아 움직이고 칠 수 있습니다. 하루의 끝과 저장은
+  마을에 묶인 것은 꺼짐. 꺼진 기능의 행동은 서버가 거절합니다. 낮에도 플러그인의 몬스터(`spawn_mob`)는 남아 움직이고 칠 수 있습니다. 하루의 끝과 저장은
   규칙(`day_end`, `pass_out`), [`DayEnd`](events), `set_live_saving`이 정합니다.
 
 ```rust
+use greenhaven_plugin::vanilla::*; // set_vanilla
+
 #[on(WorldCreate)]
 fn made(e: WorldCreate) {
     let w = e.world();
@@ -341,7 +349,7 @@ fn made(e: WorldCreate) {
         w.set_rule("starter", r#"{"gold": 0, "items": {"sword": 1, "salad": 3}}"#);
     }
 }
-// 경기 시작: Server.create_world_from("arena1", "arena_tpl"); p.move_world("arena1", false);  (Join에서 p.reset())
+// 경기 시작: Server.create_world_from("arena1", "arena_tpl"); p.move_world("arena1");  (Join에서 p.reset())
 // 경기 끝: Server.reset_world("arena1", "world");  모두 허브로(허브의 가방 그대로), 경기장은 틀의 모습으로
 ```
 

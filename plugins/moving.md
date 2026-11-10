@@ -201,7 +201,7 @@ fn frame(f: Frame) {
 - 걸음은 `빠르기`배로 서버가 판정합니다(`set_walk_speed`와 같은 길). 그래서 탈것에는 검사를 끌 필요가 없습니다.
 - 내리면 엔티티는 그 자리에 남고 걸음은 전과 같아집니다. 저장되지 않습니다(다시 접속하면 걸어서).
 - 서버가 내려 주기도 합니다: 건물 문으로 들어감(방 안에는 탈것 없음), 다른 월드로 감(`Player::move_world`), 서버를 나감. 그때
-  [`Dismount`](events#dismount) 이벤트가 옵니다(`reason()` `"door"` `"world"` `"quit"`, `mount()`). 플러그인이 부른
+  [`Dismount`](events#dismount) 이벤트가 옵니다(`reason()` `"door"` `"world"` `"quit"`, 게임 모듈의 것: 농장의 `"balloon"` `"home"`; `mount()`). 플러그인이 부른
   `dismount()`에는 오지 않습니다.
 
 - 서버도 그 엔티티를 탄 사람의 걸음이 허락된 자리로 옮겨 둡니다(위치와 yaw): 탄 사람을 못 보는 사람에게도 그 자리에 보입니다.
@@ -245,7 +245,7 @@ greenhaven-physics = { path = "../../sdk/physics" }
 - 게임 쪽 `Predicted<S>`: `step` 이벤트마다 한 걸음(`step(Controls, 땅)`), 두 걸음마다 `packet(4)`를 `send_fast`, 서버 상태가 오면
   `heard`(같으면 그대로, 다르면 서버의 것으로 바꾸고 다시 걸음), 그리기는 `Entities::predict`.
 - 타는 사람은 `mount_seat(&탈것, 1, 1.0, 좌석)`: 0이 아닌 자리라 누구의 걸음도 탈것을 움직이지 않고, 그 사람의 자리는 탈것 곁인지만 봅니다.
-- 땅은 두 쪽이 똑같이 아는 함수로: 평평한 월드(`Server.create_world_with(id, "flat", false)`, 풀 꼭대기 0.5)에 플러그인이 깐 길.
+- 땅은 두 쪽이 똑같이 아는 함수로: 평평한 월드(`Server.create_world_with(id, "flat", "")`, 풀 꼭대기 0.5)에 플러그인이 깐 길.
 
 ```rust
 // shared.rs: 두 쪽이 같은 땅
@@ -390,7 +390,7 @@ fn cast(e: Use) {
     let p = e.player();
     let ((x, z), (fx, fz)) = (p.position(), p.facing());
     let (tx, tz) = (x + fx * 7.0, z + fz * 7.0);
-    e.world().strike(tx, tz, 1.8, 12);                                    // 결과: 서버
+    e.world().strike(tx, tz, 1.8, 12);                                    // 결과: 서버 (vanilla::VanillaWorld)
     p.hud().send_text("bolt", &format!("{x:.2},{z:.2},{tx:.2},{tz:.2}")); // 연출: 게임 쪽에
 }
 

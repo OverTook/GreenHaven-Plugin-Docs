@@ -454,27 +454,14 @@ fn loaded(_: Load) {
 | | |
 |---|---|
 | `World::raycast(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸) |
-| `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 그려진 몬스터(`HitKind::Mob`, `id` 그 번호: 서버가 재는 몸), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
+| `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 게임 모듈이 그린 것(`HitKind::Mob`: 농장의 몬스터, `id` 그 번호, 서버가 재는 몸; 농장 없는 월드에는 없음), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
 | `World::overlap(lo, hi)` → `Vec<(HitKind, id)>` | 그 상자(한 변 16 m까지) 안의 것 (32개까지) |
 | `World::ground(x, z)` → `f64` | 게임이 가진 그곳의 땅 높이 (모르면 NaN) |
-| `World::path(from, to)` → `Vec<(x, z)>` | 마을 길 (주민의 길찾기): 꺾이는 점들, 없으면 `[]` |
 
 이것들은 엔진이 메인 스레드에서 하는 일이라 연료에 잡히지 않아요. 그래서 핸들러 한 번에 32번까지만 답하고, 그 뒤는 모르는 것처럼
 답해요(`None`, `NaN`, `[]`). 한 번의 op 전체 크기도 8 MB까지예요(mesh 하나는 4 MB).
 | `World::id()` → `String` | 지금 있는 월드 (`"world"` 모두의 것, 아니면 서버 쪽 `Server::create_world`로 만든 id) |
 | `World::ready()` → `bool` | 월드가 오고 주변 땅이 다 그려졌는지 (서버가 다른 월드로 옮긴 뒤, 보여 줄 때) |
-
-### Balloon — 열기구
-
-게임의 열기구 여행 그대로의 장면입니다(플레이어에게 가장 가까운 정거장의 열기구). 보이는 것뿐이고, 플레이어를 옮기는 것은 서버
-쪽(`Player::move_world(.., true)`)입니다: 오르는 동안 옮기면 새 월드의 땅이 그 뒤에서 들어옵니다(이륙하는 열기구는 정거장에서 떼어
-두어, 마을이 다시 지어져도 그대로 날아감).
-
-| | |
-|---|---|
-| `Balloon::lift_off()` | 이륙: 열기구 앞에서 올려다보는 시점, 바구니에 탄 플레이어, HUD는 숨김. 다 오르면 하늘에 둔 채 멈춤 (그동안 카메라는 플러그인 것: `Camera::set` …) |
-| `Balloon::land()` | 그때 있는 월드의 가장 가까운 정거장으로 하늘에서 내려앉는 장면 (열기구 앞 시점). 갑판에 내려서면 HUD가 돌아옴 |
-| `Balloon::state()` → `i64` | 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중 |
 
 ### 액션과 터치 버튼
 
@@ -533,10 +520,9 @@ fn act(a: Action) {
 
 | | |
 |---|---|
-| `Players::list()` / `get(id)` / `near(r)` → `PlayerView { id, pos, yaw, doing }` | 이 게임이 그리는 다른 플레이어 (그려진 자리, 칸; `doing` 0 서기, 1 걷기, 2 달리기, 3 잠, 4 도구, 5 수영, 6 점프, 7 떨어짐) |
+| `Players::list()` / `get(id)` / `near(r)` → `PlayerView { id, pos, yaw, doing }` | 이 게임이 그리는 다른 플레이어 (그려진 자리, 칸; `doing` 엔진의 `DOING_IDLE` 0 서기, `DOING_WALK` 1 걷기, `DOING_RUN` 2 달리기, `DOING_SWIM` 5 수영, `DOING_JUMP` 6 점프, `DOING_FALL` 7 떨어짐; 나머지는 게임 모듈의 것: 농장의 `vanilla::DOING_ASLEEP` 3 잠, `DOING_TOOL` 4 도구, `DOING_BITE` 8 입질, `DOING_REEL` 9 릴 감기) |
 | `PlayerView::name()` / `public(key)` → `f64` / `public_text(key)` | 이름, 서버 쪽이 공개한 값 (서버 쪽 `Player::set_public`; 없으면 NaN / `""`) |
 | `Entities::list()` / `get(id)` / `near(r)` → `EntityView { id, pos, yaw, pitch, roll }`, `model()`, `public(key)` | 서버 쪽 엔티티 (`"block:stone"` 같은 블록 모습도; 기울기는 서버 쪽 `set_rotation`) |
-| `Mobs::near(r)` → `MobView { n, pos, hp }`, `kind()` | 이 층의 몬스터 (`hp` 남은 체력 0-1) |
 | `Me::id()` | 이 월드에서 내 번호 (`PlayerView::id`와 같은 것) |
 | `Net::ms()` / `Net::rtt()` | 서버 시계 (unix ms), 왕복 시간 (ms) |
 | 이벤트 `public` (`PublicChanged::who()` `id()`) | 누군가의 공개 값이 바뀜: `client! { public => f }` |
@@ -598,6 +584,35 @@ fn asked(l: ChatLine) {
 `Emitter`는 `..Default::default()`로 필요한 것만 쓰세요. 값이 이상하면(범위 밖, 글자 대신 숫자 …) 게임은 범위 안으로 줄이거나
 무시하고, 멈추지 않습니다.
 
+## 바닐라 모듈 (`greenhaven_client::vanilla`)
+
+농장 게임(바닐라 게임 모듈)의 게임 쪽 몫은 SDK 뿌리에 없고 `greenhaven_client::vanilla`에 있습니다(서버 쪽 SDK의
+[`vanilla`](sdk#바닐라-모듈-greenhaven_pluginvanilla)와 짝). 쓰려면 `use greenhaven_client::vanilla::*;`를 더합니다. 농장이 없는 월드
+(서버의 `game-module=none`, `World::set_mode("none")`)에는 그 어느 것도 없습니다: 열기구도, 몬스터도 없고 마을 길은 `[]`.
+
+| | |
+|---|---|
+| `Balloon::lift_off()` `land()` `state()` | 열기구 여행의 장면 (아래) |
+| `Mobs::near(r)` → `MobView { n, pos, hp }`, `kind()` | 이 층의 몬스터 (`n` 서버의 번호, `hp` 남은 체력 0-1) |
+| `World::path(from, to)` → `Vec<(x, z)>` (트레잇 `TownPath`) | 마을 길 (주민의 길찾기): 꺾이는 점들, 마을 밖이거나 마을 없는 월드면 `[]` |
+| `DOING_ASLEEP` 3 `DOING_TOOL` 4 `DOING_BITE` 8 `DOING_REEL` 9 | 농장의 `PlayerView::doing` (엔진의 `DOING_*`는 뿌리에) |
+
+조준의 `HitKind::Mob`은 엔진의 것(게임 모듈이 그린 것)이고, 농장에서는 그 몬스터입니다.
+
+### Balloon — 열기구
+
+`use greenhaven_client::vanilla::*;`
+
+게임의 열기구 여행 그대로의 장면입니다(플레이어에게 가장 가까운 정거장의 열기구). 보이는 것뿐이고, 플레이어를 옮기는 것은 서버
+쪽(`Player::move_world_at(.., "station")`)입니다: 오르는 동안 옮기면 새 월드의 땅이 그 뒤에서 들어옵니다(이륙하는 열기구는 정거장에서 떼어
+두어, 마을이 다시 지어져도 그대로 날아감).
+
+| | |
+|---|---|
+| `Balloon::lift_off()` | 이륙: 열기구 앞에서 올려다보는 시점, 바구니에 탄 플레이어, HUD는 숨김. 다 오르면 하늘에 둔 채 멈춤 (그동안 카메라는 플러그인 것: `Camera::set` …) |
+| `Balloon::land()` | 그때 있는 월드의 가장 가까운 정거장으로 하늘에서 내려앉는 장면 (열기구 앞 시점). 갑판에 내려서면 HUD가 돌아옴 |
+| `Balloon::state()` → `i64` | 0 땅, 1 오르는 중, 2 하늘, 3 내려오는 중 |
+
 ## 원본 함수 (`"ghc"`)
 
 게임이 연결하는 것은 모듈 `"ghc"`의 함수 여섯뿐입니다. SDK의 함수는 모두 이것들을 감쌉니다. 글을 넘길 때 `(ptr, len)`, 받을 때
@@ -624,6 +639,8 @@ fn asked(l: ChatLine) {
 레이아웃](screen#레이아웃-머리-위-트윈-점수판)). 게임 쪽에서 쓰면 왕복 없이 바로: 예를 들어 근처 몬스터마다 체력 바를 붙이기.
 
 ```rust
+use greenhaven_client::vanilla::*; // Mobs
+
 for m in Mobs::near(25.0) {
     Hud::add(&format!("mob{}", m.n), &El::bar(m.hp, 1.0).size(56.0, 7.0).color("d9483b"));
     Hud::pin_to(&format!("mob{}", m.n), Some(&PinTo::Mob(m.n)), 1.7, 25.0);

@@ -21,7 +21,7 @@ has_children: true
 <div class="cards">
   <a class="card" href="plugin-json"><strong>plugin.json</strong><span>이름, 버튼, 바, 명령어, 설정</span></a>
   <a class="card" href="events"><strong>이벤트</strong><span>행동, 수확, 몬스터, 하루, 월드 만들기</span></a>
-  <a class="card" href="sdk"><strong>SDK 레퍼런스</strong><span>Player, World, Server, OfflinePlayer, Npc, Gui</span></a>
+  <a class="card" href="sdk"><strong>SDK 레퍼런스</strong><span>Player, World, Server, OfflinePlayer, Gui, 바닐라 모듈</span></a>
   <a class="card" href="rules"><strong>규칙 등록</strong><span>Enable에서 아이템·작물·블록·주민·스킬·땅 바꾸기</span></a>
   <a class="card" href="screen"><strong>화면</strong><span>HUD 요소, 미니맵, 키, 채널, 인벤토리 창</span></a>
   <a class="card" href="client"><strong>게임 쪽 코드</strong><span>client.wasm: 매 프레임 HUD, 카메라, 셰이더, 소리, 빠른 통신</span></a>
@@ -87,6 +87,7 @@ greenhaven-plugin = { path = "../../sdk/plugin" }   # GreenHaven-Server의 sdk/p
 
 ```rust
 use greenhaven_plugin::*;
+use greenhaven_plugin::vanilla::*;   // 농장 게임의 것 (Harvest ...)
 
 #[on(Harvest)]                       // 이 이벤트마다 불림
 fn bigger(e: Harvest) {

@@ -11,7 +11,8 @@ redirect_from:
 
 GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 모두 Rust SDK로 쓰여 있고, 규칙을 바꾸는 것은 모두
 `#[on(Enable)] fn enable`의 `Registry`로 합니다([규칙 등록](rules)). `cutscene` `riding` `flight` `showcase` `friend_lands` `camera_modes` `arcade` `hide_blocks` `fx_demo`는 서버 쪽과 [게임 쪽 코드](client)를
-함께 가집니다(`src/shared.rs` `server.rs` `client.rs`). 몇몇은 게임에도 zip으로 들어 있어 월드 선택 › 편집 › 플러그인에서
+함께 가집니다(`src/shared.rs` `server.rs` `client.rs`). 농장 게임의 것(작물, 몬스터, 주민, 골드, 열기구 …)을 쓰는 샘플은
+`use greenhaven_plugin::vanilla::*;`(게임 쪽은 `greenhaven_client::vanilla`)를 더해 씁니다([바닐라 모듈](sdk#바닐라-모듈-greenhaven_pluginvanilla)). 몇몇은 게임에도 zip으로 들어 있어 월드 선택 › 편집 › 플러그인에서
 켤 수 있습니다(PC).
 
 | 샘플 | 하는 일 | 보여 주는 것 |
@@ -21,7 +22,7 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 | `harvest_festival` 풍년 축제 | 비 오는 밤엔 작물이 이틀치 자람, 계절의 7·14·21·28일은 수확 두 배·파는 값 1.25배, 그날 아침 알림, `/축제` | `Grow` `Harvest` `Sell` `Morning` `Command` |
 | `golden_crops` 황금 작물 | 새 작물 황금 당근(잡화점 씨앗, 아이콘, 금빛 당근 모델), 먹으면 기력, 새 퀘스트, 거두면 반짝임, `/황금씨앗` | `Registry::crop` `item` `patch`, `assets/`, `Harvest` |
 | `new_start` 새 출발 | 짧은 오프닝, 첫날 할 일 넷과 보상 1000골드, 마법 스킬 없음, 3레벨마다 전직(만렙 15), 채집 경험치 두 배, 집 안·광산의 음악, `/노래 곡` | `client.Intro.SCENES` `progress.tutorial_tasks` `progress.skills` `client.Music.TRACKS`, `play_music` |
-| `new_creatures` 새 생물 | 밤의 얼음 버섯(돌을 떨굼), 둘레를 돌다 덤비는 도깨비불(광산 2층부터도), 헛간의 염소(이틀에 한 번 염소 젖) | `monsters_add` `animals_add`, `MobStep`, `Mob::set` `attack` |
+| `new_creatures` 새 생물 | 밤의 얼음 버섯(돌을 떨굼), 둘레를 돌다 덤비는 도깨비불(광산 2층부터도), 헛간의 염소(이틀에 한 번 염소 젖) | `monsters_add` `animals_add`, `MobStep`, `EnemyEntity::set` `attack` |
 | `new_neighbor` 새 이웃 하늘 | 새 주민 하늘(소율의 모습, 하루 일정, 대사), 말을 걸면 선택지 창, 이야기, `/하늘`로 부르면 걸어옴 | `WorldCreate`의 `spawn_npc`, `Words`, `Gui`, `Npc::say` `go_to`, 대사 패치 |
 | `woodcutter` 나무꾼 | `/나무꾼`: 곁에 나타난 나무꾼(아바타, 머리 위 이름)이 가장 가까운 나무로 걸어가 한 번씩 도끼질해(나무가 흔들림) 자기 쪽으로 베어 쓰러뜨리고, 떨어진 나무 하나를 먹고 하나는 모이를 쪼는 닭으로 꾸미며(나머지는 누구나 주움), 가까운 건물 방에 들렀다 나옴 | `spawn_avatar` `Avatar::set_look` `hold` `set_name` `play_anim` `debris_at` `debris_damage` `items_near` `ItemEntity::consume_by` `set_model` `play_anim` `room`, `Tick` |
 | `hitboxes` 히트박스 | `/벽세우기`: 동쪽 3칸에 히트박스(1 × 9칸, 3블록 높이)를 가진 상자 구조물, 서쪽 3칸에 같은 히트박스의 단단한 바위 엔티티: 서버의 걸음 판정과 게임의 몸이 둘 다 막음. `/벽치우기`로 치움 | `put_structure`의 `"hit"`, `set_hitbox` `set_solid` |

@@ -16,8 +16,8 @@ redirect_from:
 ## 핸들러
 
 ```rust
-#[on(Harvest)]                      // 이 이벤트마다 불림
-fn grown(e: Harvest) { /* … */ }
+#[on(Chat)]                         // 이 이벤트마다 불림
+fn said(e: Chat) { /* … */ }
 
 #[on(ActionBefore, priority = -10)] // 낮은 숫자가 먼저 (기본 0). 플러그인들 사이에서도 이 순서
 fn first(e: ActionBefore) { /* … */ }
@@ -37,7 +37,7 @@ fn cmd(c: Command) { /* … */ }
 
 | 메서드 | |
 |---|---|
-| `name()` | 이벤트 이름 (`"harvest"`, `"action.before"` …) |
+| `name()` | 이벤트 이름 (`"chat"`, `"action.before"` …) |
 | `kind()` | 행동 종류 (`action.before`/`after`: `"till"` `"water"` `"buy"` …) |
 | `id()` | 무엇에 대한 것: 아이템, 작물, 주민, 명령어 이름, 버튼 … |
 | `tool()` | 쓴 도구 |
@@ -47,7 +47,7 @@ fn cmd(c: Command) { /* … */ }
 | `text(k)` → `String` | 이벤트의 글 (아래) |
 | `set(k, v)` | 이벤트의 숫자 바꾸기 (서버가 플러그인들 다음에 읽음) |
 | `roll(k)` → `f64` | 정해진 난수 [0, 1). 같은 이벤트면 다시 돌려도 같음 (`k` 0~63로 여럿) |
-| `day()` `season()` `date()` | 며칠째(1부터), 계절(0 봄 … 3 겨울), 계절의 날(1~28) |
+| `day()` | 며칠째(1부터). 계절과 계절의 날은 바닐라 모듈의 `season()` `date()` ([바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla)) |
 | `player()` → [`Player`](sdk#player) | 이벤트의 플레이어 |
 | `world()` → [`World`](sdk#world) | 이벤트의 월드 |
 | `drop_item(item, n)` | 이벤트의 칸에 아이템 떨구기 (수확처럼) |
@@ -59,9 +59,9 @@ fn cmd(c: Command) { /* … */ }
 | 키 | |
 |---|---|
 | `day` `season` `date` `minute` | 날짜와 시각 (`minute`: 하루의 분, 6:00 = 360) |
-| `gold` `energy` | 플레이어의 골드, 기력 |
+| `gold` `energy` | 플레이어의 골드, 기력 (바닐라 모듈의 것) |
 | `me.x` `me.z` `me.fx` `me.fz` | 행동한 플레이어의 위치(칸)와 바라보는 방향 |
-| `tile.*` `tree.*` `debris.*` `prop.*` | 그 칸의 밭·과일나무·야생 나무와 바위·선 것 (`text("tile.crop")` `text("tree.id")` `text("debris.id")`) |
+| `tile.*` `tree.*` `debris.*` `prop.*` | 그 칸의 밭·과일나무·야생 나무와 바위(바닐라 모듈의 것)·선 것 (`text("tile.crop")` `text("tree.id")` `text("debris.id")`) |
 | `weather` | `text`: 날씨 (`grow`에도) |
 | 이벤트마다의 값 | `price`, `count`, `quality`, `days`, `amount`, `damage` … (아래 각 이벤트) |
 | `now` | 벽시계: 1970년부터의 ms (서버의 모든 월드에 같음; [`now()`](sdk#함수)) |
@@ -74,20 +74,13 @@ fn cmd(c: Command) { /* … */ }
 | [`ActionBefore`](#actionbefore--actionafter) | `action.before` | ✔ | 플레이어 행동 직전 |
 | [`ActionAfter`](#actionbefore--actionafter) | `action.after` | | 행동이 받아들여진 뒤 |
 | [`Use`](#use) | `use` | ✔ | 게임에 쓰임새가 없는 아이템을 씀 |
-| [`Grow`](#grow) | `grow` | ✔ | 밤마다 작물 하나 |
-| [`Harvest`](#harvest) | `harvest` | ✔ | 수확 |
-| [`Price`](#price--sell) | `price` | | 상점의 값 |
-| [`Sell`](#price--sell) | `sell` | | 파는 값 |
 | [`PlayerDamage`](#playerdamage) (`Damage`) | `damage` | ✔ | 플레이어가 다치려 함: 몬스터, `Player::damage`, 다른 플레이어의 타격 |
-| [`Strike`](#strike) | `strike` | ✔ | 플레이어가 몬스터를 침 |
-| [`Spawn`](#spawn) | `spawn` | ✔ | 몬스터가 나옴 (밤, 광산 층) |
 | [`Tick`](#tick) | `tick` | | 누가 있는 월드에서 플러그인마다 기본 1초에 한 번 (`Registry::tick_rate(n)`, `#[every(초)]`) |
 | [`ServerTick`](#servertick) | `server.tick` | | 서버의 틱, 아무도 없어도 1초에 두 번 |
 | [`DayEnd`](#dayend) | `day.end` | ✔ | 하루가 끝나려 함 |
 | [`DayChange`](#daychange) | `day.change` | ✔ | 아침에 날짜가 넘어가려 함 |
 | [`Button`](#button) | `button` | ✔ | 플러그인 버튼이나 창의 버튼을 누름 |
 | [`Command`](#command) | `command` | ✔ | 채팅 명령어 |
-| [`Morning`](#morning) | `morning` | | 밤이 지나고 아침 (농장 주인에게) |
 | [`Join`](#join--leave) | `join` | | 월드에 들어옴 |
 | [`Leave`](#join--leave) | `leave` | | 월드에서 나감 |
 | [`PlayerLogin`](#playerlogin) | `login` | ✔ | 서버에 들어오기 직전 |
@@ -96,9 +89,6 @@ fn cmd(c: Command) { /* … */ }
 | [`PacksStatus`](#packsstatus) | `packs` | | 게임이 접속의 파일을 다 받음 |
 | [`PlayerItemHeld`](#playeritemheld) | `held` | | 단축바의 다른 칸을 고르거나 고른 칸의 것이 바뀜 |
 | [`Chat`](#chat) | `chat` | ✔ | 채팅 한 줄 |
-| [`Words`](#words) | `words` | ✔ | 주민에게 말을 걸음 |
-| [`MobStep`](#mobstep) | `mob` | | `script` 몬스터의 한 걸음 |
-| [`MineFloor`](#minefloor) | `mine.floor` | | 광산 층이 그날 처음 만들어짐 |
 | [`PlayerMove`](#playermove) | `move` | ✔ | 플레이어가 움직임 (가로나 위아래로) |
 | [`WorldCreate`](#worldcreate) | `world.create` | | 월드가 만들어짐 |
 | [`ChunkGenerate`](#chunkgenerate) | `chunk.generate` | | 청크가 처음 만들어짐 |
@@ -116,8 +106,6 @@ fn cmd(c: Command) { /* … */ }
 | [`EntityBump`](#entityland--entitybump) | `entity.bump` | | 이 플러그인의 움직이는 것이 부딪힘 (튕기는 발사체는 무엇에든) |
 | [`ZoneEntityEnter`](#zoneentityenter) | `zone.entity` | | 엔티티가 이 플러그인의 지켜보는 구역에 들어옴 |
 | [`Explosion`](#explosion) | `explosion` | | `World::explode`가 터짐 (아무 플러그인의 것) |
-| [`MobDeath`](#mobdeath) | `mob.death` | | 몬스터가 쓰러짐 (휘두름, 플러그인의 피해) |
-| [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
 | [`Enable`](#enable) | `enable` | | 서버가 켜질 때, 플러그인마다 한 번: [규칙 등록](rules) |
 | [`Disable`](#disable) | `disable` | | 서버가 멈출 때, 저장 전에 한 번 |
 | [`WorldRemove`](#worldremove) | `world.remove` | | 이 플러그인의 월드가 지워지거나(`remove_world`) 다시 만들어지기(`reset_world`) 직전 |
@@ -139,6 +127,9 @@ fn cmd(c: Command) { /* … */ }
 | [`EffectEnd`](#effectstart--effectend) | `effect.end` | | 상태 효과가 끝남 (시간이 다 됨, `remove_effect`) |
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
+농장의 이벤트(`Grow` `Harvest` `Price` `Sell` `Morning` `Words` `MineFloor` `LevelUp` `Spawn` `MobStep` `MobDeath` `Strike`
+`PlayerEnergy`, 농장의 행동마다의 이벤트)는 [바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla)에 있습니다(`use greenhaven_plugin::vanilla::*;`).
+
 ### 별칭
 
 같은 이벤트를 이 이름으로도 씁니다.
@@ -147,13 +138,12 @@ fn cmd(c: Command) { /* … */ }
 |---|---|
 | `PlayerJoin` / `PlayerQuit` | `Join` / `Leave` |
 | `PlayerChat` / `PlayerCommand` | `Chat` / `Command` |
-| `PlayerInteractNpc` | `Words` |
-| `BlockGrow` | `Grow` |
-| `EntityDamage` / `EntityDamageByPlayer` | `Damage` / `Strike` |
-| `CreatureSpawn` / `EntityDeath` | `Spawn` / `MobDeath` |
-| `PlayerLevelChange` | `LevelUp` |
+| `EntityDamage` | `Damage` (= `PlayerDamage`) |
 
-예전의 별칭 `BlockBreak`(`hit`)·`BlockPlace`(`place` `furnish`)는 [`WildHit`·`ThingPlace`](#행동마다의-이벤트)로 바뀌었고,
+농장 이벤트의 별칭(`PlayerInteractNpc` `BlockGrow` `EntityDamageByPlayer` `CreatureSpawn` `EntityDeath` `PlayerLevelChange`)은
+[바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla)에.
+
+예전의 별칭 `BlockBreak`(`hit`)·`BlockPlace`(`place` `furnish`)는 [`WildHit`·`ThingPlace`](#농장의-행동마다의-이벤트)(바닐라 모듈)로 바뀌었고,
 `BlockBreak` `BlockPlace`는 이제 [블록](#blockplace--blockbreak)의 이벤트입니다.
 
 ## 켜질 때
@@ -208,41 +198,19 @@ fn watered(e: ActionAfter) {
 
 ### 행동마다의 이벤트
 
-모두 `action.before`의 그 종류만 받는 타입입니다(취소 가능). 다른 종류의 행동에는 불리지 않습니다.
+모두 `action.before`의 그 종류만 받는 타입입니다(취소 가능). 다른 종류의 행동에는 불리지 않습니다. 엔진에 있는 것은 이것뿐이고,
+농사·낚시·장사·잠 …의 것은 [농장의 행동마다의 이벤트](#농장의-행동마다의-이벤트)(바닐라 모듈)에 있습니다.
 
 | SDK 타입 | 행동 종류 (`kind()`) | |
 |---|---|---|
-| `PlayerTill` | `till` | 괭이로 밭 갈기 |
-| `PlayerPlant` | `plant` `sapling` | 씨앗·묘목 심기 (`id` 씨앗) |
-| `PlayerWater` | `water` | 물 주기 |
-| `PlayerHarvest` | `harvest` `fruit` | 작물·과일나무 거두기 (거둔 양은 [`Harvest`](#harvest)) |
-| `WildHit` | `hit` | 나무·바위·잡초·광맥을 도구로 침 |
-| `ThingPlace` | `place` `furnish` | 땅에 설치물, 집에 가구 놓기 |
-| `BlockRemove` | `unplace` `unfurnish` | 놓은 것 다시 줍기 |
-| `PlayerFish` | `cast` `fish` `release` | 던지기, 낚아 올림, 놓아줌 |
-| `PlayerEat` | `eat` | 먹기 |
-| `PlayerCraft` | `craft` | 제작 |
-| `PlayerSell` | `ship` `sell` | 출하 상자, 상점에 팔기 |
-| `PlayerBuy` | `gold` | 상점에서 사기, 돈 내기 |
-| `PlayerTalk` | `talk` | 주민에게 말 걸기 |
-| `PlayerGift` | `gift` | 선물 |
-| `PlayerSleep` | `sleep` | 잠자리에 듦 |
 | `PlayerDoor` | `door` | 건물의 문 (`id` 방, `n` 1 들어감 / 0 나감) |
-| `PlayerMine` | `mine` | 광산의 구멍·사다리 (`n` 층) |
 | `PlayerPickup` | `item` | 땅에서 줍기, 채집, 동물의 생산물, 우편 |
 | `PlayerDrop` | `discard` | 버리기 |
-| `PlayerAnimal` | `pet` `feed` `animal` | 쓰다듬기, 먹이 주기, 사기 |
-| `PlayerEquip` | `equip` `unequip` | 장비 |
-| `PlayerChest` | `store` `take` | 상자에 넣기·꺼내기 |
 | `PlayerAttack` | `strike` | 몬스터에게 휘두름 |
-| `PlayerQuest` | `quest` `request` `daily` `giveup` | 퀘스트·오늘의 의뢰 받기, 마치기, 포기 |
-| `PlayerUpgrade` | `upgrade` `smith_pick` `enchant` | 대장간 도구 강화, 대장장이 고르기, 마법 부여 |
-| `PlayerBuild` | `build` | 목수에게 건물 주문 |
-| `PlayerGate` | `gate` | 레버로 성문 열기·닫기 |
 
 ```rust
-#[on(PlayerSleep)]
-fn no_sleep(e: PlayerSleep) { e.cancel("이 서버에선 잠들 수 없어요") }
+#[on(PlayerDrop)]
+fn no_drop(e: PlayerDrop) { e.cancel("여기선 버릴 수 없어요") }
 ```
 
 ### Use
@@ -250,55 +218,12 @@ fn no_sleep(e: PlayerSleep) { e.cancel("이 서버에선 잠들 수 없어요") 
 게임에 쓰임새가 없는 아이템(플러그인이 [등록](rules)한 것 등)을 썼을 때. `id()` 아이템. 가져가려면 `player().take(id, 1)`.
 아이템에 `"action"`(동작)이 있으면 게임이 그 동작을 하고 `"hit"`의 순간에 옵니다: [도구 동작](moving#도구-동작-플러그인-아이템).
 
-## 농사와 장사
-
-### Grow
-
-밤마다 작물 하나에. 취소하면 오늘 밤 자라지 않습니다.
-
-| | |
-|---|---|
-| `crop()` | 작물 id (`text("tile.crop")`) |
-| `weather()` | 날씨 |
-| `set_grows(bool)` | 오늘 밤 자라는지 |
-| `set_days(f64)` | 오늘 밤 며칠치 자라는지 (원래 1) |
-
-### Harvest
-
-수확. 취소하면 거둬지지 않습니다.
-
-| | |
-|---|---|
-| `crop()` | 작물 id |
-| `count()` / `set_count(n)` | 거두는 개수 |
-| `quality()` / `set_quality(q)` | 품질 |
-
-### Price / Sell
-
-상점의 사는 값 / 파는 값. 막을 수는 없고 값을 바꿉니다.
-
-| | |
-|---|---|
-| `item()` | 아이템 id |
-| `price()` / `set_price(gold)` | 값 |
-
-```rust
-#[on(Sell)]
-fn festival(e: Sell) {
-    if e.date() % 7 == 0 { e.set_price(e.price() * 1.25) }
-}
-```
-
-### Morning
-
-밤이 지나고 아침, 농장 주인에게. `player().give` `add_gold` `add_energy` `say` 등으로 아침의 선물.
-
 ## 전투와 몬스터
 
 ### PlayerDamage
 
 플레이어가 다치려 할 때(Bukkit의 EntityDamageEvent): 몬스터의 접촉, 플러그인의 [`Player::damage`](sdk#피해-체력-pvp-팀), PvP가 켜진
-월드에서 다른 플레이어의 휘두름. `amount()` / `set_amount(n)` (0이면 안 다침), `cause()` ("monster", "player", 또는 플러그인이 준 원인),
+월드에서 다른 플레이어의 휘두름. `amount()` / `set_amount(n)` (0이면 안 다침), `cause()` ("player", 플러그인이 준 원인, 또는 게임 모듈의 것: 농장의 "monster"),
 `by()` 친 사람의 이름("" 없음), `attacker()` → `Option<Player>`. 취소: 안 다침. 예전 이름 `Damage`도 그대로.
 
 ```rust
@@ -308,52 +233,10 @@ fn armor(e: PlayerDamage) {
 }
 ```
 
-### Strike
-
-플레이어가 몬스터를 칠 때. `damage()` / `set_damage(n)`. 취소: 휘두름이 없던 일.
-
-### Spawn
-
-몬스터가 나올 때: 밤, 그리고 광산 층. `kind_id()` 종류, `floor()` 0은 지상(밤), 아니면 광산 층. 취소: 나오지 않음.
-
-### MobStep
-
-[등록](rules#몬스터-monsters_add)한 `monsters_add`에서 `"script": true`인 종류의 몬스터마다, 서버의 한 걸음(1초에 10번)에 옵니다. 한 걸음의
-몬스터 모두를 모듈 하나가 차례로 받습니다.
-
-| | |
-|---|---|
-| `mob()` → [`Mob`](sdk#enemyentity) | 그 몬스터 (`get("x")` `"z"` `"hp"` `"tier"` `"speed"` `"damage"` `"size"` `"t"`(나온 뒤 초)) |
-| `kind_id()` | 종류 |
-| `target()` → `Option<(이름, x, z, 거리)>` | 같은 층의 가장 가까운 플레이어 |
-| `num("floor")` | 광산 층 (0 지상) |
-
-```rust
-#[on(MobStep)]
-fn circle(e: MobStep) {
-    let m = e.mob();
-    if let Some((_, tx, tz, d)) = e.target() {
-        if d < 1.5 { m.attack(2.0, 1.5) }
-        let (dx, dz) = (tx - m.get("x"), tz - m.get("z"));
-        m.set("vx", -dz * 0.5 + dx * 0.2); // 둘레를 돌며 다가감
-        m.set("vz", dx * 0.5 + dz * 0.2);
-    }
-}
-```
-
-`mob` 이벤트에서 낸 `particle` `sound`는 월드의 모두에게 보입니다. 예: `plugins/new_creatures`.
-
-### MobDeath
-
-몬스터가 쓰러졌을 때: 플레이어의 휘두름, 또는 플러그인의 `EnemyEntity::damage`(광선, 발사체 …). `kind_id()` 종류, `position()` → `(x, z)`,
-`floor()`(0 지상, 광산 층, 던전 방), `killer()` 쓰러뜨린 사람(휘두른 사람, 또는 `damage`를 부른 이벤트의 플레이어; "" 없음),
-`cause()` "player"(휘두름) 또는 피해를 준 플러그인의 이름. `drop_item`은 그 몬스터 자리에 떨굽니다. 드롭과 경험치는 그대로.
-이 이벤트에서 다른 몬스터를 쓰러뜨리면 그 MobDeath도 오지만 4겹까지입니다.
-
 ### PlayerDeath
 
-플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `reason()` "monster" "plugin"(`death`) "damage"(`Player::damage`, 타격), `cause()`,
-`killer()` 마지막으로 친 사람("" 없음: 킬 피드). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기. `respawn_at_spawn(true)`: 의료실 대신 월드의 스폰에서. `no_letter()`: 도구 편지 없음. 월드 전체로는 `World::set_vanilla("fall", false)`(잃는 것 없이 스폰에서). 그 사람을 쫓던 몬스터만 사라집니다.
+플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `reason()` "plugin"(`death`) "damage"(`Player::damage`, 타격), 또는 게임 모듈의 것(농장의 "monster": 몬스터의 접촉), `cause()`,
+`killer()` 마지막으로 친 사람("" 없음: 킬 피드). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기. `respawn_at_spawn(true)`: 게임 모듈의 자리(농장의 의료실) 대신 월드의 스폰에서(`World::set_mode("none")`이면 늘). 농장의 `no_letter()`(도구 편지 없음)와 월드 전체의 `set_vanilla("fall", false)`(잃는 것 없이 스폰에서)는 [바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla). 그 사람을 쫓던 몬스터만 사라집니다.
 
 ### PlayerRespawn
 
@@ -377,7 +260,7 @@ fn circle(e: MobStep) {
 
 ### ProjectileHit
 
-`World::projectile`로 날린 이 플러그인의 발사체가 처음 닿은 것: `hit()`(`kind` `who` `entity` `at` `normal`, `player()` 맞은 사람, `mob()` 몬스터;
+`World::projectile`로 날린 이 플러그인의 발사체가 처음 닿은 것: `hit()`(`kind` `who` `entity` `at` `normal`, `player()` 맞은 사람, 바닐라 모듈의 `mob()` 몬스터;
 마을 아래에서는 쏜 사람의 광산 층·던전 방의 벽·바위·몬스터, `num("floor")` 그 층),
 `projectile()`(이 이벤트 뒤 사라짐), `player()` 쏜 사람. 그 플러그인에만 옵니다. 예: `plugins/blaster`의 돌 대포.
 
@@ -441,7 +324,7 @@ PlayerServerFullCheckEvent). `who()` `online()` `max()`. 취소하면 그래도 
 `Leave::reason()`: `"quit"`(게임을 끔) `"kick"`(내보내짐·차단) `"timeout"`(연결이 끊김) `"transfer"`(다른 서버로 감) `"world"`(`move_world`: 서버에는 그대로).
 `who()` 누구. 다른 서버가 [`Player::transfer`](server#다른-서버로)로 보낸 접속이면 `is_transfer()`가 참이고
 `transfer_from()`(보낸 서버), `transfer_data()`(함께 온 것), `transfer_trusted()`(같은 `transfer-key`, 또는 보낸 서버의 `transfer-keys` 키로 서명됨)를 읽습니다.
-`e.player().give(..)` `add_gold` `inventory().add(..)`는 그 사람의 가방에 들어가고 게임에 바로 보입니다(`Leave`에서는 그날이 저장되는 서버에서만 남음; [Player](sdk#player)).
+`e.player().give(..)` `inventory().add(..)`(바닐라 모듈의 `add_gold`도)는 그 사람의 가방에 들어가고 게임에 바로 보입니다(`Leave`에서는 그날이 저장되는 서버에서만 남음; [Player](sdk#player)).
 
 ### PlayerMove
 
@@ -475,15 +358,11 @@ PlayerServerFullCheckEvent). `who()` `online()` `max()`. 취소하면 그래도 
 
 | | |
 |---|---|
-| `reason()` | `"door"` 건물 안으로 (방 안에는 탈것 없음), `"world"` 다른 월드로 감 (`Player::move_world`), `"quit"` 서버를 나감 |
+| `reason()` | `"door"` 건물 안으로 (방 안에는 탈것 없음), `"world"` 다른 월드로 감 (`Player::move_world`), `"quit"` 서버를 나감, 또는 게임 모듈의 것 (농장의 `"balloon"` `"home"`) |
 | `mount()` → `ModelEntity` | 탔던 엔티티 (내린 자리에 남음) |
 | `player()` | 내린 사람 |
 
 예: `plugins/riding`([이동 방식 만들기 › 탈것](moving#탈것)).
-
-### LevelUp
-
-스킬 레벨이 오를 때. `skill()`, `level()` 새 레벨.
 
 ## 채팅, 버튼, 창
 
@@ -507,6 +386,8 @@ plugin.json의 버튼, 또는 [`Gui`](sdk#gui) 창의 버튼을 눌렀을 때. �
 | `player().facing()` | 누를 때 바라보던 방향 |
 
 ```rust
+use greenhaven_plugin::vanilla::*; // Gui::npc (VanillaGui)
+
 #[command("하늘", "하늘을 불러요")]
 fn call(c: Command) {
     c.player().show(&Gui::new("haneul").npc("haneul").title("하늘").text("무슨 일이에요?")
@@ -559,7 +440,7 @@ InventoryOpenEvent와 비슷하지만 인벤토리가 아닌 창(대화, 잠자�
 
 | | |
 |---|---|
-| `window()` | `"bag"` `"shop"` `"chest"` `"dialogue"` `"sleep"` … |
+| `window()` | 엔진의 `"bag"` `"friends"`, 게임 모듈의 것 (농장의 `"shop"` `"chest"` `"dialogue"` `"sleep"` …: `vanilla::windows`) |
 | `get(key)` | 무엇이었는지, 글로 (`"tab"` `"shop"` `"selling"` `"x"` `"z"` …; 숫자는 `"12"`처럼; `""` 없음) |
 
 ```rust
@@ -600,18 +481,6 @@ PlayerInteractEntityEvent). 서버가 거리를 확인합니다. 무엇을 할�
 | `to_slot()` / `count()` | 옮겨 간 칸 (정리는 -1) / 몇 개 (0: 칸 전부) |
 
 `cancel(이유)`: 자기 가방의 것은 옮겨지지 않습니다(게임의 가방도 그대로). 예: `plugins/kits`(직업 무기를 첫 칸에 고정).
-
-### Words
-
-주민에게 말을 걸 때(또는 마을 소식을 들을 때). 주민의 말은 서버가 대사 표에서 고릅니다.
-
-| | |
-|---|---|
-| `npc()` → [`Npc`](sdk#npc) | 누구 |
-| `topic()` | `"talk"` 말을 걸었음, `"town"` 마을 소식 |
-| `line()` | 하려던 말 |
-| `reply(line)` | 대신 할 말 |
-| `player().show(&Gui)` | 대신 선택지 창 |
 
 ## 시간과 하루
 
@@ -679,7 +548,7 @@ fn timer(e: Timer) {
 | `reason()` | 언제 | 취소하면 |
 |---|---|---|
 | `"clock"` | 하루의 끝 시각 (규칙의 `day_end`) | 시계가 계속 감, 날짜 그대로 |
-| `"sleep"` | 모두 잠듦 | 자던 사람들이 일어남, 하루가 이어짐 |
+| `"sleep"` | 모두 잠듦 (게임 모듈의 것: 농장의 침대) | 자던 사람들이 일어남, 하루가 이어짐 |
 | `"end_day"` | 플러그인의 `World::end_day()` | 아무 일도 없음 |
 | `"limit"` | 넘을 수 없는 끝 (다음날 6:00, 더 늦은 day_end면 그것) | 아침이 오지 않음(작물·출하·생성 없음, 저장도 없음), 날짜 그대로, 시계는 하루의 시작으로 |
 
@@ -698,12 +567,12 @@ fn timer(e: Timer) {
 
 ### WorldCreate
 
-월드가 만들어진 직후, 아무도 들어오기 전. 바닐라 마을·성벽·주민이 놓인 상태에서 여기서 바꾼 것이 처음부터 그 월드입니다.
+월드가 만들어진 직후, 아무도 들어오기 전. 생성기가 놓은 것(`"vanilla"`면 농장의 마을·성벽·주민) 위에 여기서 바꾼 것이 처음부터 그 월드입니다.
 이미 있는 월드에는 불리지 않습니다. [월드와 하루](world) 참고.
 
 ### ChunkGenerate
 
-청크가 처음 만들어질 때(바닐라 땅이 이미 들어 있음). 그 청크의 블록만 `World::fill` / `set_block`으로 바꿀 수 있습니다(이웃
+청크가 처음 만들어질 때(월드의 생성기의 땅이 이미 들어 있음). 그 청크의 블록만 `World::fill` / `set_block`으로 바꿀 수 있습니다(이웃
 청크는 무시).
 
 | | |
@@ -784,23 +653,7 @@ fn loaded(e: ChunkLoad) {
 
 예: `plugins/blocks`.
 
-### MineFloor
-
-광산 층이 그날 처음 만들어질 때(누가 처음 내려갈 때, 아무도 보기 전). **바위만** 바꿀 수 있습니다: 벽과 사다리는
-배치(규칙의 [`mine_layout`](rules#광산-mine_layout))의 것입니다.
-
-| | |
-|---|---|
-| `floor()` | 층 |
-| `size()` → `(w, d)` | 층의 폭·깊이 (칸) |
-| `cell()` | 층의 (0, 0) 칸의 마을 좌표 |
-| `rocks()` → `Vec<(i, j, id)>` | 층의 바위 (층 자신의 칸) |
-| `set_rock(i, j, id)` | 그 칸에 바위 놓기 (`gold_node` 등 debris id), `""` 치우기. 벽 위와 사다리 둘레는 안 됨 |
-| `num("up_x")` `"up_z"` `"down_x"` `"down_z"` | 올라가는·내려가는 사다리 |
-
-예: `plugins/deep_mines`.
-
-## 알림: 가방, 회복, 기력, 넉백, 걸음, 땅, 전리품
+## 알림: 가방, 회복, 넉백, 걸음, 땅, 전리품
 
 ### InventoryChange
 
@@ -814,15 +667,15 @@ fn loaded(e: ChunkLoad) {
 | `previous_item_id()` / `previous_count()` | 전 것 |
 | `item()` | 지금 스택, 메타까지 (`Option<ItemStack>`) |
 
-### PlayerHeal / PlayerEnergy
+### PlayerHeal
 
-행동 하나가 체력을 돌려줬을 때 / 기력을 바꿨을 때(Bukkit의 EntityRegainHealthEvent / FoodLevelChangeEvent; 쓰러짐은 아님).
-취소하면 그 전대로.
+행동 하나가 체력을 돌려줬을 때(Bukkit의 EntityRegainHealthEvent; 쓰러짐은 아님). 취소하면 그 전대로. 기력은 바닐라 모듈의
+[`PlayerEnergy`](#playerenergy).
 
 | | |
 |---|---|
-| `amount()` / `set_amount(n)` | 돌아온 체력 / 기력의 변화 (쓰면 음수) |
-| `cause()` | `"food"` 먹음, `"sleep"` 침대, `"regen"` 상태 효과, `"plugin"` 다른 이벤트의 `heal`·`set_energy`, `"respawn"`, 그 밖에는 행동의 종류 (`"till"` `"hit"` `"command"` …) |
+| `amount()` / `set_amount(n)` | 돌아온 체력 |
+| `cause()` | `"regen"` 상태 효과, `"plugin"` 다른 이벤트의 `heal`, `"respawn"`, 행동의 종류 (`"command"` …), 또는 게임 모듈의 것 (농장의 `"food"` 먹음, `"sleep"` 침대) |
 
 ### PlayerKnockback
 
@@ -846,7 +699,7 @@ fn loaded(e: ChunkLoad) {
 
 ### GroundDrop
 
-땅에 아이템이 생기기 직전(ItemSpawnEvent): 수확, 나무, 몬스터, 버린 것, `drop_item`. 취소하면 안 생김. `World::ground_drop`은 오지 않습니다.
+땅에 아이템이 생기기 직전(ItemSpawnEvent): 버린 것, `drop_item`, 게임 모듈의 것(농장의 수확, 나무, 몬스터). 취소하면 안 생김. `World::ground_drop`은 오지 않습니다.
 
 | | |
 |---|---|
@@ -859,9 +712,225 @@ fn loaded(e: ChunkLoad) {
 
 | | |
 |---|---|
-| `source()` | `"chest"` 던전 상자 (`id()` 방의 층), `"mob"` 쓰러진 몬스터 (`id()` 종류) |
+| `source()` | 게임 모듈의 것: 농장의 `"chest"` 던전 상자 (`id()` 방의 층), `"mob"` 쓰러진 몬스터 (`id()` 종류) |
 | `items()` / `set_items(&[(id, n)])` | 64개까지, 모르는 아이템은 빠짐 |
 | `at()` | |
+
+## 바닐라 모듈 (`greenhaven_plugin::vanilla`)
+
+농장 게임(바닐라 게임 모듈)의 이벤트입니다. 엔진의 SDK 뿌리에는 없고, 쓰려면 `use greenhaven_plugin::vanilla::*;`를 더합니다.
+농장이 없는 서버·월드(server.properties `game-module=none`, `World::set_mode("none")`)에서는 하나도 오지 않습니다.
+
+```rust
+use greenhaven_plugin::*;
+use greenhaven_plugin::vanilla::*;
+
+#[on(Harvest)]
+fn bigger(e: Harvest) {
+    if e.crop() == "pumpkin" { e.set_count(e.count() * 2.0) }
+}
+```
+
+| SDK 타입 | 이름 | 취소 | 언제 |
+|---|---|:-:|---|
+| [`Grow`](#grow) | `grow` | ✔ | 밤마다 작물 하나 |
+| [`Harvest`](#harvest) | `harvest` | ✔ | 수확 |
+| [`Price`](#price--sell) | `price` | | 상점의 값 |
+| [`Sell`](#price--sell) | `sell` | | 파는 값 |
+| [`Morning`](#morning) | `morning` | | 밤이 지나고 아침 (농장 주인에게) |
+| [`Words`](#words) | `words` | ✔ | 주민에게 말을 걸음 |
+| [`MineFloor`](#minefloor) | `mine.floor` | | 광산 층이 그날 처음 만들어짐 |
+| [`LevelUp`](#levelup) | `level` | | 스킬 레벨이 오름 |
+| [`Spawn`](#spawn) | `spawn` | ✔ | 몬스터가 나옴 (밤, 광산 층) |
+| [`MobStep`](#mobstep) | `mob` | | `script` 몬스터의 한 걸음 |
+| [`MobDeath`](#mobdeath) | `mob.death` | | 몬스터가 쓰러짐 (휘두름, 플러그인의 피해) |
+| [`Strike`](#strike) | `strike` | ✔ | 플레이어가 몬스터를 침 |
+| [`PlayerEnergy`](#playerenergy) | `energy` | ✔ | 기력이 바뀜 |
+| [농장의 행동마다의 이벤트](#농장의-행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
+
+별칭(Bukkit의 이름):
+
+| 별칭 | = |
+|---|---|
+| `PlayerInteractNpc` | `Words` |
+| `BlockGrow` | `Grow` |
+| `EntityDamageByPlayer` | `Strike` |
+| `CreatureSpawn` / `EntityDeath` | `Spawn` / `MobDeath` |
+| `PlayerLevelChange` | `LevelUp` |
+
+모든 이벤트에 붙는 것(트레잇 `VanillaEvent`): `season()` 계절(0 봄 … 3 겨울), `date()` 계절의 날(1~28). 엔진의 `day()`(며칠째)에서
+나온 농장의 달력입니다.
+
+### 농장의 행동마다의 이벤트
+
+[행동마다의 이벤트](#행동마다의-이벤트)처럼 `action.before`의 그 종류만 받는 타입입니다(취소 가능; `PlayerBedLeave`만 알림).
+
+| SDK 타입 | 행동 종류 (`kind()`) | |
+|---|---|---|
+| `PlayerTill` | `till` | 괭이로 밭 갈기 |
+| `PlayerPlant` | `plant` `sapling` | 씨앗·묘목 심기 (`id` 씨앗) |
+| `PlayerWater` | `water` | 물 주기 |
+| `PlayerHarvest` | `harvest` `fruit` | 작물·과일나무 거두기 (거둔 양은 [`Harvest`](#harvest)) |
+| `WildHit` | `hit` | 나무·바위·잡초·광맥을 도구로 침 |
+| `ThingPlace` | `place` `furnish` | 땅에 설치물, 집에 가구 놓기 |
+| `ThingRemove` | `unplace` `unfurnish` | 놓은 것 다시 줍기 (예전 이름 `BlockRemove`) |
+| `PlayerFish` | `cast` `fish` `release` | 던지기, 낚아 올림, 놓아줌 |
+| `PlayerEat` | `eat` | 먹기 |
+| `PlayerCraft` | `craft` | 제작 |
+| `PlayerSell` | `ship` `sell` | 출하 상자, 상점에 팔기 |
+| `PlayerBuy` | `gold` | 상점에서 사기, 돈 내기 |
+| `PlayerTalk` | `talk` | 주민에게 말 걸기 |
+| `PlayerGift` | `gift` | 선물 |
+| `PlayerSleep` | `sleep` | 잠자리에 듦 |
+| `PlayerBedLeave` | `wake` | 아침 전에 다시 일어남 (취소 없음; 아침 자체는 `DayEnd`) |
+| `PlayerMine` | `mine` | 광산의 구멍·사다리 (`n` 층) |
+| `PlayerAnimal` | `pet` `feed` `animal` | 쓰다듬기, 먹이 주기, 사기 |
+| `PlayerEquip` | `equip` `unequip` | 장비 |
+| `PlayerChest` | `store` `take` | 상자에 넣기·꺼내기 |
+| `PlayerQuest` | `quest` `request` `daily` `giveup` | 퀘스트·오늘의 의뢰 받기, 마치기, 포기 |
+| `PlayerUpgrade` | `upgrade` `smith_pick` `enchant` | 대장간 도구 강화, 대장장이 고르기, 마법 부여 |
+| `PlayerBuild` | `build` | 목수에게 건물 주문 |
+| `PlayerGate` | `gate` | 레버로 성문 열기·닫기 |
+
+```rust
+use greenhaven_plugin::vanilla::*;
+
+#[on(PlayerSleep)]
+fn no_sleep(e: PlayerSleep) { e.cancel("이 서버에선 잠들 수 없어요") }
+```
+
+### Grow
+
+밤마다 작물 하나에. 취소하면 오늘 밤 자라지 않습니다.
+
+| | |
+|---|---|
+| `crop()` | 작물 id (`text("tile.crop")`) |
+| `weather()` | 날씨 |
+| `set_grows(bool)` | 오늘 밤 자라는지 |
+| `set_days(f64)` | 오늘 밤 며칠치 자라는지 (원래 1) |
+
+### Harvest
+
+수확. 취소하면 거둬지지 않습니다.
+
+| | |
+|---|---|
+| `crop()` | 작물 id |
+| `count()` / `set_count(n)` | 거두는 개수 |
+| `quality()` / `set_quality(q)` | 품질 |
+
+### Price / Sell
+
+상점의 사는 값 / 파는 값. 막을 수는 없고 값을 바꿉니다.
+
+| | |
+|---|---|
+| `item()` | 아이템 id |
+| `price()` / `set_price(gold)` | 값 |
+
+```rust
+use greenhaven_plugin::vanilla::*;
+
+#[on(Sell)]
+fn festival(e: Sell) {
+    if e.date() % 7 == 0 { e.set_price(e.price() * 1.25) }
+}
+```
+
+### Morning
+
+밤이 지나고 아침, 농장 주인에게 (엔진의 `DayChange` 뒤: 작물이 자라고 출하가 정산된 뒤). `player().give`, `add_gold`
+`add_energy`([`VanillaPlayer`](sdk#바닐라-모듈-greenhaven_pluginvanilla)), `say` 등으로 아침의 선물.
+
+### Words
+
+주민에게 말을 걸 때(또는 마을 소식을 들을 때). 주민의 말은 서버가 대사 표에서 고릅니다.
+
+| | |
+|---|---|
+| `npc()` → [`Npc`](sdk#npc) | 누구 |
+| `topic()` | `"talk"` 말을 걸었음, `"town"` 마을 소식 |
+| `line()` | 하려던 말 |
+| `reply(line)` | 대신 할 말 |
+| `player().show(&Gui)` | 대신 선택지 창 |
+
+### MineFloor
+
+광산 층이 그날 처음 만들어질 때(누가 처음 내려갈 때, 아무도 보기 전). **바위만** 바꿀 수 있습니다: 벽과 사다리는
+배치(규칙의 [`mine_layout`](rules#광산-mine_layout))의 것입니다.
+
+| | |
+|---|---|
+| `floor()` | 층 |
+| `size()` → `(w, d)` | 층의 폭·깊이 (칸) |
+| `cell()` | 층의 (0, 0) 칸의 마을 좌표 |
+| `rocks()` → `Vec<(i, j, id)>` | 층의 바위 (층 자신의 칸) |
+| `set_rock(i, j, id)` | 그 칸에 바위 놓기 (`gold_node` 등 debris id), `""` 치우기. 벽 위와 사다리 둘레는 안 됨 |
+| `num("up_x")` `"up_z"` `"down_x"` `"down_z"` | 올라가는·내려가는 사다리 |
+
+예: `plugins/deep_mines`.
+
+### LevelUp
+
+스킬 레벨이 오를 때. `skill()`, `level()` 새 레벨.
+
+### Strike
+
+플레이어가 몬스터를 칠 때. `damage()` / `set_damage(n)`. 취소: 휘두름이 없던 일.
+
+### Spawn
+
+몬스터가 나올 때: 밤, 그리고 광산 층. `kind_id()` 종류, `floor()` 0은 지상(밤), 아니면 광산 층. 취소: 나오지 않음.
+
+### MobStep
+
+[등록](rules#몬스터-monsters_add)한 `monsters_add`에서 `"script": true`인 종류의 몬스터마다, 서버의 한 걸음(1초에 10번)에 옵니다. 한 걸음의
+몬스터 모두를 모듈 하나가 차례로 받습니다.
+
+| | |
+|---|---|
+| `mob()` → [`EnemyEntity`](sdk#enemyentity) | 그 몬스터 (`get("x")` `"z"` `"hp"` `"tier"` `"speed"` `"damage"` `"size"` `"t"`(나온 뒤 초)) |
+| `kind_id()` | 종류 |
+| `target()` → `Option<(이름, x, z, 거리)>` | 같은 층의 가장 가까운 플레이어 |
+| `num("floor")` | 광산 층 (0 지상) |
+
+```rust
+use greenhaven_plugin::vanilla::*;
+
+#[on(MobStep)]
+fn circle(e: MobStep) {
+    let m = e.mob();
+    if let Some((_, tx, tz, d)) = e.target() {
+        if d < 1.5 { m.attack(2.0, 1.5) }
+        let (dx, dz) = (tx - m.get("x"), tz - m.get("z"));
+        m.set("vx", -dz * 0.5 + dx * 0.2); // 둘레를 돌며 다가감
+        m.set("vz", dx * 0.5 + dz * 0.2);
+    }
+}
+```
+
+`mob` 이벤트에서 낸 `particle` `sound`는 월드의 모두에게 보입니다. 예: `plugins/new_creatures`.
+
+### MobDeath
+
+몬스터가 쓰러졌을 때: 플레이어의 휘두름, 또는 플러그인의 `EnemyEntity::damage`(광선, 발사체 …). `kind_id()` 종류, `position()` → `(x, z)`,
+`floor()`(0 지상, 광산 층, 던전 방), `killer()` 쓰러뜨린 사람(휘두른 사람, 또는 `damage`를 부른 이벤트의 플레이어; "" 없음),
+`cause()` "player"(휘두름) 또는 피해를 준 플러그인의 이름. `drop_item`은 그 몬스터 자리에 떨굽니다. 드롭과 경험치는 그대로.
+이 이벤트에서 다른 몬스터를 쓰러뜨리면 그 MobDeath도 오지만 4겹까지입니다.
+
+### PlayerEnergy
+
+기력을 얻거나 썼을 때(Bukkit의 FoodLevelChangeEvent): `amount()` / `set_amount(n)` 변화(쓰면 음수), `cause()`는
+[`PlayerHeal`](#playerheal)의 것처럼(`"till"` `"hit"` … 기력을 쓴 행동). 취소하면 그 전대로.
+
+### 엔진 이벤트의 농장 몫
+
+| | |
+|---|---|
+| `PlayerDeath::no_letter()` (`VanillaDeath`) | 쓰러진 뒤 우편함에 도구 편지 없음 |
+| `Hit::mob()` / `Found::mob()` (`VanillaHit`) | 광선·`overlap`·[`ProjectileHit`](#projectilehit)이 맞힌 몬스터 → `Option<EnemyEntity>` |
+| `ItemEntity::floor()` (`VanillaItem`) | 아이템이 놓인 광산 층 (0 지상) |
 
 ## SDK 없이 (원본 ABI)
 

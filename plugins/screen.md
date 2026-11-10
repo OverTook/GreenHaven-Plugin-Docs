@@ -63,8 +63,8 @@ fn packet(e: Packet) {
 
 ### 게임 HUD의 부분
 
-`hide` / `show`의 이름: `clock`(날짜, 시각, 날씨, 골드) `time`(그중 날짜, 시각, 날씨만) `status`(그 아래의 알약과 버튼) `nearby`(가까운 사람) `chat` `hotbar`
-`bars`(체력과 기력) `quests` `prompt`(E가 하는 일) `toasts` `plugins`(plugin.json의 버튼과 바) `menu`(휴대폰의 메뉴 버튼).
+`hide` / `show`의 이름: `clock`(날짜, 시각, 날씨, 게임 모듈의 것: 농장의 골드) `time`(그중 날짜, 시각, 날씨만) `status`(그 아래의 알약과 버튼) `nearby`(가까운 사람) `chat` `hotbar`
+`bars`(체력과 게임 모듈의 것: 농장의 기력) `quests`(게임 모듈의 따라가는 퀘스트) `prompt`(E가 하는 일) `toasts` `plugins`(plugin.json의 버튼과 바) `menu`(휴대폰의 메뉴 버튼).
 여러 플러그인이 숨기면 모두 `show`해야 다시 보입니다. 월드의 모두에게는 `World::hide_hud(part, true)`.
 
 같은 요소를 같은 내용으로 다시 `add` / `set`하면 서버가 보내지 않고 게임도 다시 만들지 않으며, 글자나 값만 바뀌면 그 컨트롤만
@@ -160,7 +160,7 @@ h.board(&Board::new("모험단", "P").column("kills", "처치").sort("kills", tr
 ## 패킷 (`Packet`)
 
 버튼·입력 칸의 `on`, `key`로 묶은 키, 그리고 [게임 쪽 코드](client)의 `send`는 그 플러그인에게만 [`Packet`](events#packet) 이벤트로 옵니다: `channel()`, `data()`(4 KB까지),
-`player()`. 플레이어의 행동처럼 판정되므로 여기서 `give` `take` `add_gold` …가 됩니다.
+`player()`. 플레이어의 행동처럼 판정되므로 여기서 `give` `take`(바닐라 모듈의 `add_gold` …)가 됩니다.
 
 ## 인벤토리 창
 
@@ -224,7 +224,8 @@ fn came(e: Join) {
 
 **바꾸기** — `Hud::replace(window)`: 플레이어가 그 창을 열면 게임은 열지 않고 이 플러그인에 채널 `"window"`의 패킷을 보냅니다.
 플러그인은 자기 것(인벤토리 창, HUD 요소, `gui`)을 보여 주면 됩니다. 아무것도 안 하면 그 창은 막힌 셈입니다.
-`restore(window)`로 게임의 창이 돌아옵니다.
+`restore(window)`로 게임의 창이 돌아옵니다. 엔진의 창은 `bag`과 `friends`이고, 나머지는 게임 모듈(농장)의 것입니다: 이름은
+서버 쪽 SDK의 `greenhaven_plugin::vanilla::windows`(`SHOP` `SMITH` `ENCHANT` `CHEST` …)에도 있습니다.
 
 | 창 | 패킷 데이터 (JSON) |
 |---|---|

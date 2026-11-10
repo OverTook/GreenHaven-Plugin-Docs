@@ -25,6 +25,7 @@ Bukkit의 `onEnable`처럼, 플러그인은 서버가 켜질 때 [`Enable`](even
 
 ```rust
 use greenhaven_plugin::*;
+use greenhaven_plugin::vanilla::*; // Registry::crop (VanillaRegistry)
 
 #[on(Enable)]
 fn enable(_e: Enable) {
@@ -44,12 +45,19 @@ fn enable(_e: Enable) {
 | `Registry::add(table, id, json)` | 표 `table`에 `id` 더하기·바꾸기 (`set("table.id", json)`) |
 | `Registry::block(id, &BlockKind)` | `blocks_add` — [새 블록 종류](world#새-블록-종류) |
 | `Registry::item(id, json)` | `items` |
+| `Registry::model(id, json)` `Registry::emote(id, json)` | `models_add` `emotes_add` ([커스텀 모델](models)) |
+| `Registry::text(from, to)` | `texts` |
+
+농장(바닐라 모듈)의 표는 `use greenhaven_plugin::vanilla::*;`의 트레잇 `VanillaRegistry`로 ([바닐라 모듈](sdk#바닐라-모듈-greenhaven_pluginvanilla)):
+
+| 함수 | 규칙의 키 |
+|---|---|
 | `Registry::crop(id, json)` | `crops` |
 | `Registry::monster(id, json)` | `monsters_add` |
 | `Registry::animal(id, json)` | `animals_add` |
 | `Registry::villager(id, json)` | `villagers_add` |
-| `Registry::model(id, json)` `Registry::emote(id, json)` | `models_add` `emotes_add` ([커스텀 모델](models)) |
-| `Registry::text(from, to)` | `texts` |
+
+`Registry::add("crops", id, json)`처럼 표 이름으로 부르면 들여오지 않아도 같습니다.
 
 이 문서의 JSON 예는 모두 `Registry::patch`에 넘기는 모양입니다. SDK 없이는 plugin.json `events`에 `"enable"`을 구독하고
 `on_event`에서 "gh" [`register(ptr, len)`](abi#등록과-화면)를 부릅니다(샘플 `wild_fish`).

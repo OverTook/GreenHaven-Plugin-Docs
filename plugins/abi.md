@@ -13,6 +13,11 @@ redirect_from:
 SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽 `client.wasm`이 쓰는 모듈 `"ghc"`는 [아래](#게임-쪽-ghc). Rust SDK로는 `greenhaven_plugin::sys`에 그대로 있고, 다른 언어로 WebAssembly를 만들 때는
 모듈 `"gh"`에서 가져옵니다.
 
+농장 게임(바닐라 모듈)의 함수(`gold` `energy` `set_energy` `xp` `friendship` `open_shop` `set_vanilla` `vanilla_on` `set_dawn_time`
+`strike` `mob_*` `npc_*` `debris_*` `tree_fell` `room_get` `equip_*` `inv_enchant` `mine_rock`)도 같은 모듈 `"gh"`에 있지만, Rust SDK는
+그것들을 `greenhaven_plugin::vanilla`의 트레잇으로만 감쌉니다([SDK › 바닐라 모듈](sdk#바닐라-모듈-greenhaven_pluginvanilla)). 농장이 없는
+서버·월드에서는 아무것도 하지 않습니다.
+
 1. TOC
 {:toc}
 
@@ -54,7 +59,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `give(p, len, n: i64)` | 아이템 주기 (음수면 빼기) |
 | `inv_count(p, len) -> i64` | 그 플레이어의 가방에 그 아이템이 몇 개 |
 | `inv_list(p, cap) -> i32` | 가방의 모든 것: 한 줄에 하나 `id	n	tier	마법:레벨,…` (이벤트가 시작될 때의 것) |
-| `inv_clear(tools: i32)` | 가방 비우기 (`tools` 0이 아니면 도구까지; 착용한 장비는 그대로) |
+| `inv_clear(tools: i32)` | 가방 비우기 (`tools` 0이 아니면 도구까지: SDK의 `PlayerInventory::clear()`는 1, 바닐라의 `clear_keep_tools()`는 0; 착용한 장비는 그대로) |
 | `inv_size() -> i32` `inv_held() -> i32` | 칸 수, 손에 든 단축바 칸 |
 | `inv_get(slot, p, cap) -> i32` | 한 칸: `id	n` 그리고 메타 한 줄씩 (`name	..` `lore	..` `tint	..` `model	..` `data	키	값` `unbreakable` `glow` `tier	등급` `ench	마법	단계`); 비면 `""` |
 | `inv_set(slot, ip, il, n: i64, mp, ml)` | 그 칸을 n개의 `ip`로, 메타 `mp`(JSON, 빈 것: 없음; n 0: 비우기) |
@@ -87,7 +92,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `set_model(p, len)` | [커스텀 모델](models) (빈 문자열: 원래 모습) |
 | `play_anim(p, len)` `stop_anim()` | [감정 표현](models) 재생, 끝내기 |
 | `set_time(minute: i64)` | 그 월드의 시각 |
-| `move_world(p, len, station: i32)` | 그 플레이어를 서버의 그 월드로 (`""` 모두의 월드; `station` 1: 그 월드의 열기구 정거장으로, 0: 농장 집 앞으로) |
+| `move_world_at(p, len, ap, al)` | 그 플레이어를 서버의 그 월드로 (`""` 모두의 월드), 게임 모듈이 아는 자리 `ap`(32바이트까지)로: 농장의 `"station"`(그 월드의 열기구 정거장) `"desert"`(사막의 정거장); `""`이나 모르는 이름이면 그 월드의 스폰. 예전의 `move_world(p, len, station: i32)`는 없어졌습니다 |
 | `music_play(p, len)` `music_all(p, len)` | 그 플레이어 / 월드 모두에게 곡 |
 | `player(i: i32) -> i32` | tick: i번째 플레이어를 고름 (뒤의 `pget` `me` 등이 그 사람; -1: 이벤트의 그 사람으로 돌아감) |
 | `player_named(p, len) -> i32` | 서버 어디든 접속한 그 이름의 사람을 `player(i)`의 번호로 (-1: 없음; `num("player.i.x")` 등도 채움) |
@@ -138,7 +143,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `save_now()` | 월드를 지금 저장 |
 | `set_live_saving(on: i32)` | 실시간 저장 |
 | `set_quit_warning(p, len)` | 나가기 경고 |
-| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void", "town": false}`; `"template"`: 그 월드의 복사 |
+| `create_world(p, len) -> i32` | 플러그인의 월드 하나 (1 / 0: 쓸 수 없는 이름; id만이면 서버의 생성기 `level-type`); id 대신 JSON `{"id", "generator": "vanilla" \| "flat" \| "void", ...그 생성기의 옵션}`(농장의 `"town": false`); `"template"`: 그 월드의 복사 |
 | `set_spawn(x: f64, y: f64, z: f64, yaw: f64)` | 월드의 스폰 |
 | `set_rule(kp, kl, jp, jl) -> i32` `clear_rules()` | 이 월드의 규칙 패치 (키, JSON 값; 1 / 0: JSON이 아니거나 월드마다 둘 수 없는 키) |
 | `set_clock_rate(f: f64)` | 이 월드의 시계 배율 (0 멈춤, 음수 규칙대로) |
