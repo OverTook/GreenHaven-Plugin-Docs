@@ -33,26 +33,34 @@ fn cmd(c: Command) { /* … */ }
     `e.set_cancelled(true)`는 `cancel("")`. 한 번 막히면 막힌 채이고, 뒤 핸들러(뒤 플러그인)는 불리지 않습니다.
   - **알리기만 하는 이벤트**: `cancel`이 아예 없어서 부르면 컴파일되지 않습니다.
 
-## 모든 이벤트에 있는 것 (`Base`)
+## 모든 이벤트에 있는 것 (`Base`, `PlayerEvent`, `ActionEvent`)
+
+이벤트의 메서드는 세 트레잇으로 나뉩니다(2026-11-11). 없는 것은 컴파일이 막습니다(`Tick`에서 `player()`는 없음).
+
+- `Base` — 모든 이벤트: 아래 표에서 `tool` `cell` `player` `drop_item` `sound_here` `prop`을 뺀 것.
+- `PlayerEvent` — 플레이어가 있는 이벤트: `player()`. 월드·서버의 것(`Tick` `ServerTick` `DayEnd` `DayChange` `WorldCreate` `ChunkGenerate` `ChunkLoad` `Enable` `Disable` `Timer` `HttpDone` `WorldSave` `WorldRemove` `ServerFull` `Explosion` `EntityLand` `EntityBump` `ZoneEntityEnter`, 바닐라의 `Grow` `Spawn` `MobStep`)에는 없습니다.
+- `ActionEvent` — 플레이어가 한 일(행동과 그 종류별 이벤트, `Use` `Button` `Command` `Chat` `Packet` `FastPacket` `BlockPlace` `BlockBreak` `PlayerInteract` `EntityInteract` `PlayerInteractPlayer` `InventoryClick` `ModelEntityDamage` `ModelEntityDeath`, 바닐라의 `Harvest` `Words` `Strike` `MobDeath`): `tool()` `cell()` `drop_item` `sound_here` `prop`.
+
+여러 이벤트를 받는 함수는 `fn f(e: &impl PlayerEvent)`처럼.
 
 | 메서드 | |
 |---|---|
 | `name()` | 이벤트 이름 (`"chat"`, `"action.before"` …) |
 | `kind()` | 행동 종류 (`action.before`/`after`: `"till"` `"water"` `"buy"` …) |
 | `id()` | 무엇에 대한 것: 아이템, 작물, 주민, 명령어 이름, 버튼 … |
-| `tool()` | 쓴 도구 |
-| `cell()` → `(i64, i64)` | 일어난 칸 |
+| `tool()` | 쓴 도구 (`ActionEvent`) |
+| `cell()` → `(i64, i64)` | 일어난 칸 (`ActionEvent`) |
 | `n()` → `i64` | 행동의 개수 (산 개수, 판 개수 …) |
 | `num(k)` → `f64` | 이벤트의 숫자 (아래) |
 | `text(k)` → `String` | 이벤트의 글 (아래) |
 | `set(k, v)` | 이벤트의 숫자 바꾸기 (서버가 플러그인들 다음에 읽음) |
 | `roll(k)` → `f64` | 정해진 난수 [0, 1). 같은 이벤트면 다시 돌려도 같음 (`k` 0~63로 여럿) |
 | `day()` | 며칠째(1부터). 계절과 계절의 날은 바닐라 모듈의 `season()` `date()` ([바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla)) |
-| `player()` → [`Player`](sdk#player) | 이벤트의 플레이어 |
+| `player()` → [`Player`](sdk#player) | 이벤트의 플레이어 (`PlayerEvent`) |
 | `world()` → [`World`](sdk#world) | 이벤트의 월드 |
-| `drop_item(item, n)` | 이벤트의 칸에 아이템 떨구기 (수확처럼) |
-| `sound_here(name)` | 이벤트의 칸에서 게임의 소리 (`"hit"` `"pickup"` `"click"` …), 월드의 모두에게 (2026-11-11 전 `fx`) |
-| `prop(name, v)` | 그 칸에 선 것의 속성 (`"scale"`: 나무·바위·과일나무를 그 크기로 그림) |
+| `drop_item(item, n)` | 이벤트의 칸에 아이템 떨구기 (수확처럼; `ActionEvent`) |
+| `sound_here(name)` | 이벤트의 칸에서 게임의 소리 (`"hit"` `"pickup"` `"click"` …), 월드의 모두에게 (2026-11-11 전 `fx`; `ActionEvent`) |
+| `prop(name, v)` | 그 칸에 선 것의 속성 (`"scale"`: 나무·바위·과일나무를 그 크기로 그림; `ActionEvent`) |
 
 ### `num` / `text`의 키
 

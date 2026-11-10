@@ -97,24 +97,28 @@ GreenHaven-Server의 `plugins/` 아래에서 `python tools/build_plugins.py <이
 use crate::shared::*;
 use greenhaven_client::*;
 
-greenhaven_client::client! { load => loaded, frame => frame, packet => heard, input => key }  // 그리고 click => …
-
+#[on(Load)]
 fn loaded(_: Load) { log("내 플러그인: 게임 쪽 로드됨"); }
 
+#[on(Frame)]
 fn frame(f: Frame) {   // 매 프레임 (f.dt(), f.time())
     Hud::add("t", &El::text(&format!("{:.1}", f.time())).anchor(Anchor::Top));
 }
 
+#[on(Packet)]
 fn heard(p: Packet) {  // 서버 쪽이 보낸 것
     if p.channel() == "boom" { Camera::shake(0.3, 0.5); Screen::flash("ffffff", 0.2); }
 }
 
+#[on(Input)]
 fn key(i: Input) {     // 패널이 열려 있지 않을 때의 키·마우스
     if i.key() == "Q" && i.pressed() { send("cast", ""); }
 }
 ```
 
-`client!`에는 쓰는 것만 적습니다.
+쓰는 이벤트에만 `#[on(타입)]`을 답니다(종류마다 함수 하나; 2026-11-11 전에는 `client! { frame => f, .. }` 매크로).
+
+**값 묶어 보내기**: `send(채널, &pack(&값))` → 서버 쪽 `e.read::<타입>()`(숫자·bool·String·Vec·Option·튜플: 플러그인 사이 호출의 `Put` / `Take`와 같은 꼴, `greenhaven_common`), 서버 쪽 `hud().send_text(채널, &pack(&값))` → 여기 `p.read::<타입>()`. 꼴이 다르면 None. 묶은 글은 base64(같은 값의 바이트보다 1/3 큼).
 
 | 핸들러 | 언제 | |
 |---|---|---|
@@ -279,7 +283,6 @@ pub const PRESS: &str = "press";     // 패널의 버튼
 pub const PRESSED: &str = "pressed"; // 서버 → 게임: 센 횟수
 
 // client.rs
-greenhaven_client::client! { load => loaded, packet => heard, click => clicked }
 static PANEL: Global<i64> = Global::new(0);
 
 fn board(n: &str) -> El {
@@ -287,13 +290,16 @@ fn board(n: &str) -> El {
         .child(El::text(&format!("서버가 센 누름: {n}")).anchor(Anchor::Top).pos(0.0, 40.0).font_size(20))
         .child(El::button("눌러 보세요", PRESS).anchor(Anchor::Bottom).pos(0.0, -20.0).size(200.0, 56.0))
 }
+#[on(Load)]
 fn loaded(_: Load) {
     let (x, y, z) = Me::position();
     PANEL.set(Local::spawn_panel(&board("0"), x + 3.0, y + 1.6, z, 1.8, (360.0, 220.0), true));
 }
+#[on(Click)]
 fn clicked(c: Click) {
     if c.on() == PRESS { Camera::shake(0.05, 0.2) }   // 바로 (서버의 답보다 먼저)
 }
+#[on(Packet)]
 fn heard(p: Packet) {
     if p.channel() == PRESSED { Local::set_panel(PANEL.get(), &board(&p.data())) }
 }
@@ -498,13 +504,13 @@ if let Some(at) = Target::Entity(car).pin() { Hud::pin_to("car_hp", Some(&at), 1
 휴대폰 화면 버튼을 같이 묶고, 무엇으로 누르든 `action` 핸들러가 받습니다.
 
 ```rust
-greenhaven_client::client! { load => loaded, action => act }
-
+#[on(Load)]
 fn loaded(_: Load) {
     Input::bind("boost", &Bind { label: "부스트", keys: &["K"], pad: &["RB"],
         touch: Some(TouchButton { label: "부스트", icon: "" }) });
 }
 
+#[on(Action)]
 fn act(a: Action) {
     if a.name() == "boost" && a.pressed() { request("boost", ""); }   // 판정은 서버 쪽
 }
@@ -554,7 +560,7 @@ fn act(a: Action) {
 | `Entities::list()` / `get(id)` / `near(r)` → `EntityView { id, pos, yaw, pitch, roll }`, `model()`, `public(key)` | 서버 쪽 엔티티 (`"block:stone"` 같은 블록 모습도; 기울기는 서버 쪽 `set_rotation`) |
 | `Me::id()` | 이 월드에서 내 번호 (`PlayerView::id`와 같은 것) |
 | `Net::ms()` / `Net::rtt()` | 서버 시계 (unix ms), 왕복 시간 (ms) |
-| 이벤트 `public` (`PublicChanged::who()` `id()`) | 누군가의 공개 값이 바뀜: `client! { public => f }` |
+| 이벤트 `public` (`PublicChanged::who()` `id()`) | 누군가의 공개 값이 바뀜: `#[on(PublicChanged)]` |
 | `Target::Player(id)` | 외곽선·파티클·궤적의 대상으로 다른 플레이어 |
 
 ### 연출: 빛, 외곽선, 파티클, 궤적
@@ -601,7 +607,7 @@ for o in Players::near(6.0) { Target::Player(o.id).ragdoll((0.0, 4.0, 5.0), 2.5)
 (`""` 게임의 것), `size` 글자 px (0 게임의 것). 모두 비우면 게임의 모양으로.
 
 ```rust
-greenhaven_client::client! { chat => asked }
+#[on(ChatLine)]
 fn asked(l: ChatLine) {
     if l.text().trim() == "점수?" && l.channel() != "sys" {
         Chat::system(&format!("내 점수 {}", Me::data("score")));
@@ -641,12 +647,11 @@ fn asked(l: ChatLine) {
 ```rust
 use greenhaven_client::*;
 use greenhaven_client::vanilla::*;
-greenhaven_client::client! { module => told, frame => frame }
-
 const MELT: &str = "uniform float t = 0.0;
 void fragment() { ALBEDO = mix(vec3(0.6, 0.9, 1.0), vec3(0.1, 0.3, 1.0), t); EMISSION = vec3(0.2, 0.5, 1.0) * t; ALPHA = 1.0 - t; }";
 static DYING: Global<Vec<(i64, f64)>> = Global::new(Vec::new()); // (몬스터 번호, 지난 초)
 
+#[on(ModuleEvent)]
 fn told(e: ModuleEvent) {
     let Some(d) = MobDeath::of(&e) else { return };   // (look "death": "none"인 종류)
     let id = format!("melt{}", d.n % 8); // (머티리얼 여덟 개를 돌려 씀: 하나 만들 때마다 셰이더를 새로 컴파일하므로)
@@ -654,6 +659,7 @@ fn told(e: ModuleEvent) {
     d.mob().target().set_material(&id);
     DYING.with(|v| v.push((d.n, 0.0)));
 }
+#[on(Frame)]
 fn frame(f: Frame) {
     DYING.borrow().retain_mut(|(n, t)| {
         *t += f.dt();

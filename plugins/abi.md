@@ -314,7 +314,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `query(kp, kl, jp, jl, p, cap) -> i32` | 엔진에 묻기: `raycast` `[x0,y0,z0,x1,y1,z1]`, `ground` `[x,z]` → 답의 JSON; 이 게임에 온 것 읽기: `players` `[]` → `[id,x,y,z,yaw,doing,…]`, `player` `[id]` → 이름, `entities` `[]` → `[id,x,y,z,yaw,…]`, `entity` `[id]` → 모델, `public` `["p"\|"e", id, key]` → 값; 조준: `cast` `[x,y,z,dx,dy,dz,len]` → `[kind,id,x,y,z,nx,ny,nz,거리]`(kind 0 블록, 1 상자, 2 플레이어, 3 엔티티), `overlap` `[x0,y0,z0,x1,y1,z1]` → `[kind,id,…]`, `screen_ray` `[px,py]` → `[x,y,z,dx,dy,dz]`, `to_screen` `[x,y,z]` → `[sx,sy]`; 게임 모듈의 질의(게임이 알려 준 것만, `allow_module`): 농장의 `path` `[x0,z0,x1,z1]` → `[x,z,…]`, `mobs` `[r]` → `[n,x,y,z,hp,…]`, `mob` `[n]` → 종류 |
 | `local_id() -> i64` | 자기에게만 보이는 물체(`Local`)에 줄 새 id |
 
-내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` `ghc_action` `ghc_step` `ghc_public` `ghc_module` (`() -> i32`, 있는 것만; SDK의 `client!`가 만듦). `ghc_module`은 게임 모듈의 이벤트: `text("module.kind")` 이름(농장의 `"v.mob_death"`), 그 값은 `num("module.<키>")` / `text("module.<키>")`(`v.mob_death`: `n` `x` `y` `z`, 글 `id`). 대상 키(`Highlight` `Trail` `Particles`의 `on`)에는 `me` `local:<id>` `entity:<id>` `player:<id>`와 게임 모듈의 `<종류>:<번호>`(농장의 `mob:<번호>`).
+내보내는 것: `ghc_load` `ghc_frame` `ghc_packet` `ghc_input` `ghc_click` `ghc_action` `ghc_step` `ghc_public` `ghc_module` (`() -> i32`, 있는 것만; SDK의 `#[on(타입)]`이 만듦). `ghc_module`은 게임 모듈의 이벤트: `text("module.kind")` 이름(농장의 `"v.mob_death"`), 그 값은 `num("module.<키>")` / `text("module.<키>")`(`v.mob_death`: `n` `x` `y` `z`, 글 `id`). 대상 키(`Highlight` `Trail` `Particles`의 `on`)에는 `me` `local:<id>` `entity:<id>` `player:<id>`와 게임 모듈의 `<종류>:<번호>`(농장의 `mob:<번호>`).
 
 ## 상태 효과, 타이머, 쿨다운 (`plugin_api/effects.rs`)
 
