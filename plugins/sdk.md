@@ -287,7 +287,6 @@ p.inventory().set_held_slot(0);
 | `online()` → `Vec<Player>` | 어느 월드든 접속한 모두 (`players()`는 이름과 월드만). 말·소리는 [`Audience`](#audience)로 서버 모두에게 |
 | `create_world(id)` → `bool` | 플러그인의 월드 하나 (서버의 생성기: server.properties `level-type`, 저만의 씨앗, 여느 월드처럼 저장; `id`는 영문·숫자·`_ - .` 32자까지, `false`: 쓸 수 없는 이름). 그 월드에서 `WorldCreate`·`ChunkGenerate`가 불림 ([플러그인의 월드](world#플러그인의-월드)). 서버가 함께 돌리는 월드는 16 + 접속 한도의 두 배(256까지): 넘으면 만들어지지 않음(서버 로그) |
 | `create_world_with(id, generator, options)` → `bool` | 생성기를 골라: `"flat"`(높이 0의 풀, 위에 아무것도 없음) `"void"`(아무것도 없음) `"vanilla"`(농장의 땅과 마을) `"<플러그인>:<이름>"`(플러그인의 [생성기](#chunkgenerator)) `"map"`(아래), `options`는 그 생성기의 JSON 객체(`""` 없음; 농장의 `{"town": false}`: 마을 없는 땅). 처음 만들 때만 셈 ([월드 만들기](world#월드-만들기)) |
-| `create_map_world(id, glb, collision, spawn)` → `bool` | 모델 한 채가 곧 맵인 월드 (생성기 `"map"`): 땅은 비고, 이 플러그인의 GLB(`res://plugins/<이름>/…glb`)가 원점에 영구 `ModelEntity`로, `collision`(`None`: GLB 자신)의 삼각형으로 단단; 모두 `spawn` (x, y, z, yaw 라디안)으로 들어옴; 평평하게, 가림 컬링 켬 ([맵 월드](world#맵-월드)) |
 | `create_world_from(id, template)` → `bool` | 이 플러그인이 만든 월드 `template`의 지금 모습을 복사한 월드 ([월드마다의 규칙](world#월드마다의-규칙가방시계-월드의-수명-미니게임-허브)) |
 | `reset_world(id, to)` / `remove_world(id, to)` → `bool` | 이 플러그인이 만든 월드를 만든 그대로 다시 / 지움; 안의 사람은 먼저 `to`로 (`""`: 모두의 월드, reset이면 다시 들어옴) |
 | `worlds()` → `Vec<(String, usize)>` | 만들었거나 읽은 월드들과 사람 수 (아무도 없어 내린 월드도) |

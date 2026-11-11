@@ -262,16 +262,39 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
 
 ### 맵 월드
 
-`Server.create_map_world(id, glb, collision, spawn)` → `bool` (2026-11-11, 생성기 `"map"`)은 위를 한 번에 합니다:
+빈 월드(`Server.create_world_with(id, "void", "")`)의 `WorldCreate`에서 맵 GLB를 `World::spawn`으로 세웁니다. 맵, 맵 조각, 문, 소품이
+모두 같은 `ModelEntity`입니다(2026-11-11 잠깐 있던 `create_map_world` / 생성기 `"map"`은 이것과 같아 없앴습니다).
 
-- 땅은 비어 있고(void), 월드가 만들어질 때 이 플러그인의 GLB(`"res://plugins/<이름>/arena.glb"`; 다른 곳의 것은 안 됨)가 원점에
-  **영구 `ModelEntity`**(이 플러그인의 것: `World::entities`에 있고 옮기거나 지울 수 있음)로 섭니다.
-- `collision`의 삼각형으로 단단합니다(`None`: GLB 자신; 같은 모양의 더 단순한 메시가 쌈).
-- 모두 `spawn` `(x, y, z, yaw 라디안)`으로 들어옵니다.
-- 평평하게(`curve` 끔), 가림 컬링 켬(`occlusion`)으로 그립니다: `World::set_view`로 바꿈.
-- `false`: 쓸 수 없는 id. `create_world_with(id, "map", r#"{"glb": "...", "collision": "...", "spawn": [x, y, z, yaw 도]}"#)`와 같습니다.
+- `set_persistent(true)`: 월드와 함께 저장 (`WorldCreate`는 월드가 처음 만들어질 때 한 번만).
+- `set_collision_mesh(glb)`: 그 삼각형으로 단단하게. 같은 모양의 더 단순한 메시가 쌉니다. 거리와 상관없이 보이고 월드에 256개까지.
+- **충돌 없는 것**(수풀, 풀, 장식): 충돌 메시를 주지 않으면 됩니다. `spawn`한 엔티티는 기본으로 통과합니다(`set_solid`도 꺼짐).
+  많으면 맵 GLB에 그려 넣고 충돌 GLB에서만 빼는 편이 쌉니다(엔티티 하나가 그리기 한 번, 월드에 1024개까지, 150 m 안에서만 보임).
+- `World::set_spawn`, `World::set_view(&View { curve: false, occlusion: true, .. })`: 평평하게, 벽 뒤는 그리지 않음.
 
 ```rust
+// 맵 하나 = 빈 월드 + WorldCreate에서 세운 모델 (World::spawn 하나로: 맵, 그 조각, 소품 모두 같은 ModelEntity)
+#[command("경기장", "")]
+fn arena(c: Command) {
+    Server.create_world_with("arena", "void", "");   // 처음 한 번만 만들어짐
+    c.player().move_world("arena");
+}
+
+#[on(WorldCreate)]
+fn build(e: WorldCreate) {
+    let w = e.world();
+    if w.id() != "arena" { return }
+    if let Some(map) = w.spawn("res://plugins/arena/arena.glb", 0.0, 0.0, 0.0) {
+        map.set_persistent(true);                                   // 월드와 함께 저장
+        map.set_collision_mesh("res://plugins/arena/arena_col.glb"); // 단단하게 (없으면 통과)
+    }
+    if let Some(bush) = w.spawn("res://plugins/arena/bush.glb", 12.5, 0.0, -3.2) {
+        bush.set_persistent(true);                                  // 충돌 메시 없음: 보이기만 하고 통과
+    }
+    w.set_spawn(0.0, 2.0, -20.0, 0.0);
+    w.set_view(&View { curve: false, occlusion: true, ..View::default() }); // 평평하게, 벽 뒤는 안 그림
+}
+```
+
 #[command("경기장", "")]
 fn arena(c: Command) {
     Server.create_map_world("arena", "res://plugins/arena/arena.glb", Some("res://plugins/arena/arena_col.glb"), (0.0, 2.0, -20.0, 0.0));
@@ -367,7 +390,6 @@ fn keep_to_the_server(e: Tick) {
 | `flat` | 어디나 높이 0의 풀 (그 밑 흙 셋, 그 밑 돌) | 없음 |
 | `void` | 아무것도 없음: 플러그인이 `WorldCreate`·`ChunkGenerate`로 지음 | 없음 |
 | `<플러그인>:<이름>` | 그 플러그인의 [생성기](#플러그인의-월드-생성기) (예: `islands:islands`) | 없음 |
-| `map` | 없음, 플러그인의 GLB 한 채 ([맵 월드](#맵-월드)) | 없음 |
 
 - 모두의 월드: server.properties `level-type=vanilla|flat|void|<플러그인>:<이름>` (처음 만들 때만, [서버](server)).
 - 플러그인의 월드: `Server.create_world_with("arena", "void", "")` (세 번째는 그 생성기의 옵션 JSON 객체, `""` 없음; 처음 만들 때만 셈).
@@ -471,7 +493,7 @@ fn made(e: WorldCreate) {
 - `curve`: 세계가 지평선 아래로 휘는지 (농장의 모습). false면 평평 (FPS 맵: 안개까지 그대로 보임).
 - `fog`: 안개가 다 가리는 거리 m, `sight`: 그 너머는 안 그리는 거리 m (16~2000, sight ≥ fog).
 - `occlusion`: 벽에 가려진 것을 그리지 않음. 가리개는 플러그인 엔티티의 충돌 메시입니다: 방과 거리가 많은 맵은 이득, 위에서
-  내려다보는 농장은 비용뿐이라 기본 꺼짐 ([맵 월드](#맵-월드)는 켬).
+  내려다보는 농장은 비용뿐이라 기본 꺼짐 ([맵 월드](#맵-월드)는 `set_view`로 켬).
 - `View::default()`와 `clear_view()`는 server.properties의 `world-curve=true`, `fog-distance=112`, `view-distance=150`, occlusion 꺼짐.
   블록 땅은 플레이어 둘레 ~112 m만 지어지니, 블록 월드에서 안개를 그보다 멀리 두면 땅 끝이 보입니다.
 
@@ -503,4 +525,4 @@ w.paste((0, 0, 0), &Server.data_get("arena").unwrap(), 0, false);
 - 나가기 전 경고는 `World::set_quit_warning("...")` (`""`: 띄우지 않음; 실시간 저장이면 기본으로 안 띄움).
 - 주민의 기억(본 일과 소문, 플레이어와 마지막으로 나눈 말과 받은 선물, 최근에 한 말)은 월드와 함께 저장됩니다. 주민이 서 있는
   곳과 하던 일은 저장하지 않고, 월드가 열릴 때 그 시각의 일정대로 다시 놓입니다.
-- 엔티티는 저장되지 않습니다(`ModelEntity::set_persistent(true)`나 맵 월드의 맵은 저장됨).
+- 엔티티는 저장되지 않습니다(`ModelEntity::set_persistent(true)`면 저장됨).
