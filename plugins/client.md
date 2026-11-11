@@ -495,7 +495,7 @@ if let Some(at) = Target::Entity(car).pin() { Hud::pin_to("car_hp", Some(&at), 1
 | | |
 |---|---|
 | `World::cast_to(from, to)` → `Option<(x, y, z)>` | 그 선이 처음 닿는 단단한 것 (칸; 2026-11-11 전 `raycast`) |
-| `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 게임 모듈이 그린 것(`HitKind::Mob`: 농장의 몬스터, `id` 그 번호, 서버가 재는 몸; 농장 없는 월드에는 없음), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
+| `World::cast(from, dir, len)` → `Option<Hit>` | 이 게임이 그린 블록, 단단한 것, 다른 플레이어의 히트박스(폭 0.8 m, 1.6 m: 서버의 몸과 같음), 게임 모듈이 그린 것(`HitKind::Module`: 농장의 몬스터, `id` 그 번호, 서버가 재는 몸; 농장 없는 월드에는 없음), 서버의 단단한 엔티티 가운데 처음 닿는 것 (`kind`, `id`, `at`, `normal`, `distance`; 자신은 빼고). 그리기 예측: 맞힘은 서버 쪽 `World::cast_for` |
 | `World::overlap(lo, hi)` → `Vec<(HitKind, id)>` | 그 상자(한 변 16 m까지) 안의 것 (32개까지) |
 | `World::ground(x, z)` → `f64` | 게임이 가진 그곳의 땅 높이 (모르면 NaN) |
 
@@ -641,7 +641,7 @@ fn asked(l: ChatLine) {
 | `World::path(from, to)` → `Vec<(x, z)>` (트레잇 `TownPath`) | 마을 길 (주민의 길찾기): 꺾이는 점들, 마을 밖이거나 마을 없는 월드면 `[]` |
 | `DOING_ASLEEP` 3 `DOING_TOOL` 4 `DOING_BITE` 8 `DOING_REEL` 9 | 농장의 `PlayerView::doing` (엔진의 `DOING_*`는 뿌리에) |
 
-조준의 `HitKind::Mob`은 엔진의 것(게임 모듈이 그린 것)이고, 농장에서는 그 몬스터입니다.
+조준의 `HitKind::Module`은 엔진의 것(게임 모듈이 그린 것)이고, 농장에서는 그 몬스터입니다.
 
 ### 몬스터의 죽음
 
