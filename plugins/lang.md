@@ -59,6 +59,20 @@ e.replace(&t!("welcome", who = p.name()));
 
 게임 쪽 코드(`client.wasm`, `greenhaven_client`)도 같은 `t!`를 씁니다: 같은 플러그인의 `lang/`에서 찾습니다.
 
+## 등록하는 것의 이름, 플러그인 목록
+
+Registry로 등록하는 아이템·작물·주민·퀘스트의 이름에도 `t!`를 쓰면 됩니다(`"name": t!("ruby")`). 게임은 이것을 자기
+번역의 하나로 넣어 두어서, 이름이 보이는 곳 어디서나 그 언어로 보이고 언어를 바꾸면 바로 바뀝니다.
+
+게임의 플러그인 목록(월드 만들기, 설정 › 플러그인)에 보이는 이름과 설명은 `lang/<언어>.json`의 `"@title"`,
+`"@description"`입니다(없으면 plugin.json의 것).
+
+```json
+{"@title": "Golden Crops", "@description": "A new crop, the Golden Carrot ...", "tree.huge": "..."}
+```
+
+파일 이름은 게임의 언어 코드입니다: `ko`, `en`, `ja`, `zh_CN`. 그 파일이 없으면 앞 두 글자(`zh`), 그다음 `en`.
+
 ## 안에서 일어나는 일
 
 `t!`는 `U+E000 @ U+E001 키 U+E001 {값 JSON} U+E002` 모양의 글자를 만듭니다. 서버는 플러그인이 넘긴 글자 속 `@`를 그
