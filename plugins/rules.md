@@ -29,10 +29,12 @@ use greenhaven_plugin::vanilla::*; // Registry::crop (VanillaRegistry)
 
 #[on(Enable)]
 fn enable(_e: Enable) {
+    // 엔진: 가방, 화면 글자, 아이템
     Registry::set("bag.slots", "48");                 // 값 하나: 경로와 JSON
     Registry::text("가방", "큰 가방");                 // 화면 글자
-    Registry::crop("golden_carrot", r#"{"days": 8, "seasons": [0, 1, 2], "name": "황금 당근", "look": "carrot", "tint": "ffd23f"}"#);
     Registry::item("golden_carrot", &ItemDef::new("황금 당근").icon("res://plugins/golden_crops/golden_carrot.png").color("f2c14e"));
+    // 바닐라(농장 모듈): 작물, 상점 가격, 먹으면 기력, 퀘스트 — 농장이 꺼진 서버·월드에서는 아무 일도 안 함
+    Registry::crop("golden_carrot", r#"{"days": 8, "seasons": [0, 1, 2], "name": "황금 당근", "look": "carrot", "tint": "ffd23f"}"#);
     Registry::set("price.golden_carrot_seeds", "120");
     Registry::patch(r#"{"edible": {"golden_carrot": 150}, "progress": {"quests+": [["golden_harvest", "황금빛 수확", "황금 당근 3개를 가져다주세요.", {"deliver": {"golden_carrot": 3}}, 2000, "doyun"]]}}"#);
 }
