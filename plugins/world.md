@@ -304,14 +304,14 @@ fn arena(c: Command) {
 
 ## 주민
 
-주민은 바닐라 모듈의 것입니다(`use greenhaven_plugin::vanilla::*;`: `VanillaWorld::spawn_npc` `npcs`, [`Npc`](sdk#npc)).
+주민은 바닐라 모듈의 것입니다(`use greenhaven_vanilla::*;`: `VanillaWorld::spawn_npc` `npcs`, [`Npc`](sdk#npc)).
 
 바닐라 주민 10명이 월드를 만들 때 들어가고, 그 목록이 서버의 주민 AI·대사·선물·의뢰와 게임의 주민 표가 됩니다. 주민은
 서버가 걷게 하고 말도 서버가 합니다: 광장의 잡담, 둘이 만나 나누는 말과 소문, 플레이어가 하는 일을 보고 하는 말, 지나갈
 때의 인사, 말을 걸었을 때의 대답이 모두 대사 표(`client.VillagerLines` 등, [등록](rules)으로 더함)에서 나옵니다.
 
 ```rust
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 #[on(WorldCreate)]
 fn neighbor(e: WorldCreate) {
@@ -407,7 +407,7 @@ fn keep_to_the_server(e: Tick) {
   규칙(`day_end`, `pass_out`), [`DayEnd`](events), `set_live_saving`이 정합니다.
 
 ```rust
-use greenhaven_plugin::vanilla::*; // set_vanilla
+use greenhaven_vanilla::*; // set_vanilla
 
 #[on(WorldCreate)]
 fn made(e: WorldCreate) {

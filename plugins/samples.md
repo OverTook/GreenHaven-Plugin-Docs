@@ -12,7 +12,7 @@ redirect_from:
 GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 모두 Rust SDK로 쓰여 있고, 규칙을 바꾸는 것은 모두
 `#[on(Enable)] fn enable`의 `Registry`로 합니다([규칙 등록](rules)). `cutscene` `riding` `flight` `showcase` `friend_lands` `camera_modes` `arcade` `hide_blocks` `fx_demo`는 서버 쪽과 [게임 쪽 코드](client)를
 함께 가집니다(`src/shared.rs` `server.rs` `client.rs`). 농장 게임의 것(작물, 몬스터, 주민, 골드, 열기구 …)을 쓰는 샘플은
-`use greenhaven_plugin::vanilla::*;`(게임 쪽은 `greenhaven_client::vanilla`)를 더해 씁니다([바닐라 모듈](sdk#바닐라-모듈-greenhaven_pluginvanilla)). 몇몇은 게임에도 zip으로 들어 있어 월드 선택 › 편집 › 플러그인에서
+`use greenhaven_vanilla::*;`(게임 쪽은 `greenhaven_vanilla`)를 더해 씁니다([바닐라 모듈](sdk#바닐라-모듈-greenhaven_vanilla)). 몇몇은 게임에도 zip으로 들어 있어 월드 선택 › 편집 › 플러그인에서
 켤 수 있습니다(PC).
 
 | 샘플 | 하는 일 | 보여 주는 것 |

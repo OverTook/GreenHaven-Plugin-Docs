@@ -15,7 +15,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 
 농장 게임(바닐라 모듈)의 함수(`gold` `energy` `set_energy` `xp` `friendship` `open_shop` `set_vanilla` `vanilla_on` `set_dawn_time`
 `strike` `mob_*` `npc_*` `debris_*` `tree_fell` `room_get` `equip_*` `inv_enchant` `mine_rock`)도 같은 모듈 `"gh"`에 있지만, Rust SDK는
-그것들을 `greenhaven_plugin::vanilla`의 트레잇으로만 감쌉니다([SDK › 바닐라 모듈](sdk#바닐라-모듈-greenhaven_pluginvanilla)). 농장이 없는
+그것들을 `greenhaven_vanilla`의 트레잇으로만 감쌉니다([SDK › 바닐라 모듈](sdk#바닐라-모듈-greenhaven_vanilla)). 농장이 없는
 서버·월드에서는 아무것도 하지 않습니다.
 
 1. TOC

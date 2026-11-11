@@ -87,7 +87,7 @@ greenhaven-plugin = { path = "../../sdk/plugin" }   # GreenHaven-Server의 sdk/p
 
 ```rust
 use greenhaven_plugin::*;
-use greenhaven_plugin::vanilla::*;   // 농장 게임의 것 (Harvest ...)
+use greenhaven_vanilla::*;   // 농장 게임의 것 (Harvest ...)
 
 #[on(Harvest)]                       // 이 이벤트마다 불림
 fn bigger(e: Harvest) {

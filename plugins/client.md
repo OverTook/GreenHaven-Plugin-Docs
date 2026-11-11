@@ -625,10 +625,10 @@ fn asked(l: ChatLine) {
 `Emitter`는 `..Default::default()`로 필요한 것만 쓰세요. 값이 이상하면(범위 밖, 글자 대신 숫자 …) 게임은 범위 안으로 줄이거나
 무시하고, 멈추지 않습니다.
 
-## 바닐라 모듈 (`greenhaven_client::vanilla`)
+## 바닐라 모듈 (`greenhaven_vanilla`)
 
-농장 게임(바닐라 게임 모듈)의 게임 쪽 몫은 SDK 뿌리에 없고 `greenhaven_client::vanilla`에 있습니다(서버 쪽 SDK의
-[`vanilla`](sdk#바닐라-모듈-greenhaven_pluginvanilla)와 짝). 쓰려면 `use greenhaven_client::vanilla::*;`를 더합니다. 농장이 없는 월드
+농장 게임(바닐라 게임 모듈)의 게임 쪽 몫은 SDK 뿌리에 없고 `greenhaven_vanilla`에 있습니다(서버 쪽 SDK의
+[`vanilla`](sdk#바닐라-모듈-greenhaven_vanilla)와 짝). 쓰려면 `use greenhaven_vanilla::*;`를 더합니다. 농장이 없는 월드
 (서버의 `game-module=none`, `World::set_mode("none")`)에는 그 어느 것도 없습니다: 열기구도, 몬스터도 없고 마을 길은 `[]`.
 
 | | |
@@ -652,7 +652,7 @@ fn asked(l: ChatLine) {
 
 ```rust
 use greenhaven_client::*;
-use greenhaven_client::vanilla::*;
+use greenhaven_vanilla::*;
 const MELT: &str = "uniform float t = 0.0;
 void fragment() { ALBEDO = mix(vec3(0.6, 0.9, 1.0), vec3(0.1, 0.3, 1.0), t); EMISSION = vec3(0.2, 0.5, 1.0) * t; ALPHA = 1.0 - t; }";
 static DYING: Global<Vec<(i64, f64)>> = Global::new(Vec::new()); // (몬스터 번호, 지난 초)
@@ -678,7 +678,7 @@ fn frame(f: Frame) {
 
 ### Balloon — 열기구
 
-`use greenhaven_client::vanilla::*;`
+`use greenhaven_vanilla::*;`
 
 게임의 열기구 여행 그대로의 장면입니다(플레이어에게 가장 가까운 정거장의 열기구). 보이는 것뿐이고, 플레이어를 옮기는 것은 서버
 쪽(`Player::move_world_at(.., "station")`)입니다: 오르는 동안 옮기면 새 월드의 땅이 그 뒤에서 들어옵니다(이륙하는 열기구는 정거장에서 떼어
@@ -716,7 +716,7 @@ fn frame(f: Frame) {
 레이아웃](screen#레이아웃-머리-위-트윈-점수판)). 게임 쪽에서 쓰면 왕복 없이 바로: 예를 들어 근처 몬스터마다 체력 바를 붙이기.
 
 ```rust
-use greenhaven_client::vanilla::*; // Mobs
+use greenhaven_vanilla::*; // Mobs
 
 for m in Mobs::near(25.0) {
     Hud::add(&format!("mob{}", m.n), &El::bar(m.hp, 1.0).size(56.0, 7.0).color("d9483b"));

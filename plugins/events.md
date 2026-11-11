@@ -55,7 +55,7 @@ fn cmd(c: Command) { /* … */ }
 | `text(k)` → `String` | 이벤트의 글 (아래) |
 | `set(k, v)` | 이벤트의 숫자 바꾸기 (서버가 플러그인들 다음에 읽음) |
 | `roll(k)` → `f64` | 정해진 난수 [0, 1). 같은 이벤트면 다시 돌려도 같음 (`k` 0~63로 여럿) |
-| `day()` | 며칠째(1부터). 계절과 계절의 날은 바닐라 모듈의 `season()` `date()` ([바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla)) |
+| `day()` | 며칠째(1부터). 계절과 계절의 날은 바닐라 모듈의 `season()` `date()` ([바닐라 모듈](#바닐라-모듈-greenhaven_vanilla)) |
 | `player()` → [`Player`](sdk#player) | 이벤트의 플레이어 (`PlayerEvent`) |
 | `world()` → [`World`](sdk#world) | 이벤트의 월드 |
 | `drop_item(item, n)` | 이벤트의 칸에 아이템 떨구기 (수확처럼; `ActionEvent`) |
@@ -136,7 +136,7 @@ fn cmd(c: Command) { /* … */ }
 | [행동마다의 이벤트](#행동마다의-이벤트) | `action.before` (그 종류만) | ✔ | |
 
 농장의 이벤트(`Grow` `Harvest` `Price` `Sell` `Morning` `Words` `MineFloor` `LevelUp` `Spawn` `MobStep` `MobDeath` `Strike`
-`PlayerEnergy`, 농장의 행동마다의 이벤트)는 [바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla)에 있습니다(`use greenhaven_plugin::vanilla::*;`).
+`PlayerEnergy`, 농장의 행동마다의 이벤트)는 [바닐라 모듈](#바닐라-모듈-greenhaven_vanilla)에 있습니다(`use greenhaven_vanilla::*;`).
 
 ### 별칭
 
@@ -149,7 +149,7 @@ fn cmd(c: Command) { /* … */ }
 | `EntityDamage` | `Damage` (= `PlayerDamage`) |
 
 농장 이벤트의 별칭(`PlayerInteractNpc` `BlockGrow` `EntityDamageByPlayer` `CreatureSpawn` `EntityDeath` `PlayerLevelChange`)은
-[바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla)에.
+[바닐라 모듈](#바닐라-모듈-greenhaven_vanilla)에.
 
 예전의 별칭 `BlockBreak`(`hit`)·`BlockPlace`(`place` `furnish`)는 [`WildHit`·`ThingPlace`](#농장의-행동마다의-이벤트)(바닐라 모듈)로 바뀌었고,
 `BlockBreak` `BlockPlace`는 이제 [블록](#blockplace--blockbreak)의 이벤트입니다.
@@ -244,7 +244,7 @@ fn armor(e: PlayerDamage) {
 ### PlayerDeath
 
 플레이어가 쓰러질 때(체력이 다했거나 `Player::death`). `reason()` "plugin"(`death`) "damage"(`Player::damage`, 타격), 또는 게임 모듈의 것(농장의 "monster": 몬스터의 접촉), `cause()`,
-`killer()` 마지막으로 친 사람("" 없음: 킬 피드). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기. `respawn_at_spawn(true)`: 게임 모듈의 자리(농장의 의료실) 대신 월드의 스폰에서(`World::set_mode("none")`이면 늘). 농장의 `no_letter()`(도구 편지 없음)와 월드 전체의 `set_vanilla("fall", false)`(잃는 것 없이 스폰에서)는 [바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla). 그 사람을 쫓던 몬스터만 사라집니다.
+`killer()` 마지막으로 친 사람("" 없음: 킬 피드). `keep_inventory(true)`: 가방과 장비를 지킴. `hold(true)`: 바로 일어나지 않고 `Player::respawn`까지 쓰러진 채 대기. `respawn_at_spawn(true)`: 게임 모듈의 자리(농장의 의료실) 대신 월드의 스폰에서(`World::set_mode("none")`이면 늘). 농장의 `no_letter()`(도구 편지 없음)와 월드 전체의 `set_vanilla("fall", false)`(잃는 것 없이 스폰에서)는 [바닐라 모듈](#바닐라-모듈-greenhaven_vanilla). 그 사람을 쫓던 몬스터만 사라집니다.
 
 ### PlayerRespawn
 
@@ -394,7 +394,7 @@ plugin.json의 버튼, 또는 [`Gui`](sdk#gui) 창의 버튼을 눌렀을 때. �
 | `player().facing()` | 그 사람이 바라보는 방향 |
 
 ```rust
-use greenhaven_plugin::vanilla::*; // Gui::npc (VanillaGui)
+use greenhaven_vanilla::*; // Gui::npc (VanillaGui)
 
 #[command("하늘", "하늘을 불러요")]
 fn call(c: Command) {
@@ -727,14 +727,14 @@ fn loaded(e: ChunkLoad) {
 | `items()` / `set_items(&[(id, n)])` | 64개까지, 모르는 아이템은 빠짐 |
 | `at()` | |
 
-## 바닐라 모듈 (`greenhaven_plugin::vanilla`)
+## 바닐라 모듈 (`greenhaven_vanilla`)
 
-농장 게임(바닐라 게임 모듈)의 이벤트입니다. 엔진의 SDK 뿌리에는 없고, 쓰려면 `use greenhaven_plugin::vanilla::*;`를 더합니다.
+농장 게임(바닐라 게임 모듈)의 이벤트입니다. 엔진의 SDK 뿌리에는 없고, 쓰려면 `use greenhaven_vanilla::*;`를 더합니다.
 농장이 없는 서버·월드(server.properties `game-module=none`, `World::set_mode("none")`)에서는 하나도 오지 않습니다.
 
 ```rust
 use greenhaven_plugin::*;
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 #[on(Harvest)]
 fn bigger(e: Harvest) {
@@ -804,7 +804,7 @@ fn bigger(e: Harvest) {
 | `PlayerGate` | `gate` | 레버로 성문 열기·닫기 |
 
 ```rust
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 #[on(PlayerSleep)]
 fn no_sleep(e: PlayerSleep) { e.cancel("이 서버에선 잠들 수 없어요") }
@@ -841,7 +841,7 @@ fn no_sleep(e: PlayerSleep) { e.cancel("이 서버에선 잠들 수 없어요") 
 | `price()` / `set_price(gold)` | 값 |
 
 ```rust
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 #[on(Sell)]
 fn festival(e: Sell) {
@@ -852,7 +852,7 @@ fn festival(e: Sell) {
 ### Morning
 
 밤이 지나고 아침, 농장 주인에게 (엔진의 `DayChange` 뒤: 작물이 자라고 출하가 정산된 뒤). `player().give`, `add_gold`
-`add_energy`([`VanillaPlayer`](sdk#바닐라-모듈-greenhaven_pluginvanilla)), `say` 등으로 아침의 선물.
+`add_energy`([`VanillaPlayer`](sdk#바닐라-모듈-greenhaven_vanilla)), `say` 등으로 아침의 선물.
 
 ### Words
 
@@ -908,7 +908,7 @@ fn festival(e: Sell) {
 
 ```rust
 use greenhaven_plugin::*;
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 #[on(MobStep)]
 fn circle(e: MobStep) {

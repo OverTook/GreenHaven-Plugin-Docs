@@ -25,7 +25,7 @@ Bukkit의 `onEnable`처럼, 플러그인은 서버가 켜질 때 [`Enable`](even
 
 ```rust
 use greenhaven_plugin::*;
-use greenhaven_plugin::vanilla::*; // Registry::crop (VanillaRegistry)
+use greenhaven_vanilla::*; // Registry::crop (VanillaRegistry)
 
 #[on(Enable)]
 fn enable(_e: Enable) {
@@ -50,7 +50,7 @@ fn enable(_e: Enable) {
 | `Registry::model(id, json)` `Registry::emote(id, json)` | `models_add` `emotes_add` ([커스텀 모델](models)) |
 | `Registry::text(from, to)` | `texts` |
 
-농장(바닐라 모듈)의 표는 `use greenhaven_plugin::vanilla::*;`의 트레잇 `VanillaRegistry`로 ([바닐라 모듈](sdk#바닐라-모듈-greenhaven_pluginvanilla)):
+농장(바닐라 모듈)의 표는 `use greenhaven_vanilla::*;`의 트레잇 `VanillaRegistry`로 ([바닐라 모듈](sdk#바닐라-모듈-greenhaven_vanilla)):
 
 | 함수 | 규칙의 키 |
 |---|---|

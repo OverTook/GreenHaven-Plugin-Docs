@@ -14,8 +14,8 @@ redirect_from:
 (마을 땅은 y 0의 블록, 윗면 0.5).
 
 여기 있는 것은 엔진의 것뿐입니다. 농장 게임(바닐라 게임 모듈)의 것 — 골드·기력·스킬·호감도, 도구의 등급과 마법, 몬스터, 주민,
-야생의 나무와 바위, 방, 작물·몬스터·동물·주민 등록, 농장의 이벤트 — 은 `greenhaven_plugin::vanilla`에 있고
-`use greenhaven_plugin::vanilla::*;`를 더해야 보입니다: [바닐라 모듈](#바닐라-모듈-greenhaven_pluginvanilla).
+야생의 나무와 바위, 방, 작물·몬스터·동물·주민 등록, 농장의 이벤트 — 은 `greenhaven_vanilla`에 있고
+`use greenhaven_vanilla::*;`를 더해야 보입니다: [바닐라 모듈](#바닐라-모듈-greenhaven_vanilla).
 
 이것은 서버 쪽(`server.wasm`)의 SDK입니다. 게임 안에서 도는 쪽(`client.wasm`)은 `greenhaven-client`: [게임 쪽 코드](client).
 
@@ -403,7 +403,7 @@ fn joined(e: Join) {
 | `data_get(key)` / `world_data_get(key)` | 이 플러그인이 그 사람에게 / 그 사람 월드에 맡긴 바이트 |
 
 ```rust
-use greenhaven_plugin::vanilla::*; // OfflinePlayer::gold (VanillaOffline)
+use greenhaven_vanilla::*; // OfflinePlayer::gold (VanillaOffline)
 
 #[command("부자", "골드가 가장 많은 농장 주인")]
 fn richest(c: Command) {
@@ -443,14 +443,14 @@ Entity (트레잇)                location  move_to  play_clip  stop_clip  remov
 주변의 것을 한 번에: `World::entities_near(x, z, radius)` → `Vec<AnyEntity>` (가까운 것부터). `AnyEntity`는 `Player` `Avatar`
 `Model` `Item` 가운데 하나: `entity()` → `&dyn Entity`, `as_living()` → `Option<&dyn LivingEntity>`(플레이어, 아바타, 체력을 준
 플러그인의 엔티티), `as_player()` → `Option<&dyn PlayerEntity>`(Bukkit의 `instanceof`처럼), 또는 `match`. 농장의 몬스터는 여기에
-없고 바닐라의 [`mobs()`](#바닐라-모듈-greenhaven_pluginvanilla)에 있습니다.
+없고 바닐라의 [`mobs()`](#바닐라-모듈-greenhaven_vanilla)에 있습니다.
 
 몬스터의 종류는 데이터(rules.json [`monsters_add`](rules#몬스터-monsters_add))라 SDK에 종류별 타입이 없습니다. 자기 종류에 자기
 메서드를 붙이려면 `EnemyEntity` 위에 자기 타입을 만듭니다(`of_kind`):
 
 ```rust
 use greenhaven_plugin::*;
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 struct Wisp(EnemyEntity); // 이 플러그인의 "wisp" (monsters_add)
 
@@ -771,16 +771,33 @@ fn skill(e: Packet) {
 | `World::set_minute(m)` | 월드의 시계 |
 | `World::team_option(team, key, value)` | `"prefix"` `"suffix"` (16자), `"nametag"` `"all"` \| `"team"` \| `"others"` \| `"none"`, `"collide"` `"on"` \| `"off"` (끄면 단단한 엔티티가 지나감) |
 
-## 바닐라 모듈 (`greenhaven_plugin::vanilla`)
+## 바닐라 모듈 (`greenhaven_vanilla`)
 
-농장 게임(바닐라 게임 모듈, 서버의 `src/vanilla/`)의 것은 엔진의 SDK 뿌리에 없고 이 모듈에 있습니다. 농장을 쓰는 플러그인은
+농장 게임(바닐라 게임 모듈, 서버의 `src/vanilla/`)의 것은 엔진의 SDK에 없고 이 크레이트에 있습니다. 농장을 쓰는 플러그인은
 `use greenhaven_plugin::*;` 옆에 하나 더 씁니다. 엔진의 타입에 붙는 농장의 몫은 트레잇이라, 들여오면 전처럼 같은 이름으로
 부릅니다(`p.add_gold(10)`, `w.spawn_mob(..)`, `Registry::crop(..)`). 농장이 없는 서버·월드(server.properties `game-module=none`,
-`World::set_mode("none")`)에서는 그 이벤트가 오지 않고 그 호출은 아무것도 하지 않습니다. 이벤트는 [이벤트 › 바닐라 모듈](events#바닐라-모듈-greenhaven_pluginvanilla).
+`World::set_mode("none")`)에서는 그 이벤트가 오지 않고 그 호출은 아무것도 하지 않습니다. 이벤트는 [이벤트 › 바닐라 모듈](events#바닐라-모듈-greenhaven_vanilla).
+
+**크레이트**(2026-11-11부터): 바닐라는 엔진 SDK와 따로인 크레이트 `greenhaven-vanilla`(`sdk/vanilla`)입니다. 서버 쪽은 기능 `server`,
+게임 쪽은 `client`(`Balloon`, `MobView`, `MobDeath::of`, `TownPath` …):
+
+```toml
+[dependencies]
+greenhaven-plugin  = { path = "../../sdk/plugin" }
+greenhaven-vanilla = { path = "../../sdk/vanilla", features = ["server"] }
+# 두 쪽 플러그인: greenhaven-vanilla = { path = "../../sdk/vanilla" } 에 features 의 server = [.., "greenhaven-vanilla/server"],
+# client = [.., "greenhaven-vanilla/client"]
+```
+
+**농장이 없는 서버에서는 꺼짐**: 바닐라의 이벤트를 받거나(`#[on(Harvest)]`이 "needs vanilla"를 적음) 바닐라의 함수를 부르는(서버가
+그 import를 봄) 플러그인은 plugin.json `"depend": ["vanilla"]`과 같습니다. 바닐라가 없는 서버(server.properties `game-module=none`, 바닐라
+없이 빌드한 서버)에서는 켜지지 않고 `plugin left out: <이름>: needs vanilla (depend)`. 있으면 쓰고 없어도 되는 플러그인(농장 기능을
+끄기만 하는 `void_arena`)은 plugin.json `"soft_depend": ["vanilla"]`. 농장이 꺼진 월드(`World::set_mode("none")`)에서는 켜진 채로,
+그 이벤트가 오지 않고 호출은 아무것도 하지 않습니다.
 
 ```rust
 use greenhaven_plugin::*;
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 #[on(Morning)]
 fn gift(e: Morning) {
@@ -833,7 +850,7 @@ options)`, `World::ground_drop`(층 인자 없음), `PlayerInventory::clear()`(�
 | `remove_enchant(name)` | 떼기 |
 
 ```rust
-use greenhaven_plugin::vanilla::*;
+use greenhaven_vanilla::*;
 
 #[command("효율", "도끼에 효율 마법을 한 단계 더해요")]
 fn efficiency(c: Command) {

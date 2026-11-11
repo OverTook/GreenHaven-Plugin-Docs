@@ -225,7 +225,7 @@ fn came(e: Join) {
 **바꾸기** — `Hud::replace(window)`: 플레이어가 그 창을 열면 게임은 열지 않고 이 플러그인에 채널 `"window"`의 패킷을 보냅니다.
 플러그인은 자기 것(인벤토리 창, HUD 요소, `gui`)을 보여 주면 됩니다. 아무것도 안 하면 그 창은 막힌 셈입니다.
 `restore(window)`로 게임의 창이 돌아옵니다. 엔진의 창은 `bag`과 `friends`이고, 나머지는 게임 모듈(농장)의 것입니다: 이름은
-서버 쪽 SDK의 `greenhaven_plugin::vanilla::windows`(`SHOP` `SMITH` `ENCHANT` `CHEST` …)에도 있습니다.
+서버 쪽 SDK의 `greenhaven_vanilla::windows`(`SHOP` `SMITH` `ENCHANT` `CHEST` …)에도 있습니다.
 
 | 창 | 패킷 데이터 (JSON) |
 |---|---|

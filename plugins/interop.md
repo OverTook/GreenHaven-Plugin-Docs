@@ -85,7 +85,7 @@ economy-api = { path = "../economy/api" }
 ```
 
 ```rust
-use greenhaven_plugin::vanilla::*; // Harvest
+use greenhaven_vanilla::*; // Harvest
 
 #[on(Harvest)]
 fn reward(e: Harvest) {
