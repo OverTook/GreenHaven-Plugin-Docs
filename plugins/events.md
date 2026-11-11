@@ -211,7 +211,6 @@ fn watered(e: ActionAfter) {
 
 | SDK 타입 | 행동 종류 (`kind()`) | |
 |---|---|---|
-| `PlayerDoor` | `door` | 건물의 문 (`id` 방, `n` 1 들어감 / 0 나감) |
 | `PlayerPickup` | `item` | 땅에서 줍기, 채집, 동물의 생산물, 우편 |
 | `PlayerDrop` | `discard` | 버리기 |
 | `PlayerAttack` | `strike` | 몬스터에게 휘두름 |
@@ -778,6 +777,7 @@ fn bigger(e: Harvest) {
 
 | SDK 타입 | 행동 종류 (`kind()`) | |
 |---|---|---|
+| `PlayerDoor` | `door` | 건물의 문 (`id` 방, `n` 1 들어감 / 0 나감; 2026-11-11 엔진에서 옮김: 방은 농장의 건물의 것) |
 | `PlayerTill` | `till` | 괭이로 밭 갈기 |
 | `PlayerPlant` | `plant` `sapling` | 씨앗·묘목 심기 (`id` 씨앗) |
 | `PlayerWater` | `water` | 물 주기 |

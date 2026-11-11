@@ -815,6 +815,7 @@ options)`, `World::ground_drop`(층 인자 없음), `PlayerInventory::clear()`(�
 
 | 메서드 | |
 |---|---|
+| `is_indoors()` | 건물 방 안 (2026-11-11 `Player`에서 옮김: 방은 농장 건물의 것) |
 | `energy()` → `f64` | 기력 |
 | `add_energy(d)` / `set_energy(n)` | 기력 더하기 / n으로 (0~최대; Bukkit의 setFoodLevel). `PlayerEnergy`가 따름 |
 | `add_gold(d)` | 골드 (음수면 뺌) |
