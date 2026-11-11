@@ -495,6 +495,7 @@ fn shockwave(c: Command) {
 | 메서드 | |
 |---|---|
 | `set_rotation(yaw, pitch, roll)` / `rotation()` → `(yaw, pitch, roll)` | 통째로 돌림 (라디안: yaw(0이 +z), 그다음 pitch(기수 들기), 그다음 roll(오른쪽 내리기)): 비행기의 선회, 비탈의 차. 게임은 그 사이를 부드럽게 |
+| `play_tween(&Tween)` / `stop_tween()` | 모든 게임이 스스로 재생하는 트윈 (2026-11-11): 한 번만 보내고, 나중에 들어온 게임은 지금 지점부터. 자세 위의 보이는 것만(자리·회전·충돌은 자세 그대로). `Tween::shake(0.06, 0.2)`(맞은 나무처럼 흔들기), `Tween::new().offset((0.0, 0.15, 0.0), 0.8, Ease::InOut).offset((0.0, 0.0, 0.0), 0.8, Ease::InOut).forever()`(둥실둥실), `.turn(..)` `.scale(..)` `.repeat(n)`; 키 16개, 하나에 60초까지 |
 | `set_yaw(yaw)` | yaw만 |
 | `scale()` / `set_scale(times)` | 크기 배율 (100까지) |
 | `model()` `anim()` `held()` `name()` → `String` | 모델(`res://` 경로, `"avatar"`), 지금 클립, 손에 든 것, 머리 위 이름 (`""` 없음) |

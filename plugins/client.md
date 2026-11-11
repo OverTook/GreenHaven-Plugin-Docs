@@ -453,6 +453,7 @@ fn loaded(_: Load) {
 | `Target::Local(id).play_clip_with(clip, Clip { speed, blend, .. })` + 이벤트 `anim_end` (`LocalAnimEnd::id()` `clip()`) | 속도(음수: 거꾸로)와 섞는 초를 주고 클립, 끝나면 이벤트 (장전 뒤 대기 동작; `play_clip`도 같음) |
 | `Local::anim_marks(id, clip, &[(초, "이름")])` + 이벤트 `anim_mark` (`LocalAnimMark::id()` `clip()` `name()`) | 클립 중간의 표시 (Roblox의 마커): 재생이 그 시각을 지날 때마다 알림 (앞·뒤로, 반복마다, 속도가 바뀌어도; 한 프레임에 이름마다 한 번, 시간 순서로; 끝난 클립의 남은 표시는 `anim_end` 앞에). 클립마다 32개, 한 물체에 클립 16개, 빈 목록은 지움. 탄피 배출, 발소리, 장전 소리 (예제 `blaster`) |
 | `Local::set_rotation(id, yaw, pitch, roll)` `Local::tween(id, LocalProp::Position \| Rotation \| Scale, 값, 초, Ease)` | 완전한 회전 (yaw는 `Me::yaw`처럼), 자리·회전·크기를 부드럽게 (TweenService) |
+| `Local::play_tween(id, &Tween)` `stop_tween(id)` | 키를 이어 붙인 트윈을 스스로 재생 (흔들기, 둥실둥실; 서버 쪽 `ModelEntity::play_tween`과 같은 `Tween`) |
 | `Entities::predict(id, 자리, (yaw, pitch, roll))` `Entities::release(id)` | 서버 엔티티를 이 게임에서만 미리 본 자리에 (자기 차: 그 위에 탄 플레이어도 같은 프레임에) / 서버의 자리로 되돌림 |
 | `Me::set_pose(pitch, roll)` | 자기 몸 기울이기 (라디안, 1.2까지): 여기서 그리고 위치와 함께 보내 다른 게임의 아바타도 (`PlayerView::pitch` `roll`로 읽힘) |
 | `Local::beam(from, to, 색, 굵기, 초)` | 탄도선·레이저: 사라지며 (64개까지) |
