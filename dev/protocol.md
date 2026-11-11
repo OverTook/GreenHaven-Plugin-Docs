@@ -240,6 +240,7 @@ zip이에요. 실행되는 것은 없어요.
 | `{"t":"mode","m"}` | 게임 쪽 코드가 정한 이동 모드 (`""` 게임 그대로; 플러그인의 `PlayerMove` `mode`) |
 | `{"t":"v.line","at":[x,y,z]}` | 바닐라 모듈: 낚시찌 위치 (`null`: 감음). 다른 사람에게 `{"t":"v.line","name","at"}` (프로토콜 5까지 `"line"`) |
 | `{"t":"status","name"}` | `{"t":"status","name","online"}` (친구만 `true`) |
+| `{"t":"lang","lang"}` | 게임에서 언어를 바꿈 (`"en"`): 플러그인의 `p.lang()`이 그 언어로 |
 | `{"t":"pause","on"}` | 게임 자체 서버에서 혼자일 때만: 월드 시계 멈춤 |
 | `{"t":"plugin_settings"}` / `{"t":"plugin_setting","plugin","key","value"}` | 플러그인 설정 목록 / 바꾸기 (게임 자체 서버의 주인만) |
 
