@@ -53,7 +53,7 @@ fn enable(_e: Enable) {
 | 키 | 값 |
 |---|---|
 | 표의 키 (id) | 영문 소문자, 숫자, `_`, 32자 이하 |
-| `model` / `file` | 리소스 팩(폴더나 zip)의 `.glb`: `res://packs/<팩 이름>/...`, 폴더 팩이면 실제 파일은 `<data>/packs/<팩 이름>/packs/<팩 이름>/...` |
+| `model` / `file` | 리소스 팩(폴더나 zip)의 `.glb`: `res://packs/<팩 이름>/...`, 폴더 팩이면 실제 파일은 `<data>/packs/<팩 이름>/packs/<팩 이름>/...`; 또는 pack.json의 모델 id `pack:<팩 이름>/<id>` ([팩의 모델](index#팩의-모델)) |
 | `name` | 표시 이름 |
 | `loop` | (감정 표현) 끝나도 반복 |
 

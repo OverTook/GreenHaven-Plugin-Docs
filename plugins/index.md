@@ -65,8 +65,8 @@ has_children: true
 
 - 폴더 `<data>/packs/<이름>/` (이름은 a-z 0-9 `_` `-`, 64자까지). 안의 파일은 게임의 `res://` 경로에 놓입니다:
   `packs/<이름>/...`는 팩의 새 것(`res://packs/<이름>/...`로 부름), `assets/...`는 게임의 같은 파일을 바꿔치기. 그 밖의 파일은 빠집니다.
-  `pack.json` `{"title", "version", "description"}`은 없어도 됩니다.
-- zip `<data>/packs/<이름>.zip` (마켓이 설치하는 모양): `res://` 경로의 미디어. 안의 `.glb`도 잽니다.
+  `pack.json` `{"title", "version", "description", "models"}`은 없어도 됩니다([팩의 모델](#팩의-모델)).
+- zip `<data>/packs/<이름>.zip` (마켓이 설치하는 모양): `res://` 경로의 미디어(`pack.json`은 zip의 맨 위). 안의 `.glb`도 잽니다.
 
 ```
 <data>/packs/my_plugin/
@@ -77,6 +77,25 @@ has_children: true
 
 플러그인은 필요한 팩을 `plugin.json`의 `"packs": ["my_plugin"]`에 적습니다. 적힌 팩이 없으면 그 플러그인은 빠집니다.
 **팩은 모두 받아야 들어갈 수 있습니다**(골라 받는 팩은 없음). 더 자세히는 [plugin.json](plugin-json), [서버 운영](server).
+
+### 팩의 모델
+
+`pack.json`은 팩의 모델에 id와 언어마다의 이름을 줄 수 있습니다. 폴더 팩은 `<data>/packs/<팩>/pack.json`, zip 팩은 zip 맨 위의
+`pack.json`입니다. `title`은 문자열이어도, 언어마다의 이름이어도 됩니다.
+
+```json
+{"title": {"ko": "가을", "en": "Autumn"}, "version": "1.0",
+ "models": {"lamp": {"file": "res://packs/autumn/models/lamp.glb",
+                     "name": {"ko": "가로등", "en": "Street lamp", "ja": "街灯", "zh_CN": "路灯"}}}}
+```
+
+- 플러그인은 모델을 적는 곳 어디서나 `"pack:<팩>/<id>"`(`"pack:autumn/lamp"`)로 부를 수 있고, 서버가 그 `res://` 경로로 바꿉니다:
+  `World::spawn`, 발사체, `set_collision_mesh`, 땅에 놓인 아이템의 모델, 아이템의 모델, `Registry::model` / `models_add` /
+  `emotes_add`, [월드 파일](world#월드-파일)의 소품. 모르는 id는 그대로 두므로 `res://` 경로가 필요한 곳에서 거절됩니다.
+- 엔티티의 이름(`ModelEntity::set_name`, 아바타의 이름)을 `"pack:<팩>/<id>"`로 주면 플레이어마다 자기 언어로 그 모델의 이름을
+  봅니다(그 언어가 없으면 영어, 그다음 한국어, 그다음 아무것). `pack.json`은 팩의 zip에 담겨 게임에 갑니다.
+- 게임의 **씬**(`.tscn` 모델)은 그 경로 옆의 GLB로 바꿔치기합니다: 팩의 `assets/.../x.tscn.glb`가 `res://assets/.../x.tscn`을
+  대신합니다(게임의 로더도, 서버가 모델을 잴 때도). `.glb`·그림·소리는 전처럼 같은 경로로 바꿔치기합니다.
 
 `rules.json`은 더 이상 읽지 않습니다. 서버 운영자가 규칙을 바꾸려면 플러그인이 아니라 `<data>/rules.d/*.json`(이름 순서로
 덮음)에 둡니다.

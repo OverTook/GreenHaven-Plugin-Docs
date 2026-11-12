@@ -78,7 +78,10 @@ redirect_from:
 
 - 팩 이름은 a-z 0-9 `_` `-`, 64자까지. 폴더 안에서는 `packs/<이름>/...`(팩의 새 것)과 `assets/...`(게임의 것을 바꿔치기)만
   쓰고, 그 밖의 파일은 빠집니다. `pack.json`은 없어도 됩니다.
-- 폴더 대신 zip `<data>/packs/<이름>.zip`(`res://` 경로의 미디어; 마켓이 설치하는 모양)도 됩니다.
+- `pack.json`의 `"models"`는 팩의 모델에 id와 언어마다의 이름을 줍니다(`title`도 언어마다 줄 수 있음). 플러그인은 그 모델을
+  `"pack:<팩>/<id>"`로 부르고, 엔티티의 이름으로 주면 플레이어의 언어로 보입니다([팩의 모델](index#팩의-모델)).
+- 게임의 씬(`.tscn`)은 옆의 GLB로 바꿔치기: `assets/.../x.tscn.glb`가 `res://assets/.../x.tscn`을 대신합니다.
+- 폴더 대신 zip `<data>/packs/<이름>.zip`(`res://` 경로의 미디어, `pack.json`은 맨 위; 마켓이 설치하는 모양)도 됩니다.
 - **팩은 모두 받아야 접속할 수 있습니다.** 골라 받거나 건너뛰는 팩은 없습니다.
 - `python tools/build_plugins.py --zip DIR`는 플러그인(코드와 `lang/`)을 `DIR`에, 필요한 팩을 `DIR/../packs/<팩>.zip`으로 묶습니다.
 

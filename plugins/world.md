@@ -268,7 +268,7 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
 모두 같은 `ModelEntity`입니다(2026-11-11 잠깐 있던 `create_map_world` / 생성기 `"map"`은 이것과 같아 없앴습니다).
 
 - `set_persistent(true)`: 월드와 함께 저장 (`WorldCreate`는 월드가 처음 만들어질 때 한 번만).
-- `set_collision_mesh(glb)`: 그 삼각형으로 단단하게. 같은 모양의 더 단순한 메시가 쌉니다. 거리와 상관없이 보이고 월드에 256개까지(server.properties `max-collision-meshes`로 4096개까지).
+- `set_collision_mesh(glb)`: 그 삼각형으로 단단하게(`pack:<팩>/<id>`도). 같은 모양의 더 단순한 메시가 쌉니다. 거리와 상관없이 보이고 월드에 256개까지(server.properties `max-collision-meshes`로 4096개까지).
 - **충돌 없는 것**(수풀, 풀, 장식): 충돌 메시를 주지 않으면 됩니다. `spawn`한 엔티티는 기본으로 통과합니다(`set_solid`도 꺼짐).
   많으면 맵 GLB에 그려 넣고 충돌 GLB에서만 빼는 편이 쌉니다(엔티티 하나가 그리기 한 번, 월드에 1024개까지, 150 m 안에서만 보임).
 - `World::set_spawn`, `World::set_view(&View { curve: false, occlusion: true, .. })`: 평평하게, 벽 뒤는 그리지 않음.
@@ -402,7 +402,7 @@ fn keep_to_the_server(e: Tick) {
 | `spawn` | `[x, y, z, yaw]` 들어오는 곳 |
 | `pvp` | PvP |
 | `clock_rate` | 시계 빠르기 |
-| `props[].model` | `res://` 경로 (게임의 것이나 리소스 팩의 것) |
+| `props[].model` | `res://` 경로 (게임의 것이나 리소스 팩의 것), 또는 팩의 모델 `pack:<팩>/<id>` ([팩의 모델](index#팩의-모델)) |
 | `props[].x` `y` `z` `yaw` `scale` | 자리, 방향(라디안), 크기 |
 | `props[].collision` | `"box"` \| `"mesh"` \| `"none"` |
 | `props[].solid` | 단단한가 |

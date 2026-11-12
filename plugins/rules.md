@@ -159,6 +159,8 @@ Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::M
 - 모델(GLB)의 삼각형 수에는 한도가 없습니다(얼마나 무거워도 되는지는 서버 주인이 정함). LOD는 게임이 만들고, 옆에 `X_lod1.glb` `X_lod2.glb` `X_impostor.png`(먼 곳 그림)를
   두면 그걸 씁니다.
 - 접속할 때 꼭 받아야 하는 파일로 알려집니다 (이름은 pack.json의 `title`, 버전은 `version`). 팩은 모두 받아야 들어갑니다.
+- pack.json `"models"`에 id를 준 모델은 아이템의 `model`, `models_add` / `emotes_add`에서 `"pack:<팩>/<id>"`로 불러도 됩니다
+  ([팩의 모델](index#팩의-모델)). 게임의 씬(`.tscn`)은 팩의 `assets/.../x.tscn.glb`가 바꿔치기합니다.
 
 ## 스킬과 스킬 트리
 

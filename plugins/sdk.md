@@ -199,7 +199,7 @@ p.inventory().set_held_slot(0);
 
 | 메서드 | |
 |---|---|
-| `spawn(model, x, y, z)` → `Option<ModelEntity>` | 이 플러그인의 엔티티: `res://` 모델(glb, 씬) 또는 png(늘 카메라를 보는 그림) |
+| `spawn(model, x, y, z)` → `Option<ModelEntity>` | 이 플러그인의 엔티티: `res://` 모델(glb, 씬) 또는 png(늘 카메라를 보는 그림); 팩의 모델 `pack:<팩>/<id>`도 ([팩의 모델](index#팩의-모델)) |
 | `spawn_avatar(x, y, z)` → `Option<Avatar>` | 플레이어 아바타 엔티티 (게임이 플레이어처럼 그림; [`Avatar`](#avatar)) |
 | `entities()` → `Vec<ModelEntity>` | 이 플러그인의 엔티티들 (아바타는 `as_avatar()`) |
 | `all_entities()` → `Vec<ModelEntity>` | 월드의 모든 플러그인의 엔티티들 ([열린 엔티티](#엔티티는-모두에게-열려-있음)) |
@@ -511,7 +511,7 @@ fn shockwave(c: Command) {
 | `set_yaw(yaw)` | yaw만 |
 | `scale()` / `set_scale(times)` | 크기 배율 (100까지) |
 | `model()` `anim()` `held()` `name()` → `String` | 모델(`res://` 경로, `"avatar"`), 지금 클립, 손에 든 것, 머리 위 이름 (`""` 없음) |
-| `set_name(name)` | 머리 위 이름 (`""` 없음) |
+| `set_name(name)` | 머리 위 이름 (`""` 없음). `"pack:<팩>/<id>"`면 pack.json의 그 모델 이름을 플레이어마다 자기 언어로 ([팩의 모델](index#팩의-모델)) |
 | `get(k)` / `set(k, v)` | 이 엔티티에 남기는 숫자 ([`Store`](#store): 게임에 안 감, 엔티티와 함께 사라짐, 64개까지) |
 | `as_avatar()` → `Option<Avatar>` | 아바타면 그것으로 |
 | `set_public(key, value)` | 모든 게임이 읽는 값 (`Player::set_public`처럼; 게임 쪽 `Entities::get(id).public(key)`) |
@@ -531,7 +531,7 @@ fn shockwave(c: Command) {
 | `play_clip(동작)` | `"idle"` `"walk"` `"run"`(걷기·달리기는 빠르기로) `"sleep"` `"swim"` `"jump"` `"fall"`, 도구 `"axe"` `"pickaxe"` `"hoe"` `"scythe"` `"sword"` `"water"` `"cast"`(부를 때마다 한 번 휘두름), `"emote:<id>"` |
 | `set_look(json)` | 모습: CatLook JSON `{"species": "Dog", "skin": "Dog03", "hat": "Cap_turboA"}` (`"{}"` 기본 고양이) |
 | `hold(item)` | 손에 든 아이템 (`"axe"` …, `""` 없음) |
-| `set_name(name)` / `name()` | 머리 위 이름 (`""` 없음) |
+| `set_name(name)` / `name()` | 머리 위 이름 (`""` 없음; `"pack:<팩>/<id>"`면 그 모델 이름을 플레이어의 언어로) |
 | `facing()` | 바라보는 쪽 (`yaw`에서) |
 | `entity()` → `ModelEntity` | 모델 엔티티로서 (`set_yaw(..)` `set_scale(..)`) |
 
