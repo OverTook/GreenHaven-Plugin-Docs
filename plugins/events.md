@@ -862,7 +862,7 @@ fn festival(e: Sell) {
 |---|---|
 | `npc()` → [`Npc`](sdk#npc) | 누구 |
 | `topic()` | `"talk"` 말을 걸었음, `"town"` 마을 소식 |
-| `line()` | 하려던 말 |
+| `line()` | 하려던 말: 게임 카탈로그의 키 또는 자리가 있는 문장 표시([프로토콜 7](../dev/protocol)). 게임이 그 사람의 언어로 바꿔요. `reply`에는 플러그인 자기 말이나 `t!` |
 | `reply(line)` | 대신 할 말 |
 | `player().show(&Gui)` | 대신 선택지 창 |
 
