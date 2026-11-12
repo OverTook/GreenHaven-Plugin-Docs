@@ -256,7 +256,7 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
   0.54)로 몸 크기 구까지 대 보게 하세요. 네트워크가 나쁜 플레이어는 모서리에서 가끔 되돌려질 수 있습니다. `clear_mesh_check()`는 서버
   기본값(server.properties `mesh-walk-check=line|body`, `mesh-walk-radius=0.25`).
 - 길찾기(`path_blocks`)와 몬스터는 칸 단위라 메시를 모릅니다. FPS 맵에는 `World::set_mode("none")`로 몬스터를 끄세요.
-- 충돌 메시가 있는 엔티티(맵과 그 조각)는 거리와 상관없이 보입니다(2026-11-11부터; 다른 엔티티는 원점에서 150 m 안). 월드에 256개까지.
+- 충돌 메시가 있는 엔티티(맵과 그 조각)는 거리와 상관없이 보입니다(2026-11-11부터; 다른 엔티티는 원점에서 150 m 안). 월드에 256개까지(server.properties `max-collision-meshes`로 4096개까지).
 - 게임은 큰 플러그인 메시를 32 m 조각으로 나눠 화면 밖의 조각을 그리지 않고(frustum culling), 월드의 `View`가 `occlusion`이면 충돌
   메시로 가리개(occluder)를 만들어 벽 뒤를 그리지 않습니다.
 
@@ -266,7 +266,7 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
 모두 같은 `ModelEntity`입니다(2026-11-11 잠깐 있던 `create_map_world` / 생성기 `"map"`은 이것과 같아 없앴습니다).
 
 - `set_persistent(true)`: 월드와 함께 저장 (`WorldCreate`는 월드가 처음 만들어질 때 한 번만).
-- `set_collision_mesh(glb)`: 그 삼각형으로 단단하게. 같은 모양의 더 단순한 메시가 쌉니다. 거리와 상관없이 보이고 월드에 256개까지.
+- `set_collision_mesh(glb)`: 그 삼각형으로 단단하게. 같은 모양의 더 단순한 메시가 쌉니다. 거리와 상관없이 보이고 월드에 256개까지(server.properties `max-collision-meshes`로 4096개까지).
 - **충돌 없는 것**(수풀, 풀, 장식): 충돌 메시를 주지 않으면 됩니다. `spawn`한 엔티티는 기본으로 통과합니다(`set_solid`도 꺼짐).
   많으면 맵 GLB에 그려 넣고 충돌 GLB에서만 빼는 편이 쌉니다(엔티티 하나가 그리기 한 번, 월드에 1024개까지, 150 m 안에서만 보임).
 - `World::set_spawn`, `World::set_view(&View { curve: false, occlusion: true, .. })`: 평평하게, 벽 뒤는 그리지 않음.
