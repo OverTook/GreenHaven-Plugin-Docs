@@ -42,10 +42,13 @@ redirect_from:
 ```rust
 #[on(Enable)]
 fn enable(_e: Enable) {
-    Registry::model("blue_cat", r#"{"model": "res://plugins/custom_model/blue_cat.glb", "name": "파란 고양이"}"#);
-    Registry::emote("wave", r#"{"file": "res://plugins/custom_model/wave.glb", "name": "손 흔들기", "loop": false}"#);
+    Registry::model("blue_cat", &ModelDef::new("res://plugins/custom_model/blue_cat.glb", "파란 고양이"));
+    Registry::emote("wave", &EmoteDef::new("res://plugins/custom_model/wave.glb", "손 흔들기").looped(false));
 }
 ```
+
+`ModelDef`에는 `.hit(&[[x, z, w, d, y, h]])`(히트박스)도 있습니다. JSON 문자열을 그대로 넘겨도 됩니다
+(`Registry::model("blue_cat", r#"{"model": "...", "name": "..."}"#)`).
 
 | 키 | 값 |
 |---|---|

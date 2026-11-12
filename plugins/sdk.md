@@ -641,9 +641,13 @@ w.put_structure(&Placement::blocked(0, 0, 9, 1)); // 9칸의 보이지 않는 �
 | `Registry::add(table, id, json)` | 표에 하나 |
 | `Registry::block(id, &BlockKind)` | 블록 종류 ([새 블록 종류](world#새-블록-종류)): `BlockKind::new(name, look, tint)` `textured(name, png)` `model(name, glb, size)`, `solid` `item` `texture` `top` `bottom` `alpha` `model` `side` `size` |
 | `Registry::item(id, &ItemDef)` | `items`: `ItemDef::new(이름)` `.desc` `.icon` `.color` `.price` `.sell` `.kind(ItemKind::Tool \| Block \| Misc)` `.usable()` `.model` `.action` `.with(키, JSON)` ([규칙 등록](rules#아이템)); `ItemDef::default()`는 게임의 것 바꾸기 |
-| `Registry::model` `emote` `(id, json)` | `models_add` `emotes_add` (농장의 `crop` `monster` `animal` `villager`는 바닐라 모듈) |
+| `Registry::model(id, &ModelDef)` `emote(id, &EmoteDef)` | `models_add` `emotes_add` ([커스텀 모델](models)): `ModelDef::new(glb, 이름)` `.hit(상자들)`, `EmoteDef::new(glb, 이름)` `.looped(on)`; JSON 문자열도 받음 (농장의 `crop` `monster` `animal` `villager`는 바닐라 모듈) |
 | `Registry::text(from, to)` | 화면 글자 바꾸기 |
 | `Registry::tick_rate(n)` | 이 플러그인의 [`Tick`](events#tick)을 1초에 n번 (기본 1번; 월드의 `tick-rate`보다 자주는 아님). `Enable`에서 |
+
+JSON을 넘기는 곳(`Registry::patch`, `with(키, JSON)`, `Hud::open`의 data …)에는 `Obj`로 만든 글을 쓰면 따옴표와 이스케이프를
+틀릴 일이 없습니다: `Obj::new().s("tab", "skills").n("slots", 48.0).b("on", true).json()` → `{"tab":"skills","slots":48,"on":true}`
+(`.i` 정수, `.ns` 숫자 목록, `.ss` 글 목록, `.o` 안의 객체, `.raw` JSON 그대로; NaN은 `null`). 게임 쪽 SDK에도 같은 `Obj`가 있습니다.
 
 ## 화면 (`Hud`, `El`, `Inventory`)
 

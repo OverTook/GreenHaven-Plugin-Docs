@@ -54,6 +54,7 @@ pub fn allowed(from: (f64, f64), to: (f64, f64, f64), dt: f64) -> Result<(), &'s
 
 - **모두에게**: [`Enable`](events#enable)에서 `Registry::set("checks.air", "false")`. 서버가 켜질 때 꺼진 검사가 로그에 한 줄로 나옵니다.
 - **한 사람에게만**: `player.set_check("air", false)` / `set_check("air", true)`. 저장되지 않으니 필요하면 `Join`에서 다시 부릅니다.
+  이름은 `checks::SPEED` `WALLS` `AIR` `TELEPORT` `REACH` 상수로도 씁니다(오타는 컴파일에서 걸림).
 - 위치 보고의 검사와 행동 사이 이동 시간의 검사가 같은 스위치를 따르므로 둘이 어긋나지 않습니다.
 
 {: .warning }

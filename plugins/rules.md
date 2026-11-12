@@ -47,7 +47,7 @@ fn enable(_e: Enable) {
 | `Registry::add(table, id, json)` | 표 `table`에 `id` 더하기·바꾸기 (`set("table.id", json)`) |
 | `Registry::block(id, &BlockKind)` | `blocks_add` — [새 블록 종류](world#새-블록-종류) |
 | `Registry::item(id, &ItemDef)` | `items` ([아래](#아이템)) |
-| `Registry::model(id, json)` `Registry::emote(id, json)` | `models_add` `emotes_add` ([커스텀 모델](models)) |
+| `Registry::model(id, &ModelDef)` `Registry::emote(id, &EmoteDef)` (JSON 문자열도) | `models_add` `emotes_add` ([커스텀 모델](models)) |
 | `Registry::text(from, to)` | `texts` |
 
 농장(바닐라 모듈)의 표는 `use greenhaven_vanilla::*;`의 트레잇 `VanillaRegistry`로 ([바닐라 모듈](sdk#바닐라-모듈-greenhaven_vanilla)):
