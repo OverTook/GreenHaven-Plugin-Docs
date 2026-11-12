@@ -98,7 +98,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `player_named(p, len) -> i32` | 서버 어디든 접속한 그 이름의 사람을 `player(i)`의 번호로 (-1: 없음; `num("player.i.x")` 등도 채움) |
 | `char_view(p, len)` | 보기 그룹 (`Player::set_view_group`; 빈 이름: 없음) |
 | `char_invisible(on: i32)` `char_hide_from(p, len, on: i32)` | 그 플레이어를 아무에게도 / 그 이름의 한 사람에게 보내지 않기 |
-| `char_disguise(ent: i64, snap: i32)` | 이 플러그인의 엔티티로 변장 (0: 끄기, 엔티티 지움) |
+| `char_disguise(ent: i64, snap: i32)` | 엔티티로 변장 (어느 플러그인의 것이든; 0: 끄기, 엔티티 지움) |
 | `char_nametag(p, len, cp, cl)` `char_nametag_visible(on: i32)` `char_scale(s: f64)` | 이름표 글과 색, 보이기, 크기 (0.25-4) |
 | `char_clip(p, len, upper: i32, looped: i32, speed: f64)` | 걷는 몸 위에 겹치는 클립 (`""` 멈춤; 빠르기 0.1-4) |
 | `char_jump(s: f64)` `char_gravity(s: f64)` `char_freeze(on: i32)` `char_spectator(on: i32)` | 점프·중력 배율 (서버의 공중 검사도), 제자리, 관전자 |
@@ -206,8 +206,9 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `ent_anim(id, p, len)` `ent_remove(id)` | 클립 (아바타: 동작, 부를 때마다 한 번; SDK `Entity::play_clip`) |
 | `ent_look(id, p, len)` `ent_held(id, p, len)` | 아바타(`ent_spawn("avatar", …)`)의 CatLook JSON, 손에 든 아이템 id |
 | `ent_name(id, p, len)` | 아바타 머리 위 이름 (`""` 없음) |
-| `ent_text(id, kp, kl, p, cap) -> i32` | `model` `anim` `held` `name` |
+| `ent_text(id, kp, kl, p, cap) -> i32` | `model` `anim` `held` `name` `plugin` (그 엔티티를 만든 플러그인) |
 | `ent_count() -> i64` `ent_at(i) -> i64` | 이 플러그인의 엔티티 |
+| `ent_all_count() -> i64` `ent_all_at(i) -> i64` | 월드의 모든 플러그인의 엔티티 (`World::all_entities`); 주인은 `ent_text(id, "plugin")` (`ModelEntity::owner`) |
 | `ent_solid(id, on: i32)` | 단단하게 (충돌층에; 히트박스가 없으면 모델 크기, 아니면 한 칸 두 블록) |
 | `ent_hitbox(id, p, len)` | 히트박스 JSON `[[x, z, w, d, y, h], …]` ([히트박스](world#히트박스와-충돌)) |
 | `npc_count() -> i64` `npc_id(i, p, cap) -> i32` | 주민 목록 |

@@ -202,6 +202,7 @@ p.inventory().set_held_slot(0);
 | `spawn(model, x, y, z)` → `Option<ModelEntity>` | 이 플러그인의 엔티티: `res://` 모델(glb, 씬) 또는 png(늘 카메라를 보는 그림) |
 | `spawn_avatar(x, y, z)` → `Option<Avatar>` | 플레이어 아바타 엔티티 (게임이 플레이어처럼 그림; [`Avatar`](#avatar)) |
 | `entities()` → `Vec<ModelEntity>` | 이 플러그인의 엔티티들 (아바타는 `as_avatar()`) |
+| `all_entities()` → `Vec<ModelEntity>` | 월드의 모든 플러그인의 엔티티들 ([열린 엔티티](#엔티티는-모두에게-열려-있음)) |
 | `items()` → `Vec<ItemEntity>` | 땅에 놓인 모든 아이템 (이벤트가 시작될 때의 것에서 이번 이벤트가 가져간 것을 뺀 것; 이번에 놓은 것은 없음) |
 | `items_near(x, z, radius)` → `Vec<ItemEntity>` | 그 둘레(지상)의 아이템, 가까운 것부터 |
 
@@ -435,10 +436,21 @@ Entity (트레잇)                location  move_to  play_clip  stop_clip  remov
 │   ├── PlayerEntity (트레잇)  name  facing
 │   │   ├── Player             진짜 플레이어
 │   │   └── Avatar             플러그인이 만든 플레이어 아바타 (World::spawn_avatar)
-│   ├── ModelEntity            이 플러그인의 모델 (World::spawn)
+│   ├── ModelEntity            플러그인이 만든 모델 (World::spawn; 어느 플러그인의 것이든)
 │   └── EnemyEntity            몬스터 (바닐라 모듈: vanilla::EnemyEntity, MobStep::mob, World::mobs)
 └── ItemEntity                 땅에 놓인 아이템 (World::items, ground_drop)
 ```
+
+### 엔티티는 모두에게 열려 있음
+
+어느 서버 플러그인이든 월드의 엔티티를 id로 읽고, 옮기고, 바꾸고, 지울 수 있습니다. 예: RPGCore가 만든 발사체를 RPGMage가 지움.
+
+- 만든 플러그인이 그 엔티티의 **주인**으로 남습니다: 그 엔티티의 이벤트는 주인에게 가고, 주인 플러그인을 빼면 함께 사라집니다.
+- `ModelEntity::owner()` → `String`: 만든 플러그인 (없어졌으면 `""`; [월드 파일](world#월드-파일)이 놓은 소품은 `"@world"`).
+- `ModelEntity(id)`: 다른 플러그인이 건네준 id로 그 엔티티를 씀.
+- `World::entities()`는 이 플러그인의 것만, `World::all_entities()`는 모든 플러그인의 것, `World::entities_near`는 모든 플러그인의 것을 셈.
+- 변장(`char_disguise`)에도 어느 엔티티든 씀.
+- 게임 쪽 코드(client.wasm)는 전처럼 샌드박스 안입니다.
 
 주변의 것을 한 번에: `World::entities_near(x, z, radius)` → `Vec<AnyEntity>` (가까운 것부터). `AnyEntity`는 `Player` `Avatar`
 `Model` `Item` 가운데 하나: `entity()` → `&dyn Entity`, `as_living()` → `Option<&dyn LivingEntity>`(플레이어, 아바타, 체력을 준
@@ -462,7 +474,7 @@ impl Wisp {
 #[command("충격파", "")]
 fn shockwave(c: Command) {
     let (w, (x, z)) = (c.world(), c.player().position());
-    for e in w.entities_near(x, z, 6.0) { // 플레이어, 아바타, 이 플러그인의 것, 땅의 아이템
+    for e in w.entities_near(x, z, 6.0) { // 플레이어, 아바타, 모든 플러그인의 것, 땅의 아이템
         if e.as_player().is_some_and(|p| p.name() == c.player().name()) { continue; } // (나는 빼고)
         if let Some(l) = e.as_living() { l.damage(5.0); } // 체력 있는 것만 (원인: 이 플러그인 이름)
     }
@@ -490,7 +502,7 @@ fn shockwave(c: Command) {
 
 ### ModelEntity
 
-이 플러그인의 엔티티 (`World::spawn`). **저장되지 않습니다**(`set_persistent(true)`면 저장): 서버를 다시 켜면 사라지니, 남길 것은 `World::set`에.
+플러그인이 만든 엔티티 (`World::spawn`; 다른 플러그인의 것은 `ModelEntity(id)`, 주인은 `owner()`). **저장되지 않습니다**(`set_persistent(true)`면 저장): 서버를 다시 켜면 사라지니, 남길 것은 `World::set`에.
 
 | 메서드 | |
 |---|---|

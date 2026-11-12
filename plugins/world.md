@@ -381,6 +381,33 @@ fn keep_to_the_server(e: Tick) {
 월드에서 `join`; 가방과 게임 모듈의 몫(돈·스킬)은 함께). 한 서버가 함께 돌리는 월드는 16 + 접속 한도의 두 배(256까지)까지: 넘으면 새 월드는 만들어지지
 않고(서버 로그에 남음) 그리로 옮기는 `move_world`도 그대로 머뭅니다. 예제 [`friend_lands`](samples)(친구 땅).
 
+## 월드 파일
+
+`<data>/worlds/<id>/world.json`은 월드 하나의 설정과 소품입니다. `world`는 모두가 들어오는 월드, 다른 id는 플러그인이 만들거나
+플레이어를 옮기는 월드(`create_world` / `move_world`) 또는 시작 월드([`start-world`](server#serverproperties))입니다.
+
+- 서버는 그 월드를 돌릴 때 파일을 읽어 설정을 정하고, 소품을 **어느 플러그인의 것도 아닌 엔티티**(`owner()`가 `"@world"`)로 직접 놓습니다.
+- 어느 플러그인이든 여느 엔티티처럼 옮기거나 지울 수 있습니다([열린 엔티티](sdk#엔티티는-모두에게-열려-있음)).
+- 소품은 월드와 함께 저장되고, 파일이 바뀌었을 때만 다시 놓입니다.
+- GreenHaven Studio가 프로젝트의 월드마다 이 파일을 씁니다.
+
+```json
+{"spawn": [x, y, z, yaw], "pvp": false, "clock_rate": 1.0,
+ "props": [{"model": "res://...", "x": 0, "y": 0, "z": 0, "yaw": 0, "scale": 1,
+            "collision": "box", "solid": true, "hit": [[0, 0, 1, 1, 0, 2]]}]}
+```
+
+| 키 | |
+|---|---|
+| `spawn` | `[x, y, z, yaw]` 들어오는 곳 |
+| `pvp` | PvP |
+| `clock_rate` | 시계 빠르기 |
+| `props[].model` | `res://` 경로 (게임의 것이나 리소스 팩의 것) |
+| `props[].x` `y` `z` `yaw` `scale` | 자리, 방향(라디안), 크기 |
+| `props[].collision` | `"box"` \| `"mesh"` \| `"none"` |
+| `props[].solid` | 단단한가 |
+| `props[].hit` | 상자 칸 `[[x, z, w, d, y, h], ...]` (`ModelEntity::set_hitbox`와 같음, [히트박스](#히트박스와-충돌)); 없으면 모델에서 잼 |
+
 ## 월드 만들기
 
 서버는 Minecraft처럼 **엔진**(블록, 엔티티, 플레이어, 월드, 이벤트)과 **바닐라 콘텐츠**(마을, 주민, 농사, 상점, 밤의 몬스터 …)로
@@ -527,4 +554,4 @@ w.paste((0, 0, 0), &Server.data_get("arena").unwrap(), 0, false);
 - 나가기 전 경고는 `World::set_quit_warning("...")` (`""`: 띄우지 않음; 실시간 저장이면 기본으로 안 띄움).
 - 주민의 기억(본 일과 소문, 플레이어와 마지막으로 나눈 말과 받은 선물, 최근에 한 말)은 월드와 함께 저장됩니다. 주민이 서 있는
   곳과 하던 일은 저장하지 않고, 월드가 열릴 때 그 시각의 일정대로 다시 놓입니다.
-- 엔티티는 저장되지 않습니다(`ModelEntity::set_persistent(true)`면 저장됨).
+- 엔티티는 저장되지 않습니다(`ModelEntity::set_persistent(true)`면 저장됨). [월드 파일](#월드-파일)의 소품은 월드와 함께 저장됩니다.
