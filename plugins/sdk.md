@@ -87,7 +87,7 @@ redirect_from:
 | `is_op()` `set_op(on)` | 서버의 운영자 (`ops.json`) |
 | `kick(reason)` `ban(reason)` | 내보내기 / 차단하고 내보내기 (`/unban 이름`, `Server::unban`으로 풀기) |
 | `doing()` `on_ground()` `velocity()` | 게임이 알리는 하는 일(`idle` `walk` `run` `swim` `jump` `fall`, 농장의 `asleep` `tool` `bite` `reel`; 바뀌면 [`PlayerPose`](events#playerpose)), 발이 땅에, 속도(칸/초, 마지막으로 검사한 걸음 둘 사이) — 어느 이벤트에서나 |
-| `walk_speed()` `move_mode()` `packs_declined()` `id()` | `set_walk_speed`의 배, 게임 쪽이 알린 이동 방식, 받지 않은 선택 팩, 어느 서버에서나 같은 id |
+| `walk_speed()` `move_mode()` `packs_declined()` `id()` | `set_walk_speed`의 배, 게임 쪽이 알린 이동 방식, (늘 빔: 팩은 모두 받아야 함), 어느 서버에서나 같은 id |
 | `scale()` `jump_power()` `gravity()` `is_invisible()` `is_nametag_visible()` `is_frozen()` `is_spectator()` `is_hand_visible()` `nametag()` | 플러그인이 마지막으로 정한 값 다시 읽기 (이벤트에서 바꾼 것은 다음 이벤트부터) |
 | `can_see(name)` → `bool` | 그 사람을 보는지 (접속해 있고 투명·관전·변장이 아니며 이 사람에게서 숨지 않음) |
 | `transfer(to, data)` | 다른 서버로 (`host:port`나 `GS-` 아이디, 데이터 4 KB까지; `Server::transfer_all(to)`는 모두). [다른 서버로](server#다른-서버로) |
@@ -332,7 +332,7 @@ fn count(_e: ServerTick) {
 fn start(c: Command) {
     let w = c.world();
     w.title_with(&Title { subtitle: "준비".into(), ..Title::new("3") });
-    w.music_with(&Music { fade: 2.0, looped: false, ..Music::track("res://plugins/arena/battle.ogg") });
+    w.music_with(&Music { fade: 2.0, looped: false, ..Music::track("res://packs/arena/battle.ogg") });
     w.sky(&Sky { light_intensity: Some(0.3), ..Sky::default() });
     Server.message("경기가 시작됐어요");
 }
@@ -550,7 +550,7 @@ if let Some(apple) = w.items_near(x, z, 2.0).into_iter().find(|i| i.item() == "a
 fn fireball(e: Button) {
     let (x, z) = e.player().position();
     let (fx, fz) = e.player().facing();
-    if let Some(ball) = e.world().spawn("res://plugins/example/fireball.glb", x, 1.0, z) {
+    if let Some(ball) = e.world().spawn("res://packs/example/fireball.glb", x, 1.0, z) {
         e.world().set(&format!("ball.{}.vx", ball.0), fx * 8.0);
         e.world().set(&format!("ball.{}.vz", ball.0), fz * 8.0);
     }
@@ -593,7 +593,7 @@ fn fireball(e: Button) {
 | `.hitbox(&[[x, z, w, d, y, h]])` | 히트박스 ([히트박스](world#히트박스와-충돌); 없으면 모델의 크기) |
 
 ```rust
-let lamp = w.put_structure(&Placement::prop("res://plugins/deco/lamp.glb").at(12.0, 5.0).turned(1.57).scaled(1.2).plot("deco"));
+let lamp = w.put_structure(&Placement::prop("res://packs/deco/lamp.glb").at(12.0, 5.0).turned(1.57).scaled(1.2).plot("deco"));
 if let Some(s) = lamp { s.set_yaw(3.14); }
 w.put_structure(&Placement::building("house_Lv1").at(40.0, 60.0).plot("my_house"));
 w.put_structure(&Placement::blocked(0, 0, 9, 1)); // 9칸의 보이지 않는 벽

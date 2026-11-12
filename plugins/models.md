@@ -28,7 +28,7 @@ redirect_from:
    python fix_model.py my_model.glb out.glb
    ```
 
-5. `out.glb`를 플러그인 `assets/plugins/<플러그인 이름>/`에 넣고 `Enable`에서 [등록](#등록)합니다.
+5. `out.glb`를 리소스 팩 `<data>/packs/<팩 이름>/packs/<팩 이름>/`에 넣고(plugin.json `"packs"`에 그 팩), `Enable`에서 [등록](#등록)합니다.
 
 {: .warning }
 > **4번을 건너뛰면 대부분 거절됩니다.** 블렌더는 뼈의 기준 회전을 정확히 보존하지 못합니다. 아래를 향한 뼈(발, 엄지)가 20°쯤 틀어지고, 가져오기 옵션에 따라 더 많은 뼈가 돌아갑니다. 그대로 쓰면 발목이 꼬이므로 서버가 거절합니다. `fix_model.py`는 뼈 위치와 메시 모양은 그대로 둔 채 회전을 게임 값으로 되돌리고, 바인드 행렬과 애니메이션 값을 다시 계산합니다.
@@ -42,8 +42,8 @@ redirect_from:
 ```rust
 #[on(Enable)]
 fn enable(_e: Enable) {
-    Registry::model("blue_cat", &ModelDef::new("res://plugins/custom_model/blue_cat.glb", "파란 고양이"));
-    Registry::emote("wave", &EmoteDef::new("res://plugins/custom_model/wave.glb", "손 흔들기").looped(false));
+    Registry::model("blue_cat", &ModelDef::new("res://packs/custom_model/blue_cat.glb", "파란 고양이"));
+    Registry::emote("wave", &EmoteDef::new("res://packs/custom_model/wave.glb", "손 흔들기").looped(false));
 }
 ```
 
@@ -53,11 +53,11 @@ fn enable(_e: Enable) {
 | 키 | 값 |
 |---|---|
 | 표의 키 (id) | 영문 소문자, 숫자, `_`, 32자 이하 |
-| `model` / `file` | 플러그인 자기 폴더의 `.glb`: `res://plugins/<플러그인 이름>/...`, 실제 파일은 `assets/plugins/<플러그인 이름>/...` |
+| `model` / `file` | 리소스 팩(폴더나 zip)의 `.glb`: `res://packs/<팩 이름>/...`, 폴더 팩이면 실제 파일은 `<data>/packs/<팩 이름>/packs/<팩 이름>/...` |
 | `name` | 표시 이름 |
 | `loop` | (감정 표현) 끝나도 반복 |
 
-다른 폴더나 게임의 파일은 쓸 수 없습니다.
+어느 리소스 팩의 GLB든 됩니다. 팩 밖의 파일은 쓸 수 없습니다.
 
 ## 코드
 
@@ -142,7 +142,6 @@ fn dress(e: Join) {
 | 항목 | 규칙 |
 |---|---|
 | 파일 크기 | 16MB 이하 |
-| 삼각형 | 20,000개 이하 |
 | 메시 / 재질 | 각각 4개 이하 |
 | 스킨 | 정확히 1개, 조인트는 81개 뼈 전부. 모든 메시가 이 스킨에 묶임 |
 | 정점 | 모든 정점의 조인트가 스킨 안의 뼈 |

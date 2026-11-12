@@ -372,7 +372,7 @@ Me::set_position(p[0], p[1], p[2]);
 | 필드 | |
 |---|---|
 | `"usable": true` | 쓸 수 있는 아이템 |
-| `"model"` | 손에 드는 모델 `res://plugins/<이름>/x.glb` (자기 재질 그대로; 다른 사람의 아바타에도) |
+| `"model"` | 손에 드는 모델 `res://packs/<팩>/x.glb` (리소스 팩의 것) (자기 재질 그대로; 다른 사람의 아바타에도) |
 | `"action"` | 동작: `cast` 시전, `attack` `thrust` 공격, `block` 막기, `cheer` 환호, `slash` `chop` `swing` `sweep` `throw` 도구들의 동작, `emote:<id>` 플러그인의 [감정 표현](models), 또는 클립의 `res://` 경로 |
 | `"hit"` | 동작의 몇 할에서 쓰이는지 (기본 0.5): 이때 `Use` |
 
@@ -384,8 +384,8 @@ Me::set_position(p[0], p[1], p[2]);
 #[on(Enable)]
 fn enable(_e: Enable) {
     Registry::set("price.magic_staff", "300");
-    Registry::item("magic_staff", &ItemDef::new("마법 지팡이").usable().kind(ItemKind::Misc).icon("res://plugins/riding/staff.png")
-        .model("res://plugins/riding/staff.glb").action("cast").with("hit", "0.45"));
+    Registry::item("magic_staff", &ItemDef::new("마법 지팡이").usable().kind(ItemKind::Misc).icon("res://packs/riding/staff.png")
+        .model("res://packs/riding/staff.glb").action("cast").with("hit", "0.45"));
 }
 
 #[on(Use)]
@@ -400,7 +400,7 @@ fn cast(e: Use) {
 
 // client.rs: 구슬이 손에서 날아감 (이 플레이어에게만)
 let Some(((x, z), (tx, tz))) = p.read::<((f64, f64), (f64, f64))>() else { return };
-let id = Local::spawn("res://plugins/riding/orb.png", x, y, z);
+let id = Local::spawn("res://packs/riding/orb.png", x, y, z);
 Local::glide_to(id, tx, y, tz, 0.35);
 ```
 

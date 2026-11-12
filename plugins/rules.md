@@ -32,7 +32,7 @@ fn enable(_e: Enable) {
     // 엔진: 가방, 화면 글자, 아이템
     Registry::set("bag.slots", "48");                 // 값 하나: 경로와 JSON
     Registry::text("가방", "큰 가방");                 // 화면 글자
-    Registry::item("golden_carrot", &ItemDef::new("황금 당근").icon("res://plugins/golden_crops/golden_carrot.png").color("f2c14e"));
+    Registry::item("golden_carrot", &ItemDef::new("황금 당근").icon("res://packs/golden_crops/golden_carrot.png").color("f2c14e"));
     // 바닐라(농장 모듈): 작물, 상점 가격, 먹으면 기력, 퀘스트 — 농장이 꺼진 서버·월드에서는 아무 일도 안 함
     Registry::crop("golden_carrot", r#"{"days": 8, "seasons": [0, 1, 2], "name": "황금 당근", "look": "carrot", "tint": "ffd23f"}"#);
     Registry::set("price.golden_carrot_seeds", "120");
@@ -82,7 +82,7 @@ fn enable(_e: Enable) {
 
 ```rust
 Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::Misc).usable()
-    .model("res://plugins/riding/staff.glb").action("cast").icon("res://plugins/riding/staff.png"));
+    .model("res://packs/riding/staff.glb").action("cast").icon("res://packs/riding/staff.png"));
 ```
 
 이 문서의 JSON 예는 모두 `Registry::patch`에 넘기는 모양입니다. SDK 없이는 plugin.json `events`에 `"enable"`을 구독하고
@@ -90,7 +90,7 @@ Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::M
 
 {: .note }
 플러그인 폴더의 `rules.json`은 더 이상 읽지 않습니다(서버가 켜질 때 그렇다고 알림). 코드가 없는 플러그인은 규칙을 바꿀 수
-없고 `assets/`만 보냅니다.
+없습니다. 그림·소리·모델은 플러그인이 아니라 [리소스 팩](#에셋)에 둡니다.
 
 ## 덮어쓰기 규칙
 
@@ -150,13 +150,15 @@ Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::M
 
 ## 에셋
 
-새 그림·소리·모델은 플러그인의 `assets/`에 게임 경로로 넣습니다: `assets/plugins/golden_crops/golden_carrot.png` →
-`res://plugins/golden_crops/golden_carrot.png`. 게임의 것과 같은 경로로 넣으면 **바꿔치기**됩니다.
+새 그림·소리·모델은 플러그인이 아니라 **리소스 팩**에 게임 경로로 넣습니다(플러그인의 `assets/`는 서버가 경고하고 건너뜀):
+팩 폴더 `<data>/packs/golden_crops/`의 `packs/golden_crops/golden_carrot.png` → `res://packs/golden_crops/golden_carrot.png`.
+팩의 `assets/...`에 게임의 것과 같은 경로로 넣으면 **바꿔치기**됩니다. 플러그인은 필요한 팩을 plugin.json `"packs": ["golden_crops"]`에
+적습니다([리소스 팩](index#리소스-팩)).
 
 - 쓸 수 있는 것: PNG / JPG / WebP, OGG / WAV, GLB. 실행되는 것은 하나도 쓰지 않습니다(게임이 원본에서 직접 리소스를 만듦).
-- 모델(GLB)은 삼각형 10만 개까지. LOD는 게임이 만들고, 옆에 `X_lod1.glb` `X_lod2.glb` `X_impostor.png`(먼 곳 그림)를
+- 모델(GLB)의 삼각형 수에는 한도가 없습니다(얼마나 무거워도 되는지는 서버 주인이 정함). LOD는 게임이 만들고, 옆에 `X_lod1.glb` `X_lod2.glb` `X_impostor.png`(먼 곳 그림)를
   두면 그걸 씁니다.
-- 접속할 때 꼭 받아야 하는 파일로 알려집니다 (이름은 plugin.json의 `title`, 버전은 `version`).
+- 접속할 때 꼭 받아야 하는 파일로 알려집니다 (이름은 pack.json의 `title`, 버전은 `version`). 팩은 모두 받아야 들어갑니다.
 
 ## 스킬과 스킬 트리
 
@@ -204,7 +206,7 @@ Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::M
   "title": "새 마을",
   "caption": "자막",
   "stage": 7,
-  "image": "res://plugins/my/scene.png",
+  "image": "res://packs/my/scene.png",
   "music": "lovely_town",
   "speaker": "raon",
   "name": "라온",
@@ -237,7 +239,7 @@ Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::M
 ```
 
 지금 맞는 것 중에서 무작위 (두 번 넣으면 두 배 자주). `where`: `"outdoors"` `"indoors"` `"mine"` 또는 방 id. `id`는
-`assets/music`의 이름이나 플러그인 `assets/`의 `res://….ogg`. 코드에서는 [`Audience`](sdk#audience)의 `music(track)` /
+`assets/music`의 이름이나 리소스 팩의 `res://….ogg`. 코드에서는 [`Audience`](sdk#audience)의 `music(track)` /
 `music_with(&Music { track, fade, volume, looped })` / `stop_music()` (`Player` 그 사람, `World` 월드의 모두, `Server` 서버의 모두).
 
 ## 몬스터와 농장 동물 더하기
@@ -262,7 +264,7 @@ Registry::item("magic_staff", &ItemDef::new("마법 지팡이").kind(ItemKind::M
       "mine": 2,
       "script": true,
       "look": {
-        "model": "res://plugins/my/wisp.glb",
+        "model": "res://packs/my/wisp.glb",
         "scale": 1.0,
         "clips": {"idle": "Idle", "move": "Fly", "attack": "Bite", "hit": "Hit", "die": "Die"},
         "tiers": ["8ad8ff", "ffb35c"]

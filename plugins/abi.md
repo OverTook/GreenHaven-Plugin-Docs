@@ -168,7 +168,7 @@ SDK가 감싸는 서버 함수들입니다(서버 쪽 `server.wasm`). 게임 쪽
 | `ban_name(np, nl, p, len)` `unban(np, nl)` `is_banned(np, nl) -> i32` `bans(p, cap) -> i32` | 이름으로 차단·풀기 (이벤트가 끝난 뒤), 차단됐는지, `이름\t이유\t때\n`마다 |
 | `server_info(p, cap) -> i32` `set_motd(p, len)` `set_max_players(n: i64)` | `motd\tmax\tversion`; 소개 (`""` 파일의 것), 한도 (0 없음, 음수 파일의 것) |
 | `char_state(p, cap) -> i32` `char_can_see(p, len) -> i32` | `scale\tjump\tgravity\tinvisible\tnametag_visible\tfrozen\tspectator\thand_visible\tnametag\tcolour`; 그 사람을 보는지 |
-| `player_info(p, cap) -> i32` | `lang\tdevice\tping\tdoing\ton_ground\tvx\tvy\tvz\twalk\tmode\tdeclined` (declined는 줄바꿈으로) |
+| `player_info(p, cap) -> i32` | `lang\tdevice\tping\tdoing\ton_ground\tvx\tvy\tvz\twalk\tmode\tdeclined` (declined는 줄바꿈으로; 팩은 모두 받아야 하므로 늘 빔) |
 | `transfer(tp, tl, dp, dl)` `transfer_all(tp, tl)` | 그 플레이어를 / 모두를 다른 서버 `tp`로 (데이터 `dp`, 4096바이트까지; 넘으면 보내지 않음) |
 | `world_id(p, cap) -> i32` | 이벤트의 월드 (`"world"` 모두의 것), 길이 |
 

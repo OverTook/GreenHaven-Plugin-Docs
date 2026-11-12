@@ -79,7 +79,7 @@ GreenHaven-Server의 `plugins/` 아래에서 `python tools/build_plugins.py <이
 
 ## 게임이 받고 돌리는 법
 
-- **받기**: `client.wasm`은 플러그인 zip(`assets/`와 함께, 서버의 `<data>/.plugins/<이름>.zip`)에 들어가 리소스 팩과 같은 길로
+- **받기**: `client.wasm`은 플러그인 zip(`lang/`과 함께, 서버의 `<data>/.plugins/<이름>.zip`; 그림·소리·모델은 없음)에 들어가 리소스 팩과 같은 길로
   접속할 때 받습니다(제공 목록, sha256 확인, 끊기면 이어 받기).
 - **알림**: 서버의 플러그인 중 게임 안에서 코드를 돌리는 것이 있으면 접속할 때 알립니다("이 서버의 플러그인 N개는 이 게임
   안에서도 코드를 실행해요. 화면·카메라·효과만 다루는 격리된 환경에서만 돌아요.").
@@ -206,7 +206,7 @@ fn aim(e: FastPacket) {
 ## 소리
 
 이 플레이어에게만 들리는 소리와 음악입니다(모두가 듣는 것은 서버 쪽 [`Audience`](sdk#audience)의 `sound` / `music`). `id`는 플러그인이 붙이는
-이름이고, 경로는 게임의 것이나 플러그인 `assets/`의 `res://….ogg` / `.wav`.
+이름이고, 경로는 게임의 것이나 리소스 팩의 `res://….ogg` / `.wav`.
 
 | | |
 |---|---|
@@ -217,7 +217,7 @@ fn aim(e: FastPacket) {
 | `Sound::once(name, (x, y, z))` / `Sound::ui(name)` | 게임의 짧은 소리(`"hit"` `"pickup"` `"click"` … 또는 `res://….ogg`) 한 번: 그 자리에서 / 내 자리에서 (HUD의 클릭, 총소리). 예전 자유 함수 `sound(name, x, y, z)` |
 
 ```rust
-Sound::play("hum", "res://plugins/my_plugin/hum.ogg", -12.0, 1.0, true, Some((x, y, z)), false);
+Sound::play("hum", "res://packs/my_plugin/hum.ogg", -12.0, 1.0, true, Some((x, y, z)), false);
 ```
 
 플러그인이 내려놓거나 서버를 떠나면 모두 멈춥니다.

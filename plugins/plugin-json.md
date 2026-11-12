@@ -20,12 +20,13 @@ redirect_from:
   "version": "1.0",
   "description": "마나 바, 화염구 버튼, /신속",
   "conflicts": ["other_plugin"],
+  "packs": ["example"],
   "ui": {
     "buttons": [
       {
         "id": "fireball",
         "label": "화염구",
-        "icon": "res://plugins/example/fireball.png",
+        "icon": "res://packs/example/fireball.png",
         "key": "Q",
         "cooldown": 1.5
       }
@@ -52,6 +53,7 @@ redirect_from:
 | `title`, `description` | 게임의 플러그인 목록과 서버 접속 때 받을 파일 목록에 보이는 이름과 설명 |
 | `version` | 버전 (접속 때 받을 파일 목록에 표시) |
 | `conflicts` | 같이 켜면 안 되는 플러그인 이름들. 새 월드 만들기에서 둘 중 하나를 끌 때까지 만들 수 없음 |
+| `packs` | 이 플러그인이 쓰는 [리소스 팩](#리소스-팩) 이름들. 하나라도 없으면 그 플러그인은 빠짐 |
 | `ui` | 화면의 버튼과 바 (아래) |
 | `settings` | 서버 주인이 바꾸는 값 (아래) |
 | `events` | (SDK 없이 쓸 때) 구독할 이벤트 → 우선순위 `{"enable": 0, "action.after": 0, "tick": 0}`. 모듈의 `on_event`가 받음 (규칙 등록은 `"enable"`) |
@@ -60,6 +62,25 @@ redirect_from:
 | `provides` | 이 플러그인이 맡는 서비스 이름들 (`"economy"`): 다른 플러그인이 이 이름으로 찾아 부름 |
 | `commands` | (SDK 없이 쓸 때) 채팅 명령어 `[{"name": "축제", "desc": "…", "permission": "축제.시작"}]` (`permission`: 없는 사람은 서버가 거절; SDK는 `#[command("축제", "…", "축제.시작")]`) |
 | `permissions` | 플러그인의 권한 `{"축제.시작": {"description": "…", "default": "op"}}` (`default`: `op` 운영자만(기본), `true`(`all`) 모두, `false`(`none`) 준 사람만, `notop` 운영자 아닌 사람); 줄여서 `{"축제.시작": "op"}`. `Player::permissions()`가 목록을, `is_permission_set(p)`이 정해 준 것인지를 읽음 |
+
+## 리소스 팩
+
+플러그인은 코드만 담습니다(`plugin.json`, `server.wasm`, `client.wasm`, `lang/`, 설정). 그림·소리·모델은 리소스 팩에 두고
+`"packs"`에 그 이름을 적습니다. 플러그인 폴더의 `assets/`는 게임에 보내지 않습니다(서버가 경고하고 건너뜀).
+
+```
+<data>/packs/example/
+  pack.json                       {"title": "예제", "version": "1.0", "description": "화염구 그림과 모델"}
+  packs/example/fireball.png      res://packs/example/fireball.png
+  packs/example/fireball.glb      res://packs/example/fireball.glb
+  assets/...                      게임의 같은 경로 파일을 바꿔치기
+```
+
+- 팩 이름은 a-z 0-9 `_` `-`, 64자까지. 폴더 안에서는 `packs/<이름>/...`(팩의 새 것)과 `assets/...`(게임의 것을 바꿔치기)만
+  쓰고, 그 밖의 파일은 빠집니다. `pack.json`은 없어도 됩니다.
+- 폴더 대신 zip `<data>/packs/<이름>.zip`(`res://` 경로의 미디어; 마켓이 설치하는 모양)도 됩니다.
+- **팩은 모두 받아야 접속할 수 있습니다.** 골라 받거나 건너뛰는 팩은 없습니다.
+- `python tools/build_plugins.py --zip DIR`는 플러그인(코드와 `lang/`)을 `DIR`에, 필요한 팩을 `DIR/../packs/<팩>.zip`으로 묶습니다.
 
 ## 휴대폰
 
@@ -79,7 +100,7 @@ redirect_from:
 |---|---|
 | `id` | 버튼 id (`Button::button()`) |
 | `label` | 글자 |
-| `icon` | `res://` png (플러그인 `assets/`의 것도) |
+| `icon` | `res://` png (리소스 팩의 것도) |
 | `key` | PC 단축키 |
 | `cooldown` | 다시 누를 수 있기까지의 초 |
 

@@ -15,12 +15,16 @@ GreenHaven-Server의 `plugins/` 아래에 있습니다. `wild_fish` 말고는 �
 `use greenhaven_vanilla::*;`(게임 쪽은 `greenhaven_vanilla`)를 더해 씁니다([바닐라 모듈](sdk#바닐라-모듈-greenhaven_vanilla)). 몇몇은 게임에도 zip으로 들어 있어 월드 선택 › 편집 › 플러그인에서
 켤 수 있습니다(PC).
 
+샘플의 그림·소리·모델은 플러그인 폴더가 아니라 리소스 팩 `packs/<이름>/packs/<이름>/`(저마다 `pack.json`)에 있고, 플러그인은
+plugin.json `"packs"`로 부릅니다: `blaster` `blocks` `builder` `custom_model` `example` `golden_crops` `plane_demo` `racing`
+`riding` `screen`. `python tools/build_plugins.py --zip DIR`가 플러그인을 `DIR`에, 그 팩을 `DIR/../packs/<팩>.zip`으로 묶습니다.
+
 | 샘플 | 하는 일 | 보여 주는 것 |
 |---|---|---|
-| `example` | 마나 바, 화염구 버튼(날아가는 엔티티), 물 주면 섬유, 나무가 한 번에 5분의 1씩 자람, `/신속` | `ui` 버튼·바, `Button`, `Tick`, 엔티티, `set_walk_speed`, `assets/` |
+| `example` | 마나 바, 화염구 버튼(날아가는 엔티티), 물 주면 섬유, 나무가 한 번에 5분의 1씩 자람, `/신속` | `ui` 버튼·바, `Button`, `Tick`, 엔티티, `set_walk_speed`, 리소스 팩 |
 | `big_backpack` 큰 가방과 긴 하루 | 가방 48칸, 기력 최대 +100, 하루 1.5배, 새 농장 1000골드, "가방" 글자 바꾸기 | `Enable`의 `Registry::set` `text`만 |
 | `harvest_festival` 풍년 축제 | 비 오는 밤엔 작물이 이틀치 자람, 계절의 7·14·21·28일은 수확 두 배·파는 값 1.25배, 그날 아침 알림, `/축제` | `Grow` `Harvest` `Sell` `Morning` `Command` |
-| `golden_crops` 황금 작물 | 새 작물 황금 당근(잡화점 씨앗, 아이콘, 금빛 당근 모델), 먹으면 기력, 새 퀘스트, 거두면 반짝임, `/황금씨앗` | `Registry::crop` `item` `patch`, `assets/`, `Harvest` |
+| `golden_crops` 황금 작물 | 새 작물 황금 당근(잡화점 씨앗, 아이콘, 금빛 당근 모델), 먹으면 기력, 새 퀘스트, 거두면 반짝임, `/황금씨앗` | `Registry::crop` `item` `patch`, 리소스 팩, `Harvest` |
 | `new_start` 새 출발 | 짧은 오프닝, 첫날 할 일 넷과 보상 1000골드, 마법 스킬 없음, 3레벨마다 전직(만렙 15), 채집 경험치 두 배, 집 안·광산의 음악, `/노래 곡` | `client.Intro.SCENES` `progress.tutorial_tasks` `progress.skills` `client.Music.TRACKS`, `Audience::music` |
 | `new_creatures` 새 생물 | 밤의 얼음 버섯(돌을 떨굼), 둘레를 돌다 덤비는 도깨비불(광산 2층부터도), 헛간의 염소(이틀에 한 번 염소 젖) | `monsters_add` `animals_add`, `MobStep`, `EnemyEntity::set_velocity` `attack` |
 | `new_neighbor` 새 이웃 하늘 | 새 주민 하늘(소율의 모습, 하루 일정, 대사), 말을 걸면 선택지 창, 이야기, `/하늘`로 부르면 걸어옴 | `WorldCreate`의 `spawn_npc`, `Words`, `Gui`, `Npc::say` `go_to`, 대사 패치 |

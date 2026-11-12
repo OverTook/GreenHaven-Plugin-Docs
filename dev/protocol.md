@@ -127,7 +127,8 @@ redirect_from:
 ```
 
 - `r`: 서버가 마지막으로 받은 행동 번호. 월드와 게임 전체는 `joined`에 없고 바로 뒤의 `enter`로 와요
-- `packs`: (있을 때만) 받을 파일 `[{"name","size","sha","kind":"pack"|"plugin","title","ver"}]`
+- `packs`: (있을 때만) 받을 파일 `[{"name","size","sha","kind":"pack"|"plugin","title","ver"}]`. `"pack"`은 리소스 팩, `"plugin"`은
+  플러그인의 게임 쪽(`client.wasm`과 `lang/`만). 모두 받아야 해요(골라 받는 팩은 없어요)
 - `registry`: 서버의 게임 콘텐츠(규칙 JSON, 플러그인 패치 포함). 가진 것(`reg`)과 `reg_hash`가 다를 때만 와요. `reg_hash`로 저장해 두세요
 - `scopes`: 서버의 플러그인이 쓰는 바깥 기능
 - `now`: 서버 시계(유닉스 ms). 행동과 위치의 시각은 이 시계로 찍어요
@@ -150,7 +151,10 @@ redirect_from:
 ```
 
 `off`를 늘려가며 받고 `sha`(SHA-256)로 확인하세요. 리소스 팩은 미디어(PNG, JPG, WebP, OGG, WAV, GLB)만 들어 있는
-zip이에요. 실행되는 것은 없어요.
+zip이에요(서버의 폴더 팩도 이 모양으로 보내요). 실행되는 것은 없어요.
+
+다 받으면 `{"t":"packs","declined":[]}`를 보내요(플러그인의 `PacksStatus`). 팩은 모두 받아야 하므로 `declined`는 빈 목록이고, 서버는
+그 값을 쓰지 않아요.
 
 ## 행동 (`act`)
 

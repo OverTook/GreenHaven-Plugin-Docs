@@ -322,8 +322,8 @@ PlayerServerFullCheckEvent). `who()` `online()` `max()`. 취소하면 그래도 
 
 ### PacksStatus
 
-게임이 접속의 파일을 다 받았을 때(Bukkit의 PlayerResourcePackStatusEvent): `declined()` 받지 않은 선택 리소스 팩(파일 이름; 비면 다 받음).
-이때부터 `Player::packs_declined()`. 팩은 접속 뒤에 고르므로 `Join` 때는 아직 모릅니다. 알림만.
+게임이 접속의 파일을 다 받았을 때(Bukkit의 PlayerResourcePackStatusEvent). 알림만. 리소스 팩은 모두 받아야 들어가므로
+`declined()`(와 `Player::packs_declined()`)는 언제나 비어 있습니다(예전 플러그인과 맞추려고 남은 것).
 
 ### Join / Leave
 

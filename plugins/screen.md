@@ -76,7 +76,7 @@ fn packet(e: Packet) {
 |---|---|
 | `El::panel(style)` | 다른 요소를 담는 상자: `"wood"`(HUD의 나무 틀) `"parch"`(양피지) `"dark"`(어두운 알약) `"none"` |
 | `El::text(t)` | 글 (묶으면 채널의 글) |
-| `El::image(src)` | `res://` 그림 (게임의 것, 팩·플러그인 `assets/`의 것). `""`에 `bind`: 채널의 PNG |
+| `El::image(src)` | `res://` 그림 (게임의 것, 리소스 팩의 것). `""`에 `bind`: 채널의 PNG |
 | `El::bar(value, max)` | 바 (묶으면 채널의 `"30"` 또는 `"30/100"`) |
 | `El::button(label, on)` | 누르면 채널 `on`의 패킷 (데이터 `""`) |
 | `El::input(placeholder, on)` | 한 줄 입력: Enter면 채널 `on`의 패킷 (데이터: 쓴 글) |
@@ -210,7 +210,7 @@ fn click(e: InventoryClick) {
 fn came(e: Join) {
     let p = e.player();
     p.hud().add("welcome", &El::panel("wood").anchor(Anchor::Center).size(400.0, 340.0)
-        .child(El::image("res://plugins/screen/welcome.png").anchor(Anchor::Top).pos(0.0, 16.0).size(360.0, 150.0))
+        .child(El::image("res://packs/screen/welcome.png").anchor(Anchor::Top).pos(0.0, 16.0).size(360.0, 150.0))
         .child(El::text("어서 오세요!").anchor(Anchor::Top).pos(0.0, 176.0).size(360.0, 30.0).font_size(20))
         .child(El::button("시작하기", "welcome").anchor(Anchor::Bottom).pos(0.0, -16.0).size(140.0, 44.0)));
 }

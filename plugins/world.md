@@ -102,15 +102,16 @@ impl ChunkGenerator for Islands {
 #[on(Enable)]
 fn enable(_e: Enable) {
     Registry::block("ruby_block", &BlockKind::new("루비 블록", "stone", "e0405a"));
-    Registry::block("brick", &BlockKind::textured("벽돌", "res://plugins/blocks/brick.png"));
-    Registry::block("glass", &BlockKind { alpha: true, ..BlockKind::textured("유리", "res://plugins/blocks/glass.png") });
-    Registry::block("fence", &BlockKind { side: "res://plugins/blocks/fence_rail.glb".into(),
-        ..BlockKind::model("나무 울타리", "res://plugins/blocks/fence_post.glb", [1, 1, 1]) });
-    Registry::block("hut", &BlockKind::model("오두막", "res://plugins/blocks/hut.glb", [3, 3, 3]));
+    Registry::block("brick", &BlockKind::textured("벽돌", "res://packs/blocks/brick.png"));
+    Registry::block("glass", &BlockKind { alpha: true, ..BlockKind::textured("유리", "res://packs/blocks/glass.png") });
+    Registry::block("fence", &BlockKind { side: "res://packs/blocks/fence_rail.glb".into(),
+        ..BlockKind::model("나무 울타리", "res://packs/blocks/fence_post.glb", [1, 1, 1]) });
+    Registry::block("hut", &BlockKind::model("오두막", "res://packs/blocks/hut.glb", [3, 3, 3]));
 }
 ```
 
-그림과 모델은 플러그인의 `assets/plugins/<이름>/`에 넣고 `res://plugins/<이름>/…`로 부릅니다(접속할 때 게임이 받아 감).
+그림과 모델은 리소스 팩(폴더 `<data>/packs/<팩>/packs/<팩>/`, 또는 zip)에 넣고 `res://packs/<팩>/…`로 부릅니다. 플러그인은
+plugin.json `"packs"`에 그 팩을 적습니다(접속할 때 게임이 받아 감; [리소스 팩](index#리소스-팩)).
 
 | `BlockKind` | |
 |---|---|
@@ -198,7 +199,7 @@ fn open(e: WorldCreate) {
         if s.plot() == "station" { let (x, y, z) = s.location(); s.move_to(x + 4.0, y, z); }
     }
     e.world().put_structure(&Placement::building("house_Lv1").at(40.0, 60.0).plot("my_house"));
-    e.world().put_structure(&Placement::prop("res://plugins/deco/lamp.glb").at(12.0, 5.0).turned(1.57).scaled(1.2).plot("deco"));
+    e.world().put_structure(&Placement::prop("res://packs/deco/lamp.glb").at(12.0, 5.0).turned(1.57).scaled(1.2).plot("deco"));
 }
 ```
 
@@ -217,15 +218,15 @@ x·z는 월드의 칸) 가로 w × 세로 d칸, 바닥 블록(땅 위에 섰을 
 방향을 90도 단위로 반올림해 함께 돕니다.
 
 - 구조물: `Placement::hitbox(&[[x, z, w, d, y, h]])`. 바닥은 그 칸의 가장 높은 단단한 블록 바로 위(+ `y`). 적지 않은 `prop`·`building`은
-  놓을 때 서버가 정합니다: 플러그인 자산의 GLB면 그 크기, 아니면 발자국에 2블록 높이.
+  놓을 때 서버가 정합니다: 리소스 팩의 GLB면 그 크기, 아니면 발자국에 2블록 높이.
 - 엔티티: `set_solid(true)`(기본은 지나감), 모양은 `set_hitbox(&[[x, z, w, d, y, h]])`(없으면 GLB 크기, 아니면 한 칸 두 블록).
   움직이면 따라가고, 지우면 빠집니다. 플레이어가 타고 있는 탈것은 그 플레이어의 걸음에서는 빼고 봅니다. yaw가 직각이면 상자째
   90°씩, 아니면 어느 각도로든 돕니다(돌린 상자가 가운데를 덮는 칸들). pitch·roll은 상자를 기울이지 않습니다.
 - 바닐라 구조물은 종류대로: 건물 벽 12블록, 울타리 4블록(가늘게: 옆에 선 몸은 그 칸에 들어가도 됨), 성벽 선(성문으로만).
 
 ```rust
-w.put_structure(&Placement::prop("res://plugins/arena/pillar.glb").at(10.0, 4.0).hitbox(&[[0, 0, 2, 2, 0, 4]]));
-let gate = w.spawn("res://plugins/arena/gate.glb", 12.0, 0.5, 4.0).unwrap();
+w.put_structure(&Placement::prop("res://packs/arena/pillar.glb").at(10.0, 4.0).hitbox(&[[0, 0, 2, 2, 0, 4]]));
+let gate = w.spawn("res://packs/arena/gate.glb", 12.0, 0.5, 4.0).unwrap();
 gate.set_hitbox(&[[0, -1, 1, 3, 0, 3]]);
 gate.set_solid(true);
 if w.is_solid(11.0, 1.0, 4.0) { /* 블록이나 상자 */ }
@@ -239,14 +240,15 @@ let d = w.cast_blocks((0.0, 1.0, 4.0), (1.0, 0.0, 0.0), 30.0); // 처음 닿는 
 
 ```rust
 // 빈 월드(server.properties level-type=void, 또는 create_world_with(id, "void", ..))의 Enable이나 world.create에서
-let map = w.spawn("res://plugins/arena/map.glb", 0.0, 0.0, 0.0).unwrap();   // 그리는 모델
-map.set_collision_mesh("res://plugins/arena/map_col.glb");                 // 충돌용(같은 GLB여도 됨)
+let map = w.spawn("res://packs/arena/map.glb", 0.0, 0.0, 0.0).unwrap();   // 그리는 모델
+map.set_collision_mesh("res://packs/arena/map_col.glb");                 // 충돌용(같은 GLB여도 됨)
 map.set_persistent(true);
 w.set_view(&View { curve: false, fog: 300.0, sight: 400.0, occlusion: true }); // 평평하게, 멀리까지, 벽 뒤는 안 그림
 w.set_spawn(0.0, 1.0, 0.0, 0.0);
 ```
 
-- 충돌 GLB는 그 플러그인 자산 안의 것만, 한 조각에 10만 삼각형까지(큰 맵은 조각으로 나눠 엔티티 여러 개; 월드에 256개까지).
+- 충돌 GLB는 어느 리소스 팩의 것이든(팩이 바꿔치기한 게임의 모델도) 됩니다. 삼각형 수에는 한도가 없습니다(얼마나 무거워도 되는지는
+  서버 주인이 정함). 충돌 메시 엔티티는 월드에 256개까지.
   GLB의 노드 위치·회전·크기를 모두 반영하고, 엔티티의 자리·회전·크기대로 놓입니다.
 - 서버의 걷기 검사: 위치 보고마다 직전 위치와 이은 걸음이 벽을 앞면에서 뚫으면 되돌립니다. 바닥, 경사로, 계단, 2층을 발밑 땅으로
   봅니다. 총알(`World::cast` / `cast_for`), `cast_blocks`, 투사체, 폭발의 엄폐, `seen_from`도 면에 막힙니다(맞은 것은 `"entity"`, 그 id).
@@ -256,13 +258,13 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
   0.54)로 몸 크기 구까지 대 보게 하세요. 네트워크가 나쁜 플레이어는 모서리에서 가끔 되돌려질 수 있습니다. `clear_mesh_check()`는 서버
   기본값(server.properties `mesh-walk-check=line|body`, `mesh-walk-radius=0.25`).
 - 길찾기(`path_blocks`)와 몬스터는 칸 단위라 메시를 모릅니다. FPS 맵에는 `World::set_mode("none")`로 몬스터를 끄세요.
-- 충돌 메시가 있는 엔티티(맵과 그 조각)는 거리와 상관없이 보입니다(2026-11-11부터; 다른 엔티티는 원점에서 150 m 안). 월드에 256개까지(server.properties `max-collision-meshes`로 4096개까지).
-- 게임은 큰 플러그인 메시를 32 m 조각으로 나눠 화면 밖의 조각을 그리지 않고(frustum culling), 월드의 `View`가 `occlusion`이면 충돌
+- 충돌 메시가 있는 엔티티(맵 같은)는 거리와 상관없이 보입니다(2026-11-11부터; 다른 엔티티는 원점에서 150 m 안). 월드에 256개까지(server.properties `max-collision-meshes`로 4096개까지).
+- 게임은 큰 팩 메시를 32 m 조각으로 나눠 화면 밖의 조각을 그리지 않고(frustum culling), 월드의 `View`가 `occlusion`이면 충돌
   메시로 가리개(occluder)를 만들어 벽 뒤를 그리지 않습니다.
 
 ### 맵 월드
 
-빈 월드(`Server.create_world_with(id, "void", "")`)의 `WorldCreate`에서 맵 GLB를 `World::spawn`으로 세웁니다. 맵, 맵 조각, 문, 소품이
+빈 월드(`Server.create_world_with(id, "void", "")`)의 `WorldCreate`에서 맵 GLB를 `World::spawn`으로 세웁니다. 맵, 문, 소품이
 모두 같은 `ModelEntity`입니다(2026-11-11 잠깐 있던 `create_map_world` / 생성기 `"map"`은 이것과 같아 없앴습니다).
 
 - `set_persistent(true)`: 월드와 함께 저장 (`WorldCreate`는 월드가 처음 만들어질 때 한 번만).
@@ -272,7 +274,7 @@ w.set_spawn(0.0, 1.0, 0.0, 0.0);
 - `World::set_spawn`, `World::set_view(&View { curve: false, occlusion: true, .. })`: 평평하게, 벽 뒤는 그리지 않음.
 
 ```rust
-// 맵 하나 = 빈 월드 + WorldCreate에서 세운 모델 (World::spawn 하나로: 맵, 그 조각, 소품 모두 같은 ModelEntity)
+// 맵 하나 = 빈 월드 + WorldCreate에서 세운 모델 (World::spawn 하나로: 맵, 소품 모두 같은 ModelEntity)
 #[command("경기장", "")]
 fn arena(c: Command) {
     Server.create_world_with("arena", "void", "");   // 처음 한 번만 만들어짐
@@ -283,11 +285,11 @@ fn arena(c: Command) {
 fn build(e: WorldCreate) {
     let w = e.world();
     if w.id() != "arena" { return }
-    if let Some(map) = w.spawn("res://plugins/arena/arena.glb", 0.0, 0.0, 0.0) {
+    if let Some(map) = w.spawn("res://packs/arena/arena.glb", 0.0, 0.0, 0.0) {
         map.set_persistent(true);                                   // 월드와 함께 저장
-        map.set_collision_mesh("res://plugins/arena/arena_col.glb"); // 단단하게 (없으면 통과)
+        map.set_collision_mesh("res://packs/arena/arena_col.glb"); // 단단하게 (없으면 통과)
     }
-    if let Some(bush) = w.spawn("res://plugins/arena/bush.glb", 12.5, 0.0, -3.2) {
+    if let Some(bush) = w.spawn("res://packs/arena/bush.glb", 12.5, 0.0, -3.2) {
         bush.set_persistent(true);                                  // 충돌 메시 없음: 보이기만 하고 통과
     }
     w.set_spawn(0.0, 2.0, -20.0, 0.0);
@@ -297,7 +299,7 @@ fn build(e: WorldCreate) {
 
 #[command("경기장", "")]
 fn arena(c: Command) {
-    Server.create_map_world("arena", "res://plugins/arena/arena.glb", Some("res://plugins/arena/arena_col.glb"), (0.0, 2.0, -20.0, 0.0));
+    Server.create_map_world("arena", "res://packs/arena/arena.glb", Some("res://packs/arena/arena_col.glb"), (0.0, 2.0, -20.0, 0.0));
     c.player().move_world("arena");
 }
 ```

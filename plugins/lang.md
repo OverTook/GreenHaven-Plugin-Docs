@@ -15,7 +15,7 @@ parent: 플러그인
 
 ## 카탈로그
 
-플러그인 폴더의 `lang/<언어>.json`(`ko.json`, `en.json` ...). 접속할 때 플러그인의 zip(`assets/`, `client.wasm`과 함께)에
+플러그인 폴더의 `lang/<언어>.json`(`ko.json`, `en.json` ...). 접속할 때 플러그인의 zip(`client.wasm`과 함께)에
 담겨 게임에 갑니다.
 
 ```

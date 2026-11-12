@@ -32,7 +32,7 @@ has_children: true
   <a class="card" href="samples"><strong>샘플 플러그인</strong><span>스물다섯 개의 예제와 쓰는 기능</span></a>
 </div>
 
-플러그인은 코드와 에셋으로 되어 있습니다. 코드는 크레이트 하나에서 **두 부분**으로 빌드됩니다: 모든 것을 정하는 서버 쪽
+플러그인은 코드만으로 되어 있고, 그림·소리·모델은 따로 [리소스 팩](#리소스-팩)에 둡니다. 코드는 크레이트 하나에서 **두 부분**으로 빌드됩니다: 모든 것을 정하는 서버 쪽
 `server.wasm`과, 원하면 접속한 게임 안에서 보이고 느껴지는 것만 다루는 게임 쪽 `client.wasm`. 규칙(가격, 작물, 아이템, 블록, 주민, 대사, 스킬, 몬스터, 땅 …)도 코드에서
 등록합니다(Bukkit의 `onEnable`처럼 [`Enable`](events#enable) 이벤트에서 `Registry`로).
 
@@ -40,7 +40,8 @@ has_children: true
 |---|---|---|---|
 | 서버 쪽 코드 | `server.wasm` | 켜질 때 규칙 등록, 이벤트를 받아 값을 바꾸거나 막고, 아이템·골드·이동 판정·창·화면·엔티티·블록… 을 다룸 (서버에서만 돎) | [이벤트](events), [SDK](sdk), [규칙 등록](rules), [화면](screen), ["gh" 함수](abi) |
 | 게임 쪽 코드 (없어도 됨) | `client.wasm` | 접속한 게임 안의 샌드박스에서: 매 프레임 HUD, 카메라, 화면 효과, 자기에게만 보이는 파티클·소리, 키, 이동 넘겨받기. 상태를 바꾸는 함수는 없음 | [게임 쪽 코드](client), [이동 방식 만들기](moving) |
-| 에셋 | `assets/` | 접속자에게 보낼 그림·소리·모델 (게임의 `res://` 경로 그대로; 없어도 됨) | [규칙 등록 › 에셋](rules#에셋) |
+| 말 | `lang/` | 언어마다 쓰는 말 (없어도 됨) | [여러 언어](lang) |
+| 미디어 (플러그인 밖) | `<data>/packs/<이름>/` | 리소스 팩: 그림·소리·모델 (게임의 `res://` 경로 그대로; plugin.json `"packs"`로 부름) | [리소스 팩](#리소스-팩), [규칙 등록 › 에셋](rules#에셋) |
 
 ## 넣는 곳
 
@@ -52,9 +53,30 @@ has_children: true
 <data>/plugins/my_plugin/
   plugin.json   이름, 버전, 화면(버튼·바), 설정
   server.wasm   규칙 등록(Enable)과 이벤트 핸들러 (WebAssembly; 예전 이름 code.wasm도 읽음)
-  client.wasm   게임 쪽 코드 (없어도 됨; assets/와 함께 접속자에게 감)
-  assets/       접속자에게 보낼 그림·소리·모델
+  client.wasm   게임 쪽 코드 (없어도 됨; lang/과 함께 접속자에게 감)
+  lang/         언어마다 쓰는 말 (없어도 됨)
 ```
+
+플러그인 폴더의 `assets/`는 더 이상 게임에 보내지 않습니다(서버가 경고하고 건너뜀). 그림·소리·모델은 리소스 팩에 둡니다.
+
+## 리소스 팩
+
+미디어는 플러그인과 따로 **리소스 팩**에 있습니다. 팩은 둘 중 하나입니다.
+
+- 폴더 `<data>/packs/<이름>/` (이름은 a-z 0-9 `_` `-`, 64자까지). 안의 파일은 게임의 `res://` 경로에 놓입니다:
+  `packs/<이름>/...`는 팩의 새 것(`res://packs/<이름>/...`로 부름), `assets/...`는 게임의 같은 파일을 바꿔치기. 그 밖의 파일은 빠집니다.
+  `pack.json` `{"title", "version", "description"}`은 없어도 됩니다.
+- zip `<data>/packs/<이름>.zip` (마켓이 설치하는 모양): `res://` 경로의 미디어. 안의 `.glb`도 잽니다.
+
+```
+<data>/packs/my_plugin/
+  pack.json                        {"title": "내 플러그인", "version": "1.0"}
+  packs/my_plugin/fireball.png     res://packs/my_plugin/fireball.png
+  assets/music/lovely_town.ogg     게임의 마을 음악을 바꿔치기
+```
+
+플러그인은 필요한 팩을 `plugin.json`의 `"packs": ["my_plugin"]`에 적습니다. 적힌 팩이 없으면 그 플러그인은 빠집니다.
+**팩은 모두 받아야 들어갈 수 있습니다**(골라 받는 팩은 없음). 더 자세히는 [plugin.json](plugin-json), [서버 운영](server).
 
 `rules.json`은 더 이상 읽지 않습니다. 서버 운영자가 규칙을 바꾸려면 플러그인이 아니라 `<data>/rules.d/*.json`(이름 순서로
 덮음)에 둡니다.
@@ -123,10 +145,10 @@ cp target/wasm32-unknown-unknown/release/my_plugin.wasm server.wasm
 ```
 
 GreenHaven-Server 안의 `plugins/` 아래에 두었다면 `python tools/build_plugins.py my_plugin`이 위 두 줄을 대신하고,
-`--zip <폴더>`는 서버가 받는 모양 그대로 zip으로 묶습니다. 크레이트에 `client` feature가 있으면 `client.wasm`도 함께 빌드하고,
+`--zip <폴더>`는 서버가 받는 모양 그대로 zip으로 묶습니다(플러그인은 코드와 `lang/`, 필요한 팩은 `<폴더>/../packs/<팩>.zip`). 크레이트에 `client` feature가 있으면 `client.wasm`도 함께 빌드하고,
 두 파일이 저마다 가져다 쓰는 것을 검사합니다([게임 쪽 코드 › 빌드](client#빌드)).
 
-폴더째(`plugin.json`, `server.wasm`, 있으면 `client.wasm`과 `assets/`) 서버의 `plugins/`에 넣고 서버를 켜면 됩니다.
+폴더째(`plugin.json`, `server.wasm`, 있으면 `client.wasm`과 `lang/`) 서버의 `plugins/`에, 필요한 팩은 `packs/`에 넣고 서버를 켜면 됩니다.
 
 ## 알아 둘 것
 
