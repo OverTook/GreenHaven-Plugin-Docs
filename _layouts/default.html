@@ -1,0 +1,27 @@
+{%- comment -%}
+The wiki moved to greenhaven.fun/wiki (an editable one; these pages were brought in as its first revisions, the same
+titles as Central's wiki_import.rs gives them: the home the 대문, a page with children "분류:<title>", else its title).
+Every page of this site now sends there, its #part kept (the same heading ids); the files under assets/ stay served.
+{%- endcomment -%}
+{%- assign t = page.title | default: "" -%}
+{%- if page.has_children -%}{%- assign t = "분류:" | append: t -%}{%- endif -%}
+{%- if page.url == "/" or page.url == "/404.html" or t == "" or t == "분류:" -%}
+  {%- assign to = "https://greenhaven.fun/wiki" -%}
+{%- else -%}
+  {%- assign e = t | uri_escape -%}
+  {%- assign to = "https://greenhaven.fun/wiki/" | append: e -%}
+{%- endif -%}
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>{{ t | default: "GreenHaven 위키" }} · GreenHaven 위키 (옮김)</title>
+<link rel="canonical" href="{{ to }}">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url={{ to }}">
+<script>location.replace({{ to | jsonify }} + location.hash);</script>
+</head>
+<body>
+<p>GreenHaven 위키가 옮겼어요: <a href="{{ to }}">{{ to }}</a></p>
+</body>
+</html>
